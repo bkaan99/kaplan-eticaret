@@ -10,6 +10,7 @@ import { getJobQueue } from "@/shared/queue";
 import { getSiteUrl } from "@/shared/site-url";
 import { cartService } from "../cart/container";
 import { priceResolver } from "../catalog/container";
+import { customPickleService } from "../custom-pickle/container";
 import { PrismaDealerRepository } from "../b2b/dealer.repository";
 import { PrismaCheckoutRepository } from "../checkout/checkout.repository";
 import { CheckoutService } from "../checkout/checkout.service";
@@ -114,5 +115,6 @@ export function getCheckoutService(): CheckoutService {
     },
     dealers: features.b2b ? new PrismaDealerRepository(getDb) : undefined,
     events: getEventBus(),
+    customizations: customPickleService,
   });
 }

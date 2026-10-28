@@ -91,8 +91,11 @@ async function CheckoutContent({
       <aside className="flex h-fit flex-col gap-3 rounded-theme border border-border p-5">
         <h2 className="font-semibold">Sipariş özeti</h2>
         <ul className="flex flex-col gap-2 text-sm">
-          {quote.lines.map((line) => (
-            <li key={line.variantId} className="flex justify-between gap-3">
+          {quote.lines.map((line, index) => (
+            <li
+              key={`${line.variantId}-${index}`}
+              className="flex justify-between gap-3"
+            >
               <span>
                 {line.productName}
                 {line.variantName ? ` (${line.variantName})` : ""} ×{" "}

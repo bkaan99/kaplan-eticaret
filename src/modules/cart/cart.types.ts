@@ -12,6 +12,10 @@ export type CartLineIssue = "OUT_OF_STOCK" | "QUANTITY_REDUCED" | "UNAVAILABLE";
 
 export interface CartLine {
   variantId: string;
+  /** Satırın anahtarı (özelleştirilmiş satırlarda dolu); adet/silme işlemlerinde varyantla birlikte gönderilir */
+  lineKey: string;
+  /** Kendi turşunu yap gibi özelleştirilmiş satır mı? */
+  isCustom: boolean;
   productName: string;
   productSlug: string;
   variantLabel: string | null;

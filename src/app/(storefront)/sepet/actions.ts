@@ -50,14 +50,18 @@ export async function addToCartAction(
 export async function updateCartQuantityAction(
   variantId: string,
   quantity: number,
+  lineKey = "",
 ): Promise<CartActionResult> {
   return run((identity) =>
-    cartService.setQuantity(identity, variantId, quantity),
+    cartService.setQuantity(identity, variantId, quantity, lineKey),
   );
 }
 
 export async function removeCartItemAction(
   variantId: string,
+  lineKey = "",
 ): Promise<CartActionResult> {
-  return run((identity) => cartService.removeItem(identity, variantId));
+  return run((identity) =>
+    cartService.removeItem(identity, variantId, lineKey),
+  );
 }

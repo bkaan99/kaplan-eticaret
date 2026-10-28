@@ -340,6 +340,152 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
   }
 }
 
+const CUSTOM_PICKLE_SIZES = [
+  { label: "3 kg bidon", price: 249.9, weightGram: 3000 },
+  { label: "5 kg bidon", price: 379.9, weightGram: 5000 },
+  { label: "10 kg bidon", price: 699.9, weightGram: 10000 },
+];
+
+/** Kendi turşunu yap malzemeleri; ücret bidonun kilogramı başınadır. */
+const PICKLE_INGREDIENTS: {
+  name: string;
+  slug: string;
+  group: "VEGETABLE" | "AROMA";
+  pricePerKg: number;
+}[] = [
+  { name: "Salatalık", slug: "salatalik", group: "VEGETABLE", pricePerKg: 5 },
+  { name: "Kornişon", slug: "kornison", group: "VEGETABLE", pricePerKg: 8 },
+  {
+    name: "Beyaz lahana",
+    slug: "beyaz-lahana",
+    group: "VEGETABLE",
+    pricePerKg: 3,
+  },
+  {
+    name: "Kırmızı lahana",
+    slug: "kirmizi-lahana",
+    group: "VEGETABLE",
+    pricePerKg: 4,
+  },
+  { name: "Havuç", slug: "havuc", group: "VEGETABLE", pricePerKg: 3 },
+  {
+    name: "Sivri biber",
+    slug: "sivri-biber",
+    group: "VEGETABLE",
+    pricePerKg: 6,
+  },
+  {
+    name: "Kırmızı biber",
+    slug: "kirmizi-biber",
+    group: "VEGETABLE",
+    pricePerKg: 6,
+  },
+  { name: "Karnabahar", slug: "karnabahar", group: "VEGETABLE", pricePerKg: 6 },
+  { name: "Pancar", slug: "pancar", group: "VEGETABLE", pricePerKg: 4 },
+  {
+    name: "Yeşil domates",
+    slug: "yesil-domates",
+    group: "VEGETABLE",
+    pricePerKg: 7,
+  },
+  { name: "Ayva", slug: "ayva", group: "VEGETABLE", pricePerKg: 8 },
+  { name: "Sarımsak", slug: "sarimsak", group: "AROMA", pricePerKg: 3 },
+  { name: "Dereotu", slug: "dereotu", group: "AROMA", pricePerKg: 2 },
+  {
+    name: "Hardal tohumu",
+    slug: "hardal-tohumu",
+    group: "AROMA",
+    pricePerKg: 2.5,
+  },
+  {
+    name: "Defne yaprağı",
+    slug: "defne-yapragi",
+    group: "AROMA",
+    pricePerKg: 1.5,
+  },
+  { name: "Nohut", slug: "nohut", group: "AROMA", pricePerKg: 2 },
+  {
+    name: "Kuru acı biber",
+    slug: "kuru-aci-biber",
+    group: "AROMA",
+    pricePerKg: 3,
+  },
+];
+
+async function seedCustomPickle(db: PrismaClient): Promise<void> {
+  for (const [index, item] of PICKLE_INGREDIENTS.entries()) {
+    await db.pickleIngredient.upsert({
+      where: { slug: item.slug },
+      update: {},
+      create: {
+        name: item.name,
+        slug: item.slug,
+        group: item.group,
+        imageUrl: `/images/malzemeler/${item.slug}.svg`,
+        pricePerKg: item.pricePerKg.toFixed(2),
+        sortOrder: index,
+      },
+    });
+  }
+
+  const slug = "kendi-tursunu-yap";
+  if (await db.product.findUnique({ where: { slug } })) return;
+
+  const category = await db.category.findUnique({
+    where: { slug: "klasik-tursular" },
+  });
+  const brand = await db.brand.findUnique({ where: { slug: "kaplan" } });
+  if (!category) return;
+
+  const product = await db.product.create({
+    data: {
+      name: "Kendi Turşunu Yap",
+      slug,
+      description:
+        "Bidon boyutunu seçin, sevdiğiniz sebze ve baharatları ekleyin; salamurasına ve acılığına siz karar verin.",
+      status: "ACTIVE",
+      isFeatured: true,
+      categoryId: category.id,
+      brandId: brand?.id,
+      images: {
+        create: {
+          url: `/images/urunler/${slug}.svg`,
+          alt: "Kendi Turşunu Yap",
+        },
+      },
+      options: {
+        create: {
+          name: "Boyut",
+          position: 0,
+          values: {
+            create: CUSTOM_PICKLE_SIZES.map((size, position) => ({
+              value: size.label,
+              position,
+            })),
+          },
+        },
+      },
+    },
+    include: { options: { include: { values: true } } },
+  });
+
+  for (const value of product.options[0]!.values) {
+    const size = CUSTOM_PICKLE_SIZES.find(
+      (item) => item.label === value.value,
+    )!;
+    await db.productVariant.create({
+      data: {
+        productId: product.id,
+        sku: `${slug}-${slugify(size.label)}`.toUpperCase(),
+        price: size.price.toFixed(2),
+        weightGram: size.weightGram,
+        stockQuantity: 50,
+        optionValues: { create: { optionValueId: value.id } },
+      },
+    });
+  }
+}
+
 async function seedLegalPages(db: PrismaClient): Promise<void> {
   for (const page of LEGAL_PAGE_TEMPLATES) {
     await db.page.upsert({
@@ -362,6 +508,7 @@ async function main(): Promise<void> {
     await seedRoles(db);
     await seedCustomerGroups(db);
     await seedDemoCatalog(db);
+    await seedCustomPickle(db);
     await seedLegalPages(db);
     console.log("Seed tamamlandı.");
   } finally {

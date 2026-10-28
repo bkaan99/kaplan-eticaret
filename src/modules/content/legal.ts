@@ -4,6 +4,7 @@ export const LEGAL_PAGES = [
   { slug: "on-bilgilendirme-formu", title: "Ön Bilgilendirme Formu" },
   { slug: "kvkk-aydinlatma-metni", title: "KVKK Aydınlatma Metni" },
   { slug: "iade-ve-iptal-kosullari", title: "İade ve İptal Koşulları" },
+  { slug: "teslimat-ve-kargo", title: "Teslimat ve Kargo Bilgileri" },
   { slug: "cerez-politikasi", title: "Çerez Politikası" },
 ] as const;
 

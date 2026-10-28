@@ -30,6 +30,13 @@ import {
 } from "./discounts";
 import type { ShippingRateCalculator } from "./shipping";
 import { calculateOrderTotals, type OrderTotals } from "./totals";
+import {
+  bidonWeightGram,
+  type CustomizationPricer,
+  type CustomizationQuote,
+  type StoredCustomization,
+} from "../custom-pickle/custom-pickle.types";
+import { readStoredCustomization } from "../custom-pickle/custom-pickle.service";
 
 /** Checkout'un sepetten yalnızca ihtiyaç duyduğu parça. */
 export interface CartSource {
@@ -88,6 +95,16 @@ export interface CheckoutQuote {
 interface PricedLine {
   record: CheckoutLineRecord;
   unitPrice: Decimal;
+  /** Özelleştirilmiş satırın fiyatlandırılmış hâli */
+  custom?: CustomizationQuote;
+}
+
+function lineVariantName(entry: PricedLine): string | null {
+  const option = entry.record.optionLabels.length
+    ? entry.record.optionLabels.join(" / ")
+    : null;
+  if (!entry.custom) return option;
+  return [option, entry.custom.summary].filter(Boolean).join(" · ");
 }
 
 export interface CheckoutDeps {
@@ -99,6 +116,8 @@ export interface CheckoutDeps {
   priceResolver?: PriceResolver;
   dealers?: DealerTerms;
   events?: EventBus;
+  /** Kendi turşunu yap satırlarının ek ücretleri */
+  customizations?: CustomizationPricer;
   now?: () => Date;
 }
 
@@ -176,9 +195,8 @@ export class CheckoutService {
     const items: NewOrderItem[] = computed.priced.map((entry, index) => ({
       variantId: entry.record.variantId,
       productName: entry.record.product.name,
-      variantName: entry.record.optionLabels.length
-        ? entry.record.optionLabels.join(" / ")
-        : null,
+      variantName: lineVariantName(entry),
+      customization: entry.custom?.snapshot,
       sku: entry.record.sku,
       unitPrice: entry.unitPrice.toFixed(2),
       taxRate: toDecimal(entry.record.product.taxRate).toFixed(2),
@@ -354,7 +372,55 @@ export class CheckoutService {
       }
     }
 
+    // Özelleştirilmiş satırların malzemeleri hâlâ satışta olmalı.
+    const custom = await this.quoteCustomizations(lines);
+    lines.forEach((line, index) => {
+      if (line.customizationKey && !custom[index]?.available) {
+        throw new ConflictError(
+          `"${line.product.name}" içindeki malzemelerden biri artık mevcut değil; lütfen sepetinizi güncelleyin`,
+        );
+      }
+    });
+
     return { cartId: cart.id, lines };
+  }
+
+  /** Özelleştirilmiş satırların güncel ek ücretleri; diğer satırlar için boş. */
+  private async quoteCustomizations(
+    lines: CheckoutLineRecord[],
+  ): Promise<(CustomizationQuote | undefined)[]> {
+    const result: (CustomizationQuote | undefined)[] = lines.map(
+      () => undefined,
+    );
+    if (!this.deps.customizations) return result;
+
+    const pending = lines
+      .map((line, index) => ({
+        index,
+        customization: line.customizationKey
+          ? readStoredCustomization(line.customization)
+          : null,
+        weightGram: bidonWeightGram(
+          line.weightGram ?? null,
+          line.optionLabels.join(" "),
+        ),
+      }))
+      .filter(
+        (
+          entry,
+        ): entry is {
+          index: number;
+          customization: StoredCustomization;
+          weightGram: number | null;
+        } => entry.customization !== null,
+      );
+    if (pending.length === 0) return result;
+
+    const quotes = await this.deps.customizations.quote(pending);
+    pending.forEach((entry, position) => {
+      result[entry.index] = quotes[position];
+    });
+    return result;
   }
 
   private async compute(
@@ -372,10 +438,16 @@ export class CheckoutService {
       })),
       { customerGroupId },
     );
-    const priced: PricedLine[] = lines.map((record) => ({
-      record,
-      unitPrice: unitPrices.get(record.variantId) ?? toDecimal(record.price),
-    }));
+    const custom = await this.quoteCustomizations(lines);
+    const priced: PricedLine[] = lines.map((record, index) => {
+      const base = unitPrices.get(record.variantId) ?? toDecimal(record.price);
+      const quote = custom[index];
+      return {
+        record,
+        unitPrice: quote ? base.plus(quote.extra) : base,
+        custom: quote,
+      };
+    });
 
     const subtotal = priced.reduce(
       (sum, entry) => sum.plus(entry.unitPrice.times(entry.record.quantity)),
@@ -519,9 +591,7 @@ export class CheckoutService {
       lines: priced.map((entry, index) => ({
         variantId: entry.record.variantId,
         productName: entry.record.product.name,
-        variantName: entry.record.optionLabels.length
-          ? entry.record.optionLabels.join(" / ")
-          : null,
+        variantName: lineVariantName(entry),
         quantity: entry.record.quantity,
         unitPrice: entry.unitPrice.toFixed(2),
         lineTotal: totals.lines[index]!.lineTotal.toFixed(2),

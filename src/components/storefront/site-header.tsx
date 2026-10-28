@@ -29,6 +29,13 @@ async function CategoryNav() {
       >
         Tüm Ürünler
       </Link>
+      <Link
+        href="/kendi-tursunu-yap"
+        className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-4 py-1.5 font-semibold text-amber-900 transition-colors hover:bg-amber-200"
+      >
+        <span aria-hidden="true">✦</span>
+        Kendi Turşunu Yap
+      </Link>
       {tree.map((category) => (
         <Link
           key={category.id}

@@ -1,4 +1,5 @@
 import type Decimal from "decimal.js";
+import type { Prisma } from "../../../generated/prisma/client";
 import type { PrismaClient } from "@/shared/prisma-client";
 
 export interface CartRecord {
@@ -10,6 +11,11 @@ export interface CartRecord {
 export interface CartItemRecord {
   variantId: string;
   quantity: number;
+  /** Özelleştirilmiş satırın anahtarı; standart ürünlerde boş */
+  customizationKey?: string;
+  /** Ham özelleştirme verisi (JSON) */
+  customization?: unknown;
+  weightGram?: number | null;
   sku: string;
   price: Decimal;
   currency: string;
@@ -29,11 +35,18 @@ export interface CartItemRecord {
 
 export interface VariantStockRecord {
   variantId: string;
+  productSlug?: string;
   isActive: boolean;
   productActive: boolean;
   trackInventory: boolean;
   stockQuantity: number;
   reservedQuantity: number;
+}
+
+/** Özelleştirilmiş satırın anahtarı ve verisi. */
+export interface CartLineCustomization {
+  key: string;
+  customization: unknown;
 }
 
 export interface CartRepository {
@@ -42,13 +55,22 @@ export interface CartRepository {
   create(data: { userId?: string; sessionToken?: string }): Promise<CartRecord>;
   delete(cartId: string): Promise<void>;
   listItems(cartId: string): Promise<CartItemRecord[]>;
-  getItemQuantity(cartId: string, variantId: string): Promise<number>;
+  getItemQuantity(
+    cartId: string,
+    variantId: string,
+    customizationKey?: string,
+  ): Promise<number>;
   setItemQuantity(
     cartId: string,
     variantId: string,
     quantity: number,
+    line?: CartLineCustomization,
   ): Promise<void>;
-  removeItem(cartId: string, variantId: string): Promise<void>;
+  removeItem(
+    cartId: string,
+    variantId: string,
+    customizationKey?: string,
+  ): Promise<void>;
   findVariantStock(variantId: string): Promise<VariantStockRecord | null>;
   /** Kaynak sepetin satırlarını hedefe ekler (aynı varyantta adetler toplanır). */
   moveItems(
@@ -122,6 +144,9 @@ export class PrismaCartRepository implements CartRepository {
     return rows.map((row) => ({
       variantId: row.variantId,
       quantity: row.quantity,
+      customizationKey: row.customizationKey,
+      customization: row.customization,
+      weightGram: row.variant.weightGram,
       sku: row.variant.sku,
       price: row.variant.price,
       currency: row.variant.currency,
@@ -145,9 +170,19 @@ export class PrismaCartRepository implements CartRepository {
     }));
   }
 
-  async getItemQuantity(cartId: string, variantId: string): Promise<number> {
+  async getItemQuantity(
+    cartId: string,
+    variantId: string,
+    customizationKey = "",
+  ): Promise<number> {
     const item = await this.db().cartItem.findUnique({
-      where: { cartId_variantId: { cartId, variantId } },
+      where: {
+        cartId_variantId_customizationKey: {
+          cartId,
+          variantId,
+          customizationKey,
+        },
+      },
       select: { quantity: true },
     });
     return item?.quantity ?? 0;
@@ -157,11 +192,27 @@ export class PrismaCartRepository implements CartRepository {
     cartId: string,
     variantId: string,
     quantity: number,
+    line?: CartLineCustomization,
   ): Promise<void> {
+    const customizationKey = line?.key ?? "";
     await this.db().cartItem.upsert({
-      where: { cartId_variantId: { cartId, variantId } },
+      where: {
+        cartId_variantId_customizationKey: {
+          cartId,
+          variantId,
+          customizationKey,
+        },
+      },
       update: { quantity },
-      create: { cartId, variantId, quantity },
+      create: {
+        cartId,
+        variantId,
+        quantity,
+        customizationKey,
+        customization: line
+          ? (line.customization as Prisma.InputJsonValue)
+          : undefined,
+      },
     });
     await this.db().cart.update({
       where: { id: cartId },
@@ -169,8 +220,14 @@ export class PrismaCartRepository implements CartRepository {
     });
   }
 
-  async removeItem(cartId: string, variantId: string): Promise<void> {
-    await this.db().cartItem.deleteMany({ where: { cartId, variantId } });
+  async removeItem(
+    cartId: string,
+    variantId: string,
+    customizationKey = "",
+  ): Promise<void> {
+    await this.db().cartItem.deleteMany({
+      where: { cartId, variantId, customizationKey },
+    });
   }
 
   async findVariantStock(
@@ -183,13 +240,16 @@ export class PrismaCartRepository implements CartRepository {
         isActive: true,
         stockQuantity: true,
         reservedQuantity: true,
-        product: { select: { status: true, trackInventory: true } },
+        product: {
+          select: { status: true, trackInventory: true, slug: true },
+        },
       },
     });
     if (!variant) return null;
 
     return {
       variantId: variant.id,
+      productSlug: variant.product.slug,
       isActive: variant.isActive,
       productActive: variant.product.status === "ACTIVE",
       trackInventory: variant.product.trackInventory,
@@ -209,22 +269,29 @@ export class PrismaCartRepository implements CartRepository {
       });
 
       for (const item of items) {
-        const existing = await tx.cartItem.findUnique({
-          where: {
-            cartId_variantId: { cartId: toCartId, variantId: item.variantId },
+        const where = {
+          cartId_variantId_customizationKey: {
+            cartId: toCartId,
+            variantId: item.variantId,
+            customizationKey: item.customizationKey,
           },
-        });
+        };
+        const existing = await tx.cartItem.findUnique({ where });
         const quantity = Math.min(
           maxQuantity,
           item.quantity + (existing?.quantity ?? 0),
         );
 
         await tx.cartItem.upsert({
-          where: {
-            cartId_variantId: { cartId: toCartId, variantId: item.variantId },
-          },
+          where,
           update: { quantity },
-          create: { cartId: toCartId, variantId: item.variantId, quantity },
+          create: {
+            cartId: toCartId,
+            variantId: item.variantId,
+            quantity,
+            customizationKey: item.customizationKey,
+            customization: item.customization ?? undefined,
+          },
         });
       }
 

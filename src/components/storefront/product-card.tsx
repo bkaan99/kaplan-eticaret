@@ -83,25 +83,20 @@ export function ProductCard({ product }: { product: ProductCardData }) {
 
         {/* Ürün Bilgileri */}
         <div className="flex flex-1 flex-col p-4 sm:p-5">
-          {/* Üst Satır: Marka & Özellik Etiketi */}
+          {/* Üst Satır: Özellik Etiketi */}
           <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
-              {product.brandName ?? "KAPLAN"}
-            </span>
             <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${badgeBg}`}
+              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${badgeBg}`}
             >
               {tag}
             </span>
+            <span className="text-[11px] text-slate-400 font-medium">{sizeHint}</span>
           </div>
 
           {/* Ürün Adı */}
           <h3 className="text-base font-semibold text-slate-900 transition-colors group-hover:text-primary sm:text-lg">
             {product.name}
           </h3>
-
-          {/* Gramaj / Ambalaj Notu */}
-          <p className="mt-1 text-xs text-slate-400">{sizeHint}</p>
 
           {/* Puan ve Değerlendirme */}
           <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600">

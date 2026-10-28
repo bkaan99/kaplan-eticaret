@@ -13,6 +13,11 @@ const ISSUE_TEXT: Record<NonNullable<CartLine["issue"]>, string> = {
   UNAVAILABLE: "Bu ürün artık satışta değil.",
 };
 
+/** Aynı bidon boyutunun farklı malzemeli satırları ayrı tutulur. */
+function lineId(line: CartLine): string {
+  return line.lineKey ? `${line.variantId}-${line.lineKey}` : line.variantId;
+}
+
 function Line({ line, currency }: { line: CartLine; currency: string }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -20,14 +25,18 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
 
   function update(quantity: number) {
     startTransition(async () => {
-      const result = await updateCartQuantityAction(line.variantId, quantity);
+      const result = await updateCartQuantityAction(
+        line.variantId,
+        quantity,
+        line.lineKey,
+      );
       setError(result.ok ? null : (result.error ?? "Güncellenemedi"));
     });
   }
 
   function remove() {
     startTransition(async () => {
-      await removeCartItemAction(line.variantId);
+      await removeCartItemAction(line.variantId, line.lineKey);
     });
   }
 
@@ -43,7 +52,12 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
         />
       </div>
       <div className="flex flex-1 flex-col gap-1">
-        <Link href={`/urun/${line.productSlug}`} className="font-medium">
+        <Link
+          href={
+            line.isCustom ? "/kendi-tursunu-yap" : `/urun/${line.productSlug}`
+          }
+          className="font-medium"
+        >
           {line.productName}
         </Link>
         {line.variantLabel ? (
@@ -54,11 +68,11 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
         <Price value={line.unitPrice} currency={currency} />
 
         <div className="mt-2 flex items-center gap-3">
-          <label className="sr-only" htmlFor={`qty-${line.variantId}`}>
+          <label className="sr-only" htmlFor={`qty-${lineId(line)}`}>
             Adet
           </label>
           <input
-            id={`qty-${line.variantId}`}
+            id={`qty-${lineId(line)}`}
             type="number"
             min={1}
             max={max}
@@ -103,7 +117,7 @@ export function CartLines({ cart }: { cart: CartView }) {
   return (
     <ul>
       {cart.lines.map((line) => (
-        <Line key={line.variantId} line={line} currency={cart.currency} />
+        <Line key={lineId(line)} line={line} currency={cart.currency} />
       ))}
     </ul>
   );

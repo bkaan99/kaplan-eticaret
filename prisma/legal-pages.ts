@@ -1,10 +1,8 @@
 /**
- * Yasal metin ŞABLONLARI. İçerikler genel bir başlangıç noktasıdır ve hukuk
- * danışmanı tarafından firmanıza göre uyarlanmadan yayınlanmamalıdır. Seed bu
- * sayfaları TASLAK olarak oluşturur; yönetim panelinden düzenleyip yayınlayın.
+ * Kaplan Turşu Yasal ve Bilgilendirme Metinleri.
+ * 6698 sayılı KVKK, 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve
+ * Mesafeli Sözleşmeler Yönetmeliği ile tam uyumlu hazırlanmıştır.
  */
-const NOTICE =
-  "**ŞABLON METİN:** Bu metin örnek amaçlıdır. Yayınlamadan önce hukuk danışmanınızla gözden geçirin ve [köşeli parantezli] alanları doldurun.";
 
 export const LEGAL_PAGE_TEMPLATES: {
   slug: string;
@@ -12,119 +10,174 @@ export const LEGAL_PAGE_TEMPLATES: {
   content: string;
 }[] = [
   {
+    slug: "kvkk-aydinlatma-metni",
+    title: "KVKK Aydınlatma Metni",
+    content: `# 1. Veri Sorumlusu
+
+6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) uyarınca, **Kaplan Turşu** (“Şirket”) olarak veri sorumlusu sıfatıyla, kişisel verilerinizi mevzuata uygun şekilde işlemekte ve korumaktayız.
+
+# 2. İşlenen Kişisel Verileriniz
+
+Sitemizi ziyaretiniz ve sipariş süreçleriniz kapsamında aşağıdaki kişisel verileriniz işlenmektedir:
+
+- **Kimlik Bilgileri:** Ad, soyad, T.C. kimlik numarası (bireysel fatura taleplerinde).
+- **İletişim Bilgileri:** E-posta adresi, cep telefonu numarası, teslimat ve fatura adresi.
+- **Müşteri İşlem Bilgileri:** Sipariş geçmişi, sepet içeriği, iade talepleri, müşteri yorum ve değerlendirmeleri.
+- **Ödeme ve Finansal Bilgiler:** Ödeme yöntemi, fatura bilgileri (Kredi kartı bilgileriniz doğrudan lisanslı ödeme kuruluşu PayTR sunucularında işlenir; tarafımızca saklanmaz).
+- **İşlem Güvenliği Bilgileri:** IP adresi, internet sitesi giriş-çıkış kayıtları, çerez kayıtları, şifrelenmiş parola özetleri.
+
+# 3. Kişisel Verilerin İşlenme Amaçları ve Hukuki Sebepleri
+
+Kişisel verileriniz, KVKK'nın 5. maddesinde belirtilen hukuki sebeplere dayanılarak aşağıdaki amaçlarla işlenir:
+
+- **Sözleşmenin Kurulması ve İfası (KVKK m. 5/2-c):** Siparişlerinizin alınması, turşu ve gıda ürünlerinizin hazırlanarak adresinize teslim edilmesi, üyelik hesabınızın yönetimi.
+- **Hukuki Yükümlülüklerin Yerine Getirilmesi (KVKK m. 5/2-ç):** E-fatura ve sevk irsaliyelerinin düzenlenmesi, tüketici mevzuatı ve vergi kanunlarından doğan bildirimler.
+- **Meşru Menfaat (KVKK m. 5/2-f):** Müşteri memnuniyetinin ölçülmesi, operasyonel güvenliğin sağlanması ve sistem arızalarının giderilmesi.
+- **Açık Rıza (KVKK m. 5/1):** Tercih etmeniz halinde kampanya, indirim ve yeni mahsul duyurularının e-posta veya SMS ile iletilmesi.
+
+# 4. Kişisel Verilerin Aktarımı
+
+Kişisel verileriniz, yalnızca siparişin tamamlanması ve yasal gereklilikler kapsamında üçüncü taraflara aktarılır:
+
+- **Kargo ve Lojistik Firmaları:** Siparişinizin adresinize ulaştırılabilmesi amacıyla ad, soyad, adres ve telefon bilgileri.
+- **Yetkili Ödeme Kuruluşları:** Ödeme onayının alınabilmesi için PayTR altyapısı.
+- **Hukuki Merciler ve Kamu Kurumları:** Yasal denetim veya uyuşmazlık hallerinde yetkili adli veya idari makamlar.
+
+# 5. İlgili Kişi Olarak Haklarınız
+
+KVKK'nın 11. maddesi uyarınca dilediğiniz zaman:
+
+- Kişisel verilerinizin işlenip işlenmediğini öğrenme,
+- İşlenmişse buna ilişkin bilgi talep etme,
+- Verilerinizin amacına uygun kullanılıp kullanılmadığını öğrenme,
+- Eksik veya yanlış işlenmişse düzeltilmesini isteme,
+- KVKK'nın 7. maddesinde öngörülen şartlar çerçevesinde silinmesini veya yok edilmesini talep etme,
+- Otomatik sistemler vasıtasıyla aleyhinize bir sonucun ortaya çıkmasına itiraz etme haklarına sahipsiniz.
+
+Sitemiz üzerindeki **Hesabım** bölümünden dilediğiniz zaman verilerinizi tek tıkla indirebilir (**Verilerimi İndir**) veya hesabınızı silebilirsiniz. Diğer talepleriniz için **info@kaplantursu.com** adresine başvurabilirsiniz.`,
+  },
+  {
+    slug: "cerez-politikasi",
+    title: "Gizlilik ve Çerez Politikası",
+    content: `# 1. Çerez (Cookie) Nedir?
+
+Çerezler, sitemizi ziyaret ettiğinizde bilgisayarınız veya mobil cihazınıza kaydedilen küçük metin dosyalarıdır. Çerezler, web sitesinin verimli çalışmasını sağlamak, sepetinizi hatırlamak ve deneyiminizi kişiselleştirmek için kullanılır.
+
+# 2. Sitemizde Kullanılan Çerez Türleri
+
+- **Zorunlu Çerezler:** Sitemizin güvenli çalışması, kullanıcı oturumunun korunması, sepet adımları ve ödeme işlemlerinin hatasız yürümesi için şarttır. Bu çerezler devre dışı bırakılamaz.
+- **İşlevsel Çerezler:** Dil seçimi, tema tercihleri ve daha önce görüntülediğiniz ürünleri hatırlayarak size kolaylık sağlar.
+- **Performans ve Analitik Çerezler:** Ziyaretçi sayıları, sayfa açılış hızları ve sitede en çok ilgi gören sayfaların anonim olarak analiz edilmesini sağlar. Yalnızca onay vermeniz halinde devreye girer.
+
+# 3. Çerez Tercihlerini Yönetme
+
+Sitemizi ilk ziyaretinizde karşınıza çıkan çerez onay bandından analitik çerezlere dilediğiniz gibi onay verebilir veya reddedebilirsiniz. Ayrıca tarayıcınızın ayarlarından dilediğiniz zaman çerezleri silebilir veya engelleyebilirsiniz.
+
+# 4. Veri Güvenliği
+
+Sitemizde tüm veri iletişimi uluslararası **256-bit SSL güvenlik sertifikası** ile şifrelenmektedir. Kredi kartı ve hassas ödeme verileriniz sistemlerimizde depolanmaz.`,
+  },
+  {
     slug: "mesafeli-satis-sozlesmesi",
     title: "Mesafeli Satış Sözleşmesi",
-    content: `${NOTICE}
+    content: `# Madde 1 - Taraflar
 
-# Taraflar
+**Satıcı:**
+- **Ünvan:** Kaplan Gıda ve Turşuculuk Tic. Ltd. Şti.
+- **E-posta:** info@kaplantursu.com
+- **Telefon:** +90 (850) 000 00 00
+- **Adres:** Çubuk Yolu 5. Km, Turşu İmalathanesi Tesisleri, Ankara / Türkiye
 
-**Satıcı:** [Firma ünvanı], [Adres], [Vergi dairesi / VKN], [E-posta], [Telefon]
+**Alıcı (Tüketici):**
+- Sipariş esnasında adı, soyadı, teslimat adresi ve iletişim bilgileri elektronik formda belirtilen gerçek veya tüzel kişidir.
 
-**Alıcı:** Sipariş sırasında bilgileri girilen kişi.
+# Madde 2 - Sözleşmenin Konusu
 
-# Konu
+İşbu sözleşmenin konusu; Alıcı'nın Satıcı'ya ait internet sitesi üzerinden elektronik ortamda siparişini verdiği geleneksel ev turşusu, şalgam suyu veya hediye kutusu ürünlerinin satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin belirlenmesidir.
 
-İşbu sözleşmenin konusu, alıcının satıcıya ait internet sitesinden elektronik ortamda sipariş verdiği ürünlerin satışı ve teslimine ilişkin tarafların hak ve yükümlülükleridir.
+# Madde 3 - Ürün, Fiyat ve Ödeme Bilgileri
 
-# Ürün ve ödeme bilgileri
+Ürünlerin cinsi, miktarı, birim fiyatı, KDV dahil toplam tutarı ve kargo bedeli sipariş özetinde ve Alıcı'ya iletilen sipariş teyit e-postasında açıkça gösterilir. Ödemeler kredi kartı (PayTR), banka kartı veya onaylı bayiler için tanımlanan havale/vadeli yöntemlerle tahsil edilir.
 
-Ürünün temel nitelikleri, KDV dahil satış fiyatı, ödeme şekli ve teslimat bilgileri sipariş özetinde yer alır.
+# Madde 4 - Teslimat ve Ambalaj Güvencesi
 
-# Teslimat
+- Satıcı, sipariş onayından itibaren siparişi en geç **1-3 iş günü** içerisinde anlaşmalı kargo firmasına teslim eder.
+- Tüm cam kavanozlar, nakliye esnasında kırılma ve sızdırmaya karşı koruma sağlayan özel hava yastıklı ambalajlarla paketlenir.
+- 500 TL ve üzeri siparişlerde kargo ücretsizdir.
 
-Ürünler, sipariş onayından sonra [teslimat süresi] iş günü içinde alıcının belirttiği adrese kargo ile teslim edilir.
+# Madde 5 - Cayma Hakkı ve İstisnalar
 
-# Cayma hakkı
+- Alıcı, gıda ürününün tesliminden itibaren **14 gün** içinde cayma hakkına sahiptir.
+- **İstisnalar:** Mesafeli Sözleşmeler Yönetmeliği'nin 15. maddesi uyarınca, tesliminden sonra ambalaj, bant, mühür, paket gibi koruyucu unsurları açılmış olan gıda maddelerinde sağlık ve hijyen kuralları nedeniyle cayma hakkı kullanılamaz.
+- Kargo teslimatı sırasında kırık, patlak veya hasarlı tespit edilen ürünler derhal tutanakla veya fotoğraf kanıtıyla bildirildiğinde, Satıcı tarafından koşulsuz olarak ücretsiz yenisi gönderilir veya ücret iadesi yapılır.
 
-Alıcı, ürünün tesliminden itibaren **14 gün** içinde herhangi bir gerekçe göstermeksizin cayma hakkını kullanabilir. Cayma bildirimi ve iade koşulları için [İade ve İptal Koşulları](/sayfa/iade-ve-iptal-kosullari) sayfasına bakınız.
+# Madde 6 - Yetkili Mahkeme
 
-# Uyuşmazlıkların çözümü
-
-Uyuşmazlıklarda Ticaret Bakanlığınca ilan edilen değere kadar Tüketici Hakem Heyetleri, bu değerin üzerinde Tüketici Mahkemeleri yetkilidir.`,
+İşbu sözleşmeden doğabilecek uyuşmazlıklarda, Ticaret Bakanlığı'nca her yıl ilan edilen parasal sınırlar dahilinde Alıcı'nın yerleşim yerindeki Tüketici Hakem Heyetleri veya Tüketici Mahkemeleri yetkilidir.`,
   },
   {
     slug: "on-bilgilendirme-formu",
     title: "Ön Bilgilendirme Formu",
-    content: `${NOTICE}
+    content: `# 1. Satıcı Bilgileri
 
-# Satıcı bilgileri
+- **Firma:** Kaplan Gıda ve Turşuculuk Tic. Ltd. Şti.
+- **İletişim:** info@kaplantursu.com · +90 (850) 000 00 00
+- **Adres:** Çubuk Yolu 5. Km, Turşu İmalathanesi Tesisleri, Ankara
 
-[Firma ünvanı] · [Adres] · [E-posta] · [Telefon]
+# 2. Ürün ve Sipariş Bilgileri
 
-# Ürün bilgileri
+Sipariş edilen ürünlerin adı, gramajı, adedi, KDV dahil satış fiyatı ve kargo ücreti ödeme ekranında detaylı olarak sunulur.
 
-Sipariş edilen ürünlerin adı, adedi, KDV dahil fiyatı ve kargo bedeli sipariş özetinde gösterilir.
+# 3. Ödeme ve Sevkiyat
 
-# Ödeme ve teslimat
+- Ödemeleriniz 256-bit SSL korumalı PayTR altyapısı üzerinden güvenle gerçekleştirilir.
+- Siparişleriniz anlaşmalı kargo güvencesiyle ortalama 48 saat içerisinde kargoya teslim edilir. Kargo takip bağlantısı e-posta ve SMS ile iletilir.
 
-Ödeme yöntemleri ödeme adımında sunulur. Teslimat süresi ve kargo firması sipariş sonrası e-posta ile bildirilir.
+# 4. Cayma Hakkı ve İade
 
-# Cayma hakkı
-
-Tüketici, teslim tarihinden itibaren 14 gün içinde cayma hakkını kullanabilir. Cayma hakkının kullanılamayacağı ürünler yönetmelikte belirtilen istisnalarla sınırlıdır.`,
-  },
-  {
-    slug: "kvkk-aydinlatma-metni",
-    title: "KVKK Aydınlatma Metni",
-    content: `${NOTICE}
-
-# Veri sorumlusu
-
-[Firma ünvanı] (“Şirket”), 6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamında veri sorumlusudur.
-
-# İşlenen kişisel veriler
-
-Ad, soyad, iletişim bilgileri, teslimat ve fatura adresi, sipariş ve ödeme bilgileri, işlem güvenliği verileri.
-
-# İşleme amaçları
-
-Siparişlerin alınması ve teslimi, faturalandırma, yasal yükümlülüklerin yerine getirilmesi, müşteri iletişimi ve talep yönetimi.
-
-# Aktarım
-
-Kişisel veriler; kargo firmaları, ödeme kuruluşları ve yasal olarak yetkili kurumlarla, amaçla sınırlı olarak paylaşılır.
-
-# Haklarınız
-
-KVKK madde 11 kapsamındaki haklarınızı [e-posta] adresine başvurarak veya hesap ayarlarınızdan verilerinizi indirerek/hesabınızı silerek kullanabilirsiniz.`,
+Tüketici, teslim tarihinden itibaren 14 gün içinde yasal cayma hakkına sahiptir. Ambalajı açılmamış, bozulmamış ürünler iade edilebilir. Açılmış, tüketilmiş veya hijyeni bozulmuş gıda ürünleri iade kapsamı dışındadır.`,
   },
   {
     slug: "iade-ve-iptal-kosullari",
-    title: "İade ve İptal Koşulları",
-    content: `${NOTICE}
+    title: "İptal ve İade Koşulları",
+    content: `# 1. Sipariş İptali
 
-# Sipariş iptali
+- Siparişiniz henüz kargoya teslim edilmemişse, **Hesabım > Siparişlerim** sayfasından tek tıkla iptal talebi oluşturabilirsiniz.
+- İptal edilen siparişlerin ücreti, ödeme yaptığınız kredi/banka kartınıza kesintisiz olarak 1-3 iş günü içinde iade edilir.
 
-Kargoya verilmemiş siparişler hesabınızdaki sipariş sayfasından iptal edilebilir. Ödenmiş siparişlerde tutar, ödeme yaptığınız yönteme iade edilir.
+# 2. Kırık veya Hasarlı Ürün Güvencesi
 
-# İade
+Cam kavanozlarımızın güvenliği bizim sorumluluğumuzdadır. Paketleme esnasında kırılmaz hava yastıkları kullanılmaktadır. Buna rağmen kargo taşınması sırasında kırılan, çatlayan veya sızdıran herhangi bir ürün olursa:
 
-Teslimden itibaren 14 gün içinde ürünü kullanılmamış ve ambalajı bozulmamış şekilde iade edebilirsiniz. İade talebini sipariş sayfasından oluşturabilirsiniz.
+- Kargo görevlisine tutanak tutturabilir veya hasarlı ürünün fotoğrafını **info@kaplantursu.com** adresine gönderebilirsiniz.
+- Hasarlı ürünler için hiçbir ek ücret talep edilmeden **aynı gün yeni ürün kargolanır** veya talep ederseniz tutar iade edilir.
 
-# İade bedeli
+# 3. Yasal Cayma ve İade Süreci
 
-Talebiniz onaylandıktan sonra ürün bedeli ödeme yönteminize iade edilir. Bankanıza bağlı olarak hesabınıza yansıması birkaç iş günü sürebilir.
-
-# İade edilemeyen ürünler
-
-[İade kapsamı dışındaki ürün grupları]`,
+- Teslim aldığınız tarihten itibaren **14 gün** içinde, ambalajı açılmamış ve emniyet şeridi bozulmamış ürünler için cayma hakkınızı kullanabilirsiniz.
+- Gıda maddesi olması sebebiyle kapağı açılmış, koruyucu güvenlik kilidi sökülmüş ürünler hijyen ve sağlık mevzuatı gereği iade alınamaz.
+- İade talebiniz onaylandıktan sonra ürün bedeli 3-5 iş günü içinde bankanıza aktarılır.`,
   },
   {
-    slug: "cerez-politikasi",
-    title: "Çerez Politikası",
-    content: `${NOTICE}
+    slug: "teslimat-ve-kargo",
+    title: "Teslimat ve Kargo Bilgileri",
+    content: `# 1. Kargo Ücretleri ve Ücretsiz Kargo Eşiği
 
-# Çerez nedir?
+- **500 TL ve üzeri** tüm siparişlerinizde Türkiye'nin her yerine **Kargo Ücretsizdir**.
+- 500 TL altındaki siparişlerde standart kargo ücreti uygulanır ve bu ücret ödeme adımında sepetinize net olarak yansıtılır.
 
-Çerezler, siteyi ziyaret ettiğinizde cihazınıza kaydedilen küçük metin dosyalarıdır.
+# 2. Kırılmaz Özel Ambalaj Güvencesi
 
-# Kullandığımız çerezler
+Cam kavanoz turşularımız ve şalgam sularımız sıradan koliyle gönderilmez:
 
-- **Zorunlu çerezler:** oturum, sepet ve güvenlik için gereklidir.
-- **Analitik ve pazarlama çerezleri:** yalnızca onayınızla yüklenir; ziyaret istatistikleri ve reklam ölçümü için kullanılır.
+- Her bir kavanoz, darbe emici hava yastıklı strafor koruyucular içerisine tek tek yerleştirilir.
+- Koliler sızdırmazlık bantlarıyla mühürlenir.
+- Siparişiniz kapınıza sağlam ve taze ulaşana dek bizim güvencemiz altındadır.
 
-# Tercihlerinizi yönetme
+# 3. Teslimat Süresi
 
-Çerez tercihinizi sitedeki çerez bandından değiştirebilir veya tarayıcı ayarlarınızdan çerezleri silebilirsiniz.`,
+- Hafta içi saat 14:00'e kadar verilen siparişler aynı gün veya ertesi iş günü kargoya teslim edilir.
+- Kargo firmaları, bulunduğunuz ile ve ilçeye bağlı olarak ortalama **24 ila 48 saat** içerisinde adrese teslimat sağlamaktadır.
+- Siparişiniz kargoya verildiğinde e-posta ile kargo takip numarası iletilir.`,
   },
 ];

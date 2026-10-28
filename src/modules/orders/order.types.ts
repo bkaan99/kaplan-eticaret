@@ -75,6 +75,8 @@ export interface NewOrderItem {
   lineTotal: string;
   /** Stok takibi yapılmayan üründe rezervasyon atlanır */
   trackInventory: boolean;
+  /** Özelleştirme kopyası (kendi turşunu yap); standart üründe yok */
+  customization?: unknown;
 }
 
 export interface NewOrder {

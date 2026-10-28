@@ -186,6 +186,9 @@ export class PrismaOrderRepository implements OrderRepository {
               taxRate: item.taxRate,
               quantity: item.quantity,
               lineTotal: item.lineTotal,
+              customization: item.customization
+                ? (item.customization as Prisma.InputJsonValue)
+                : undefined,
             })),
           },
           payments: {
@@ -306,6 +309,9 @@ export class PrismaOrderRepository implements OrderRepository {
               taxRate: item.taxRate,
               quantity: item.quantity,
               lineTotal: item.lineTotal,
+              customization: item.customization
+                ? (item.customization as Prisma.InputJsonValue)
+                : undefined,
             })),
           },
           payments: {

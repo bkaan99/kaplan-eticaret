@@ -154,9 +154,9 @@ async function OrderContent({
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Ürünler</h2>
         <ul className="flex flex-col divide-y divide-border">
-          {order.items.map((item) => (
+          {order.items.map((item, index) => (
             <li
-              key={item.sku}
+              key={`${item.sku}-${index}`}
               className="flex justify-between gap-4 py-3 text-sm"
             >
               <span>

@@ -27,6 +27,11 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
     permission: PERMISSIONS.PRODUCT_READ,
   },
   {
+    href: "/admin/tursu-malzemeleri",
+    label: "Kendi turşunu yap",
+    permission: PERMISSIONS.PRODUCT_WRITE,
+  },
+  {
     href: "/admin/kategoriler",
     label: "Kategoriler",
     permission: PERMISSIONS.CATALOG_MANAGE,

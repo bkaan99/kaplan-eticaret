@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/storefront/breadcrumbs";
 import { JsonLd } from "@/components/storefront/json-ld";
@@ -12,6 +12,7 @@ import { formatMoney } from "@/shared/money";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { catalogService } from "@/modules/catalog/container";
 import { loadProduct } from "@/modules/catalog/loaders";
+import { CUSTOM_PICKLE_PRODUCT_SLUG } from "@/modules/custom-pickle/custom-pickle.types";
 import { TrackOnMount } from "@/shared/analytics/track-on-mount";
 import { absoluteUrl } from "@/shared/site-url";
 
@@ -141,6 +142,10 @@ async function ProductContent({
   if (loaded.kind === "missing") notFound();
 
   const product = loaded.value;
+  // Bidonlar malzeme seçilerek oluşturulur; ürün sayfası yapıcıya yönlenir.
+  if (product.slug === CUSTOM_PICKLE_PRODUCT_SLUG)
+    redirect("/kendi-tursunu-yap");
+
   const prices = product.variants.map((variant) => Number(variant.price));
   const lowPrice = Math.min(...prices);
   const highPrice = Math.max(...prices);

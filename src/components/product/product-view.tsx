@@ -230,12 +230,7 @@ export function ProductView({
         transition={{ duration: 0.8, delay: 0.1, ease: EASE_OUT }}
       >
         <div className="flex flex-col gap-3">
-          {product.brand ? (
-            <span className="text-xs font-semibold tracking-[0.25em] text-brand-leaf uppercase">
-              {product.brand.name}
-            </span>
-          ) : null}
-          <h1 className="font-display text-4xl leading-tight font-semibold tracking-tight text-brand-dark sm:text-5xl">
+          <h1 className="font-display text-4xl leading-tight font-semibold tracking-tight text-slate-900 sm:text-5xl">
             {product.name}
           </h1>
           {product.attributes.length > 0 ? (

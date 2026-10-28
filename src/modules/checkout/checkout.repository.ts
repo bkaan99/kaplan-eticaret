@@ -4,6 +4,11 @@ import type { PrismaClient } from "@/shared/prisma-client";
 export interface CheckoutLineRecord {
   variantId: string;
   quantity: number;
+  /** Özelleştirilmiş satırın anahtarı; standart ürünlerde boş */
+  customizationKey?: string;
+  /** Ham özelleştirme verisi (JSON) */
+  customization?: unknown;
+  weightGram?: number | null;
   sku: string;
   price: Decimal;
   currency: string;
@@ -74,6 +79,9 @@ export class PrismaCheckoutRepository implements CheckoutRepository {
       return {
         variantId: variant.id,
         quantity: item.quantity,
+        customizationKey: item.customizationKey,
+        customization: item.customization,
+        weightGram: variant.weightGram,
         sku: variant.sku,
         price: variant.price,
         currency: variant.currency,
