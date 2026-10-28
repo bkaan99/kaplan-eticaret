@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<rect width="400" height="400" fill="#f6e8dc"/>
+<circle cx="200" cy="215" r="150" fill="#fff" opacity=".45"/>
+<g>
+  <ellipse cx="200" cy="352" rx="100" ry="12" fill="#000" opacity=".08"/>
+  <clipPath id="jar-tombul-6"><path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z"/></clipPath>
+  <path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z" fill="#eef3e6"/>
+  <g clip-path="url(#jar-tombul-6)">
+    <rect x="96" y="150" width="208" height="210" fill="#d6cf86" opacity=".55"/>
+    <g><circle cx="150" cy="200" r="27" fill="#c0392b"/><path d="M136.5 191.9 a 16.2 16.2 0 0 1 13.5 -10.8" stroke="#fff" stroke-opacity=".3" stroke-width="3" fill="none"/><rect x="147" y="165" width="6" height="10" rx="3" fill="#2f5233"/></g><g><circle cx="215" cy="195" r="27" fill="#4f7a3a"/><path d="M201.5 186.9 a 16.2 16.2 0 0 1 13.5 -10.8" stroke="#fff" stroke-opacity=".3" stroke-width="3" fill="none"/><rect x="212" y="160" width="6" height="10" rx="3" fill="#2f5233"/></g><g><circle cx="265" cy="230" r="27" fill="#7aa443"/><path d="M251.5 221.9 a 16.2 16.2 0 0 1 13.5 -10.8" stroke="#fff" stroke-opacity=".3" stroke-width="3" fill="none"/><rect x="262" y="195" width="6" height="10" rx="3" fill="#2f5233"/></g><g><circle cx="175" cy="265" r="27" fill="#c0392b"/><path d="M161.5 256.9 a 16.2 16.2 0 0 1 13.5 -10.8" stroke="#fff" stroke-opacity=".3" stroke-width="3" fill="none"/><rect x="172" y="230" width="6" height="10" rx="3" fill="#2f5233"/></g><g><circle cx="240" cy="290" r="27" fill="#4f7a3a"/><path d="M226.5 281.9 a 16.2 16.2 0 0 1 13.5 -10.8" stroke="#fff" stroke-opacity=".3" stroke-width="3" fill="none"/><rect x="237" y="255" width="6" height="10" rx="3" fill="#2f5233"/></g><g><circle cx="140" cy="305" r="27" fill="#7aa443"/><path d="M126.5 296.9 a 16.2 16.2 0 0 1 13.5 -10.8" stroke="#fff" stroke-opacity=".3" stroke-width="3" fill="none"/><rect x="137" y="270" width="6" height="10" rx="3" fill="#2f5233"/></g><g><circle cx="205" cy="320" r="27" fill="#c0392b"/><path d="M191.5 311.9 a 16.2 16.2 0 0 1 13.5 -10.8" stroke="#fff" stroke-opacity=".3" stroke-width="3" fill="none"/><rect x="202" y="285" width="6" height="10" rx="3" fill="#2f5233"/></g>
+    <rect x="96" y="150" width="208" height="6" fill="#fff" opacity=".35"/>
+  </g>
+  <path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z" fill="none" stroke="#c9d3bd" stroke-width="3"/>
+  <path d="M112 160 v150" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity=".45"/>
+  <path d="M286 175 v40" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".35"/>
+  <rect x="132" y="104" width="136" height="30" rx="6" fill="#e7e9de" stroke="#c9d3bd" stroke-width="2"/>
+  <rect x="122" y="62" width="156" height="46" rx="10" fill="#d4a017"/>
+  <rect x="122" y="62" width="156" height="12" rx="6" fill="#e9bb3c"/>
+  <rect x="130" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="142.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="155" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="167.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="180" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="192.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="205" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="217.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="230" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="242.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="255" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="267.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/>
+  <path d="M118 70 q 82 -34 164 0" fill="none" stroke="#2f5233" stroke-width="0" />
+  <g><rect x="132" y="232" width="136" height="70" rx="10" fill="#fbf8f1" stroke="#c0392b" stroke-width="3"/><text x="200" y="258" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="700" letter-spacing="2" fill="#2f5233">KAPLAN</text><line x1="160" y1="266" x2="240" y2="266" stroke="#d4a017" stroke-width="2"/><text x="200" y="285" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-style="italic" fill="#2f5233">Tombul Biber</text><text x="200" y="297" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="7.5" letter-spacing="1.5" fill="#6b6a5a">ORTA ACI</text></g>
+</g>
+</svg>
