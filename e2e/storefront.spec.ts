@@ -56,6 +56,28 @@ test.describe("vitrin", () => {
     ).toBeVisible();
   });
 
+  test("kendi turşunu yap: malzeme seçip bidonu sepete ekler", async ({
+    page,
+  }) => {
+    await page.goto("/kendi-tursunu-yap");
+    await page.getByRole("button", { name: /5 kg bidon/ }).click();
+    await page.getByRole("button", { name: /^Salatalık/ }).click();
+    await page.getByRole("button", { name: /^Sarımsak/ }).click();
+    await page.getByRole("button", { name: /^Doğal fermente/ }).click();
+
+    // 379,90 + 5 kg × (5 + 3) TL
+    await expect(
+      page.getByRole("button", { name: /Sepete ekle/ }),
+    ).toContainText("419,90");
+    await page.getByRole("button", { name: /Sepete ekle/ }).click();
+    await expect(page.getByRole("status")).toContainText(/sepete eklendi/i);
+
+    await page.goto("/sepet");
+    await expect(
+      page.getByText(/5 kg bidon · Salatalık, Sarımsak · Doğal fermente/),
+    ).toBeVisible();
+  });
+
   test("kayıt, giriş ve adres defteri akışı", async ({ page }) => {
     const email = `${E2E_PREFIX}musteri-${Date.now()}@example.test`;
     const password = `Test-${Date.now()}x1`;

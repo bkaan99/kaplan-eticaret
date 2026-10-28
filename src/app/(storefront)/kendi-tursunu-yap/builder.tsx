@@ -207,7 +207,7 @@ export function Builder({
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
       {/* Sahne: bidon ve seçilenler */}
       <div className="lg:sticky lg:top-40 lg:self-start">
         <div className="relative overflow-hidden rounded-[2rem] border border-border bg-muted px-6 pt-8 pb-6">
