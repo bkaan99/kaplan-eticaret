@@ -25,9 +25,11 @@ export function StockAlertForm({ variantId }: { variantId: string }) {
   return (
     <form
       action={submit}
-      className="flex flex-col gap-2 rounded-theme border border-border p-3"
+      className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4"
     >
-      <p className="text-sm font-medium">Stoğa girince haber ver</p>
+      <p className="font-display text-lg font-semibold">
+        Stoğa girince haber ver
+      </p>
       <div className="flex gap-2">
         <input
           name="email"
@@ -35,12 +37,12 @@ export function StockAlertForm({ variantId }: { variantId: string }) {
           required
           placeholder="E-posta adresiniz"
           aria-label="E-posta adresiniz"
-          className="min-w-0 flex-1 rounded-theme border border-border px-3 py-2 text-sm"
+          className="h-11 min-w-0 flex-1 rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
         />
         <button
           type="submit"
           disabled={pending}
-          className="whitespace-nowrap rounded-theme bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
+          className="h-11 whitespace-nowrap rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
         >
           {pending ? "Kaydediliyor..." : "Haber ver"}
         </button>

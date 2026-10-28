@@ -52,152 +52,167 @@ interface DemoProduct {
   description: string;
   basePrice: number;
   featured?: boolean;
-  fabric?: string;
-  season?: string;
-  colors?: string[];
-  sizes?: string[];
+  spice?: string;
+  method?: string;
+  /** Tek seçenek ekseni (ör. Boyut) ve değerlere göre fiyat */
+  option?: { name: string; prices: Record<string, number> };
   compareAtPrice?: number;
 }
 
 const DEMO_CATEGORIES = [
-  { name: "Giyim", slug: "giyim", parent: null },
-  { name: "Erkek", slug: "erkek-giyim", parent: "giyim" },
-  { name: "Kadın", slug: "kadin-giyim", parent: "giyim" },
-  { name: "Ayakkabı", slug: "ayakkabi", parent: null },
-  { name: "Aksesuar", slug: "aksesuar", parent: null },
+  { name: "Klasik Turşular", slug: "klasik-tursular", parent: null },
+  { name: "Acılı Turşular", slug: "acili-tursular", parent: null },
+  { name: "Şalgam & Turşu Suyu", slug: "salgam-ve-tursu-suyu", parent: null },
+  { name: "Hediye Kutuları", slug: "hediye-kutulari", parent: null },
 ] as const;
 
-const DEMO_BRANDS = ["Demo Marka", "Nordik", "Atlas"];
+const DEMO_BRANDS = ["Kaplan"];
 
 const DEMO_ATTRIBUTES = [
-  {
-    name: "Kumaş",
-    slug: "kumas",
-    values: ["Pamuk", "Keten", "Yün", "Polyester"],
-  },
-  { name: "Sezon", slug: "sezon", values: ["Yaz", "Kış", "Dört mevsim"] },
+  { name: "Acılık", slug: "acilik", values: ["Acısız", "Orta acı", "Acılı"] },
+  { name: "Yapım", slug: "yapim", values: ["Doğal fermente", "Sirkeli"] },
 ];
+
+const JAR_SIZES = (small: number, large: number) => ({
+  name: "Boyut",
+  prices: { "500 g": small, "1 kg": large },
+});
 
 const DEMO_PRODUCTS: DemoProduct[] = [
   {
-    name: "Basic Tişört",
-    slug: "basic-tisort",
-    category: "erkek-giyim",
-    brand: "Demo Marka",
-    description: "Günlük kullanım için yumuşak dokulu basic tişört.",
-    basePrice: 299.9,
+    name: "Ev Usulü Salatalık Turşusu",
+    slug: "ev-usulu-salatalik-tursusu",
+    category: "klasik-tursular",
+    brand: "Kaplan",
+    description:
+      "Taze salatalıklar taş tuzu, sarımsak ve dereotuyla kurulur; çıtır çıtır, ev usulü bir lezzet.",
+    basePrice: 149.9,
     featured: true,
-    fabric: "pamuk",
-    season: "yaz",
-    colors: ["Siyah", "Beyaz"],
-    sizes: ["S", "M", "L"],
+    spice: "acisiz",
+    method: "dogal-fermente",
+    option: JAR_SIZES(149.9, 249.9),
   },
   {
-    name: "Keten Gömlek",
-    slug: "keten-gomlek",
-    category: "erkek-giyim",
-    brand: "Nordik",
-    description: "Nefes alan keten kumaştan uzun kollu gömlek.",
-    basePrice: 649.9,
+    name: "Kornişon Turşusu",
+    slug: "kornison-tursusu",
+    category: "klasik-tursular",
+    brand: "Kaplan",
+    description:
+      "Küçük boy, sert ve çıtır kornişonlar. Kahvaltıların ve sandviçlerin vazgeçilmezi.",
+    basePrice: 179.9,
     featured: true,
-    fabric: "keten",
-    season: "yaz",
-    colors: ["Bej", "Mavi"],
-    sizes: ["M", "L", "XL"],
-    compareAtPrice: 799.9,
+    spice: "acisiz",
+    method: "sirkeli",
+    option: JAR_SIZES(179.9, 299.9),
+    compareAtPrice: 209.9,
   },
   {
-    name: "Yün Kazak",
-    slug: "yun-kazak",
-    category: "kadin-giyim",
-    brand: "Atlas",
-    description: "Kış aylarında sıcak tutan yün karışımlı kazak.",
-    basePrice: 899.9,
+    name: "Lahana Turşusu",
+    slug: "lahana-tursusu",
+    category: "klasik-tursular",
+    brand: "Kaplan",
+    description:
+      "İnce kıyılmış beyaz lahana, havuç ve kırmızı biberle. Kışın sofraların yıldızı.",
+    basePrice: 139.9,
+    spice: "acisiz",
+    method: "dogal-fermente",
+    option: JAR_SIZES(139.9, 229.9),
+  },
+  {
+    name: "Karışık Turşu",
+    slug: "karisik-tursu",
+    category: "klasik-tursular",
+    brand: "Kaplan",
+    description:
+      "Salatalık, lahana, havuç ve biberin bir arada olduğu klasik bahçe karışımı.",
+    basePrice: 159.9,
     featured: true,
-    fabric: "yun",
-    season: "kis",
-    colors: ["Gri", "Bordo"],
-    sizes: ["S", "M"],
+    spice: "orta-aci",
+    method: "dogal-fermente",
+    option: JAR_SIZES(159.9, 269.9),
   },
   {
-    name: "Pamuklu Elbise",
-    slug: "pamuklu-elbise",
-    category: "kadin-giyim",
-    brand: "Nordik",
-    description: "Yazlık, rahat kesim pamuklu elbise.",
-    basePrice: 749.9,
-    fabric: "pamuk",
-    season: "yaz",
-    colors: ["Beyaz", "Lacivert"],
-    sizes: ["S", "M", "L"],
-  },
-  {
-    name: "Polar Sweatshirt",
-    slug: "polar-sweatshirt",
-    category: "erkek-giyim",
-    brand: "Atlas",
-    description: "İçi polar astarlı kapüşonlu sweatshirt.",
-    basePrice: 549.9,
-    fabric: "polyester",
-    season: "kis",
-    colors: ["Siyah", "Gri"],
-    sizes: ["M", "L", "XL"],
-  },
-  {
-    name: "Deri Sneaker",
-    slug: "deri-sneaker",
-    category: "ayakkabi",
-    brand: "Demo Marka",
-    description: "Hakiki deri, şık günlük spor ayakkabı.",
-    basePrice: 1499.9,
+    name: "Acı Sivri Biber Turşusu",
+    slug: "aci-sivri-biber-tursusu",
+    category: "acili-tursular",
+    brand: "Kaplan",
+    description:
+      "Yakan cinsten sivri biberler, sarımsaklı salamurada. Acı sevenlere.",
+    basePrice: 159.9,
     featured: true,
-    season: "dort-mevsim",
-    colors: ["Beyaz", "Siyah"],
-    sizes: ["40", "41", "42", "43"],
-    compareAtPrice: 1799.9,
+    spice: "acili",
+    method: "sirkeli",
+    option: JAR_SIZES(159.9, 269.9),
   },
   {
-    name: "Kanvas Ayakkabı",
-    slug: "kanvas-ayakkabi",
-    category: "ayakkabi",
-    brand: "Nordik",
-    description: "Hafif kanvas yapıda bağcıklı ayakkabı.",
-    basePrice: 599.9,
-    fabric: "pamuk",
-    season: "yaz",
-    colors: ["Lacivert"],
-    sizes: ["39", "40", "41", "42"],
+    name: "Tombul Biber Turşusu",
+    slug: "tombul-biber-tursusu",
+    category: "acili-tursular",
+    brand: "Kaplan",
+    description:
+      "Etli ve dolgun tombul biberler; hafif acı, bol aromalı bir turşu.",
+    basePrice: 169.9,
+    spice: "orta-aci",
+    method: "sirkeli",
+    option: JAR_SIZES(169.9, 289.9),
   },
   {
-    name: "Deri Cüzdan",
-    slug: "deri-cuzdan",
-    category: "aksesuar",
-    brand: "Atlas",
-    description: "Kartlık bölmeli, kompakt deri cüzdan.",
-    basePrice: 399.9,
-    season: "dort-mevsim",
-    colors: ["Kahve", "Siyah"],
+    name: "Acılı Karışık Turşu",
+    slug: "acili-karisik-tursu",
+    category: "acili-tursular",
+    brand: "Kaplan",
+    description:
+      "Klasik karışımın acılı hâli: kırmızı biber, salatalık ve havuç bir arada.",
+    basePrice: 169.9,
+    spice: "acili",
+    method: "dogal-fermente",
+    option: JAR_SIZES(169.9, 279.9),
+    compareAtPrice: 189.9,
   },
   {
-    name: "Yün Atkı",
-    slug: "yun-atki",
-    category: "aksesuar",
-    brand: "Nordik",
-    description: "Uzun, yumuşak dokulu yün atkı.",
-    basePrice: 249.9,
-    fabric: "yun",
-    season: "kis",
-    colors: ["Gri", "Kırmızı"],
+    name: "Acılı Şalgam Suyu",
+    slug: "acili-salgam-suyu",
+    category: "salgam-ve-tursu-suyu",
+    brand: "Kaplan",
+    description:
+      "Mor havuç ve şalgamla geleneksel yöntemle fermente edilen, acılı şalgam suyu.",
+    basePrice: 79.9,
+    featured: true,
+    spice: "acili",
+    method: "dogal-fermente",
+    option: { name: "Hacim", prices: { "1 L": 79.9, "2 L": 139.9 } },
   },
   {
-    name: "Güneş Gözlüğü",
-    slug: "gunes-gozlugu",
-    category: "aksesuar",
-    brand: "Demo Marka",
-    description: "UV korumalı, klasik çerçeveli güneş gözlüğü.",
-    basePrice: 459.9,
-    season: "yaz",
-    colors: ["Siyah"],
+    name: "Pancarlı Turşu Suyu",
+    slug: "pancarli-tursu-suyu",
+    category: "salgam-ve-tursu-suyu",
+    brand: "Kaplan",
+    description:
+      "Pancar ve lahana turşusunun suyu; ferahlatıcı, hafif ekşi bir içecek.",
+    basePrice: 69.9,
+    spice: "acisiz",
+    method: "dogal-fermente",
+    option: { name: "Hacim", prices: { "1 L": 69.9, "2 L": 119.9 } },
+  },
+  {
+    name: "Turşu Tadım Kutusu",
+    slug: "tursu-tadim-kutusu",
+    category: "hediye-kutulari",
+    brand: "Kaplan",
+    description:
+      "Kornişon, tombul biber ve lahana turşusundan oluşan üç kavanozluk tadım kutusu.",
+    basePrice: 449.9,
+    featured: true,
+    compareAtPrice: 519.9,
+  },
+  {
+    name: "Aile Boyu Turşu Kutusu",
+    slug: "aile-boyu-tursu-kutusu",
+    category: "hediye-kutulari",
+    brand: "Kaplan",
+    description:
+      "Dört farklı turşu ve bir şişe şalgam suyuyla kalabalık sofralar için büyük kutu.",
+    basePrice: 799.9,
   },
 ];
 
@@ -211,6 +226,7 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
         name: category.name,
         slug: category.slug,
         sortOrder: index,
+        imageUrl: `/images/kategoriler/${category.slug}.svg`,
         parentId: category.parent ? categoryIds.get(category.parent) : null,
       },
     });
@@ -255,16 +271,9 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
     if (exists) continue;
 
     const attributeLinks = [
-      demo.fabric ? attributeValueIds.get(`kumas:${demo.fabric}`) : undefined,
-      demo.season ? attributeValueIds.get(`sezon:${demo.season}`) : undefined,
+      demo.spice ? attributeValueIds.get(`acilik:${demo.spice}`) : undefined,
+      demo.method ? attributeValueIds.get(`yapim:${demo.method}`) : undefined,
     ].filter((id): id is string => id !== undefined);
-
-    const options = [
-      demo.colors ? { name: "Renk", values: demo.colors } : null,
-      demo.sizes ? { name: "Beden", values: demo.sizes } : null,
-    ].filter(
-      (option): option is { name: string; values: string[] } => option !== null,
-    );
 
     const product = await db.product.create({
       data: {
@@ -275,49 +284,56 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
         isFeatured: demo.featured ?? false,
         categoryId: categoryIds.get(demo.category)!,
         brandId: brandIds.get(demo.brand)!,
+        images: {
+          create: {
+            url: `/images/urunler/${demo.slug}.svg`,
+            alt: demo.name,
+          },
+        },
         attributes: {
           create: attributeLinks.map((attributeValueId) => ({
             attributeValueId,
           })),
         },
-        options: {
-          create: options.map((option, position) => ({
-            name: option.name,
-            position,
-            values: {
-              create: option.values.map((value, valuePosition) => ({
-                value,
-                position: valuePosition,
-              })),
-            },
-          })),
-        },
+        options: demo.option
+          ? {
+              create: {
+                name: demo.option.name,
+                position: 0,
+                values: {
+                  create: Object.keys(demo.option.prices).map(
+                    (value, position) => ({ value, position }),
+                  ),
+                },
+              },
+            }
+          : undefined,
       },
       include: { options: { include: { values: true } } },
     });
 
-    const axes = product.options
-      .sort((a, b) => a.position - b.position)
-      .map((option) => option.values.sort((a, b) => a.position - b.position));
-
-    const combinations = axes.reduce<{ id: string; value: string }[][]>(
-      (acc, values) =>
-        acc.flatMap((prefix) => values.map((v) => [...prefix, v])),
-      [[]],
+    const values = (product.options[0]?.values ?? []).sort(
+      (a, b) => a.position - b.position,
     );
+    const variants = values.length > 0 ? values : [null];
 
-    for (const [index, combination] of combinations.entries()) {
-      const label = combination.map((v) => v.value).join("-");
+    for (const [index, value] of variants.entries()) {
+      const price = value
+        ? (demo.option?.prices[value.value] ?? demo.basePrice)
+        : demo.basePrice;
+      // İndirim yalnızca ilk (en küçük) boyutta gösterilir
+      const compareAt =
+        index === 0 && demo.compareAtPrice ? demo.compareAtPrice : undefined;
       await db.productVariant.create({
         data: {
           productId: product.id,
-          sku: `${demo.slug}-${slugify(label) || "std"}`.toUpperCase(),
-          price: demo.basePrice.toFixed(2),
-          compareAtPrice: demo.compareAtPrice?.toFixed(2),
-          stockQuantity: index % 5 === 4 ? 0 : 20,
-          optionValues: {
-            create: combination.map((v) => ({ optionValueId: v.id })),
-          },
+          sku: `${demo.slug}-${value ? slugify(value.value) : "std"}`.toUpperCase(),
+          price: price.toFixed(2),
+          compareAtPrice: compareAt?.toFixed(2),
+          stockQuantity: 30,
+          optionValues: value
+            ? { create: { optionValueId: value.id } }
+            : undefined,
         },
       });
     }

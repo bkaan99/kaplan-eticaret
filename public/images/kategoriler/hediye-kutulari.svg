@@ -3,7 +3,7 @@
 <circle cx="200" cy="215" r="150" fill="#fff" opacity=".45"/>
 <g>
   <ellipse cx="200" cy="350" rx="150" ry="14" fill="#000" opacity=".08"/>
-  <g transform="translate(92 30) scale(0.34)"><g>
+  <g transform="translate(92 96) scale(0.34)"><g>
   <ellipse cx="200" cy="352" rx="100" ry="12" fill="#000" opacity=".08"/>
   <clipPath id="jar-kornison-21"><path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z"/></clipPath>
   <path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z" fill="#eef3e6"/>
@@ -20,7 +20,7 @@
   <rect x="122" y="62" width="156" height="12" rx="6" fill="#e9bb3c"/>
   <rect x="130" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="142.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="155" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="167.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="180" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="192.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="205" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="217.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="230" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="242.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="255" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="267.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/>
   <path d="M118 70 q 82 -34 164 0" fill="none" stroke="#2f5233" stroke-width="0" />
-  </g></g><g transform="translate(160 30) scale(0.34)"><g>
+  </g></g><g transform="translate(160 96) scale(0.34)"><g>
   <ellipse cx="200" cy="352" rx="100" ry="12" fill="#000" opacity=".08"/>
   <clipPath id="jar-tombul-22"><path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z"/></clipPath>
   <path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z" fill="#eef3e6"/>
@@ -37,7 +37,7 @@
   <rect x="122" y="62" width="156" height="12" rx="6" fill="#e9bb3c"/>
   <rect x="130" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="142.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="155" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="167.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="180" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="192.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="205" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="217.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="230" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="242.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="255" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/><rect x="267.5" y="78" width="4" height="26" rx="2" fill="#b8860b" opacity=".45"/>
   <path d="M118 70 q 82 -34 164 0" fill="none" stroke="#2f5233" stroke-width="0" />
-  </g></g><g transform="translate(228 30) scale(0.34)"><g>
+  </g></g><g transform="translate(228 96) scale(0.34)"><g>
   <ellipse cx="200" cy="352" rx="100" ry="12" fill="#000" opacity=".08"/>
   <clipPath id="jar-lahana-23"><path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z"/></clipPath>
   <path d="M120 128 h160 q22 0 22 24 v176 q0 26 -26 26 h-152 q-26 0 -26 -26 v-176 q0 -24 22 -24 z" fill="#eef3e6"/>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { siteConfig } from "@/config/site.config";
 import { themeToCss } from "@/config/theme";
 import "./globals.css";
@@ -12,6 +12,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin", "latin-ext"],
+});
+
+/** Başlıklar için serif yazı tipi (vitrin) */
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin", "latin-ext"],
+  axes: ["SOFT", "opsz"],
 });
 
 export const metadata: Metadata = {
@@ -28,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang={siteConfig.locale}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <head>
         <style dangerouslySetInnerHTML={{ __html: themeToCss() }} />

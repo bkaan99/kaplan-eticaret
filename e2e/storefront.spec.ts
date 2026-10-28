@@ -9,15 +9,15 @@ test.describe("vitrin", () => {
       page.getByRole("heading", { name: "Kategoriler" }),
     ).toBeVisible();
 
-    await page.getByRole("link", { name: "Giyim" }).first().click();
-    await expect(page).toHaveURL(/\/kategori\/giyim/);
+    await page.getByRole("link", { name: "Klasik Turşular" }).first().click();
+    await expect(page).toHaveURL(/\/kategori\/klasik-tursular/);
     await expect(page.locator("a[href^='/urun/']").first()).toBeVisible();
   });
 
   test("misafir olarak ürünü sepete ekleyip sipariş verir (geliştirme ödemesi)", async ({
     page,
   }) => {
-    await page.goto("/urun/deri-cuzdan");
+    await page.goto("/urun/ev-usulu-salatalik-tursusu");
 
     // Seçenek varsa ilk değeri seç; ardından sepete ekle.
     const optionButtons = page.locator("fieldset button[aria-pressed]");

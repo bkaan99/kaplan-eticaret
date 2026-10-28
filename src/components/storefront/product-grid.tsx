@@ -1,4 +1,5 @@
 import type { ProductCard as ProductCardData } from "@/modules/catalog/catalog.types";
+import { Stagger, StaggerItem } from "@/components/motion/motion";
 import { ProductCard } from "./product-card";
 
 export function ProductGrid({ products }: { products: ProductCardData[] }) {
@@ -11,10 +12,15 @@ export function ProductGrid({ products }: { products: ProductCardData[] }) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+    <Stagger
+      stagger={0.06}
+      className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4"
+    >
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <StaggerItem key={product.id} className="flex">
+          <ProductCard product={product} />
+        </StaggerItem>
       ))}
-    </div>
+    </Stagger>
   );
 }

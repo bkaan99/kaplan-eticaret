@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { isFeatureEnabled } from "@/config/features";
+import { MotionProvider } from "@/components/motion/motion";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { SiteHeader } from "@/components/storefront/site-header";
 import { WishlistSync } from "@/components/wishlist/wishlist-sync";
@@ -20,7 +21,7 @@ async function WishlistBootstrap() {
 
 export default function StorefrontLayout({ children }: LayoutProps<"/">) {
   return (
-    <>
+    <MotionProvider>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {children}
@@ -31,6 +32,6 @@ export default function StorefrontLayout({ children }: LayoutProps<"/">) {
       </Suspense>
       <CookieBanner />
       <AnalyticsScripts />
-    </>
+    </MotionProvider>
   );
 }

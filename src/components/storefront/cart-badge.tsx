@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getCurrentCart } from "@/modules/cart/cart.session";
+import { CartCount } from "./cart-count";
+import { BagIcon } from "./icons";
 
 export async function CartBadge() {
   const cart = await getCurrentCart();
@@ -7,15 +9,12 @@ export async function CartBadge() {
   return (
     <Link
       href="/sepet"
-      className="relative inline-flex items-center gap-1 text-sm"
+      className="relative ml-1 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-dark"
       aria-label={`Sepet, ${cart.itemCount} ürün`}
     >
-      Sepet
-      {cart.itemCount > 0 ? (
-        <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-          {cart.itemCount}
-        </span>
-      ) : null}
+      <BagIcon />
+      <span className="hidden sm:inline">Sepet</span>
+      <CartCount count={cart.itemCount} />
     </Link>
   );
 }

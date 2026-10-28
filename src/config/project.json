@@ -1,1 +1,23 @@
-{}
+{
+  "site": {
+    "name": "Kaplan Turşu",
+    "description": "Geleneksel tariflerle, sabırla fermente edilen ev usulü turşular ve şalgam suyu.",
+    "salesMode": "retail",
+    "contact": {
+      "email": "info@kaplantursu.com",
+      "phone": "+90 000 000 00 00"
+    }
+  },
+  "theme": {
+    "colors": {
+      "primary": "#2f5233",
+      "primaryForeground": "#ffffff",
+      "background": "#fbf8f1",
+      "foreground": "#1f2a1c",
+      "muted": "#f3eddf",
+      "mutedForeground": "#6b6a5a",
+      "border": "#e5dcc8",
+      "accent": "#d4a017"
+    }
+  }
+}

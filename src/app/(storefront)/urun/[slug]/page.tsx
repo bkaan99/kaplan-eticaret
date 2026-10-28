@@ -5,7 +5,10 @@ import { Breadcrumbs } from "@/components/storefront/breadcrumbs";
 import { JsonLd } from "@/components/storefront/json-ld";
 import { ProductGrid } from "@/components/storefront/product-grid";
 import { ProductView } from "@/components/product/product-view";
+import { JarIcon, LeafIcon, TruckIcon } from "@/components/storefront/icons";
 import { isFeatureEnabled } from "@/config/features";
+import { siteConfig } from "@/config/site.config";
+import { formatMoney } from "@/shared/money";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { catalogService } from "@/modules/catalog/container";
 import { loadProduct } from "@/modules/catalog/loaders";
@@ -68,10 +71,63 @@ async function RelatedProducts({
   if (related.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">Benzer ürünler</h2>
+    <section className="flex flex-col gap-8 border-t border-border pt-14">
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-semibold tracking-[0.25em] text-brand-leaf uppercase">
+          Bunları da sevebilirsiniz
+        </span>
+        <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          Benzer ürünler
+        </h2>
+      </div>
       <ProductGrid products={related} />
     </section>
+  );
+}
+
+function Highlights() {
+  const items = [
+    {
+      icon: TruckIcon,
+      text: `${formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri siparişlerde ücretsiz kargo`,
+    },
+    { icon: JarIcon, text: "Kavanozlar kırılmaya karşı tek tek paketlenir" },
+    {
+      icon: LeafIcon,
+      text: `${siteConfig.returns.withdrawalPeriodDays} gün içinde iade hakkı`,
+    },
+  ];
+
+  return (
+    <ul className="flex flex-col gap-3 rounded-2xl bg-muted p-5">
+      {items.map(({ icon: Icon, text }) => (
+        <li key={text} className="flex items-center gap-3 text-sm">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-primary">
+            <Icon width={18} height={18} />
+          </span>
+          {text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ShippingInfo() {
+  return (
+    <div className="flex flex-col gap-2">
+      <p>
+        {formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri
+        siparişlerde kargo ücretsizdir; altındaki siparişlerde{" "}
+        {formatMoney(siteConfig.shipping.flatRate)} kargo ücreti uygulanır.
+      </p>
+      <p>
+        Teslim aldığınız tarihten itibaren{" "}
+        {siteConfig.returns.withdrawalPeriodDays} gün içinde iade talebi
+        oluşturabilirsiniz. Gıda ürünlerinde ambalajı açılmış ürünler hijyen
+        nedeniyle iade alınamaz; hasarlı ulaşan ürünler için bizimle iletişime
+        geçin.
+      </p>
+    </div>
   );
 }
 
@@ -106,7 +162,7 @@ async function ProductContent({
     : "https://schema.org/OutOfStock";
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-8">
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -172,6 +228,8 @@ async function ProductContent({
       <ProductView
         product={product}
         wishlistEnabled={isFeatureEnabled("wishlist")}
+        highlights={<Highlights />}
+        shippingInfo={<ShippingInfo />}
       />
 
       <Suspense fallback={null}>
