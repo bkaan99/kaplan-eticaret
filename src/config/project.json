@@ -10,14 +10,14 @@
   },
   "theme": {
     "colors": {
-      "primary": "#2f5233",
+      "primary": "#154734",
       "primaryForeground": "#ffffff",
-      "background": "#fbf8f1",
-      "foreground": "#1f2a1c",
-      "muted": "#f3eddf",
-      "mutedForeground": "#6b6a5a",
-      "border": "#e5dcc8",
-      "accent": "#d4a017"
+      "background": "#ffffff",
+      "foreground": "#0f172a",
+      "muted": "#f8fafc",
+      "mutedForeground": "#64748b",
+      "border": "#e2e8f0",
+      "accent": "#f59e0b"
     }
   }
 }

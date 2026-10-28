@@ -12,22 +12,20 @@ export function Price({
   prefix?: string;
 }) {
   return (
-    <span className="inline-flex flex-wrap items-baseline gap-x-2">
-      <span>
-        <span
-          className={`text-base font-bold ${compareAt ? "text-brand-pepper" : "text-primary"}`}
-        >
+    <div className="flex flex-col">
+      {prefix ? (
+        <span className="text-[11px] font-medium text-slate-400">{prefix}</span>
+      ) : null}
+      <div className="flex items-baseline gap-2">
+        <span className="text-lg font-bold tracking-tight text-slate-900">
           {formatMoney(value, currency)}
         </span>
-        {prefix ? (
-          <span className="text-xs text-muted-foreground">{prefix}</span>
+        {compareAt ? (
+          <span className="text-xs font-medium text-slate-400 line-through">
+            {formatMoney(compareAt, currency)}
+          </span>
         ) : null}
-      </span>
-      {compareAt ? (
-        <span className="text-sm text-muted-foreground line-through">
-          {formatMoney(compareAt, currency)}
-        </span>
-      ) : null}
-    </span>
+      </div>
+    </div>
   );
 }

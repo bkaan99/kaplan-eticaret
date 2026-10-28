@@ -21,19 +21,19 @@ async function CategoryNav() {
   return (
     <nav
       aria-label="Kategoriler"
-      className="-mx-4 flex gap-x-7 overflow-x-auto px-4 text-sm font-medium whitespace-nowrap [scrollbar-width:none]"
+      className="-mx-4 flex gap-x-1 overflow-x-auto px-4 py-2 text-sm font-medium whitespace-nowrap [scrollbar-width:none]"
     >
       <Link
         href="/ara"
-        className="border-b-2 border-transparent py-3 text-foreground/80 transition-colors hover:border-accent hover:text-primary"
+        className="rounded-full px-4 py-1.5 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
       >
-        Tüm ürünler
+        Tüm Ürünler
       </Link>
       {tree.map((category) => (
         <Link
           key={category.id}
           href={`/kategori/${category.slug}`}
-          className="border-b-2 border-transparent py-3 text-foreground/80 transition-colors hover:border-accent hover:text-primary"
+          className="rounded-full px-4 py-1.5 text-slate-700 transition-colors hover:bg-slate-100 hover:text-primary"
         >
           {category.name}
         </Link>
@@ -42,7 +42,7 @@ async function CategoryNav() {
         <Link
           key={`${item.label}-${item.url}`}
           href={item.url}
-          className="border-b-2 border-transparent py-3 text-muted-foreground transition-colors hover:border-accent hover:text-primary"
+          className="rounded-full px-4 py-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
         >
           {item.label}
         </Link>
@@ -54,41 +54,45 @@ async function CategoryNav() {
 function SearchForm({ className = "" }: { className?: string }) {
   return (
     <form action="/ara" role="search" className={`relative ${className}`}>
-      <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted-foreground" />
+      <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400" />
       <input
         name="q"
         type="search"
-        placeholder="Turşu, şalgam, hediye kutusu ara…"
+        placeholder="Çıtır kornişon, acılı şalgam, hediye kutusu ara…"
         aria-label="Ürün ara"
-        className="h-11 w-full rounded-full border border-border bg-white pr-4 pl-11 text-sm transition outline-none placeholder:text-muted-foreground/80 focus:border-primary focus:ring-4 focus:ring-primary/10"
+        className="h-10 w-full rounded-full border border-slate-200 bg-slate-50/70 pr-4 pl-10 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-3 focus:ring-primary/10"
       />
     </form>
   );
 }
 
 const iconLinkClass =
-  "inline-flex h-11 items-center gap-2 rounded-full px-3 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-primary";
+  "inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900";
 
 export function SiteHeader() {
   return (
     <header className="relative z-40 md:sticky md:top-0">
-      <div className="bg-brand-dark text-brand-cream">
-        <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs tracking-wide">
-          <span className="text-accent">●</span>{" "}
-          {formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri
-          siparişlerde kargo ücretsiz
+      {/* Üst Duyuru Bandı */}
+      <div className="bg-[#0b2318] text-white">
+        <p className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 py-2 text-center text-xs tracking-wide">
+          <span className="flex h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+          <span>
+            {formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri siparişlerde <strong>ücretsiz kargo</strong> & kırılmaz ambalaj güvencesi
+          </span>
         </p>
       </div>
-      <div className="border-b border-border bg-background/90 backdrop-blur-md">
+
+      {/* Ana Başlık Alanı */}
+      <div className="border-b border-slate-100 bg-white/95 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="flex items-center justify-between gap-6 py-3">
+          <div className="flex items-center justify-between gap-6 py-3.5">
             <Logo />
             <SearchForm className="hidden max-w-md flex-1 md:block" />
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {isFeatureEnabled("wishlist") ? (
                 <Link href="/favoriler" className={iconLinkClass}>
-                  <HeartIcon />
-                  <span className="sr-only lg:not-sr-only">Favoriler</span>
+                  <HeartIcon className="text-slate-600" />
+                  <span className="sr-only lg:not-sr-only text-xs">Favoriler</span>
                 </Link>
               ) : null}
               <Suspense
@@ -102,9 +106,11 @@ export function SiteHeader() {
             </div>
           </div>
           <SearchForm className="pb-3 md:hidden" />
-          <Suspense fallback={<div className="h-11" />}>
-            <CategoryNav />
-          </Suspense>
+          <div className="border-t border-slate-100/80">
+            <Suspense fallback={<div className="h-10" />}>
+              <CategoryNav />
+            </Suspense>
+          </div>
         </div>
       </div>
     </header>

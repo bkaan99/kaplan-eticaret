@@ -226,7 +226,7 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
         name: category.name,
         slug: category.slug,
         sortOrder: index,
-        imageUrl: `/images/kategoriler/${category.slug}.svg`,
+        imageUrl: `/images/kategoriler/${category.slug}.jpg`,
         parentId: category.parent ? categoryIds.get(category.parent) : null,
       },
     });
@@ -286,7 +286,7 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
         brandId: brandIds.get(demo.brand)!,
         images: {
           create: {
-            url: `/images/urunler/${demo.slug}.svg`,
+            url: `/images/urunler/${demo.slug}.jpg`,
             alt: demo.name,
           },
         },

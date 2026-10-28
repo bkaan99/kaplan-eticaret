@@ -16,13 +16,14 @@
   --font-display: var(--font-fraunces);
 }
 
-/* Marka renkleri (vitrin): koyu turşu yeşili, kavanoz kapağı sarısı, biber kırmızısı */
+/* Marka renkleri (vitrin): modern orman yeşili, taze yaprak, sıcak altın, canlı biber */
 @theme {
-  --color-brand-dark: #1d3520;
-  --color-brand-leaf: #4f7a3a;
-  --color-brand-cream: #fffdf8;
-  --color-brand-pepper: #b83227;
-  --color-brand-beet: #6b1f4a;
+  --color-brand-dark: #0b2318;
+  --color-brand-leaf: #15803d;
+  --color-brand-cream: #f8fafc;
+  --color-brand-pepper: #e11d48;
+  --color-brand-beet: #881337;
+  --color-brand-gold: #f59e0b;
 }
 
 body {

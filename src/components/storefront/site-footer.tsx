@@ -13,7 +13,7 @@ async function CurrentYear() {
   return <>{new Date().getFullYear()}</>;
 }
 
-const linkClass = "text-brand-cream/70 transition-colors hover:text-accent";
+const linkClass = "text-slate-300/80 transition-colors hover:text-white";
 
 function FooterColumn({
   title,
@@ -24,7 +24,7 @@ function FooterColumn({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-xs font-semibold tracking-[0.2em] text-accent uppercase">
+      <h2 className="text-xs font-bold tracking-[0.2em] text-amber-400 uppercase">
         {title}
       </h2>
       <ul className="flex flex-col gap-2.5 text-sm">{children}</ul>
@@ -93,11 +93,11 @@ async function FooterMenu() {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 bg-brand-dark text-brand-cream">
+    <footer className="mt-20 bg-[#0b2318] text-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="flex flex-col gap-4">
           <Logo inverted />
-          <p className="max-w-xs text-sm leading-relaxed text-brand-cream/70">
+          <p className="max-w-xs text-sm leading-relaxed text-slate-300">
             {siteConfig.description}
           </p>
         </div>
