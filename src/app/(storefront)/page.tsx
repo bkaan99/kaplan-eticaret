@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { BannerGrid } from "@/components/storefront/banner-grid";
 import { ProductGrid } from "@/components/storefront/product-grid";
+import { HeroSlider } from "@/components/storefront/hero-slider";
 import { JsonLd } from "@/components/storefront/json-ld";
 import {
   ArrowRightIcon,
@@ -137,89 +138,7 @@ function SectionHeading({
   );
 }
 
-function Hero() {
-  const quickTags = [
-    { label: "Çıtır Kornişon", href: "/urun/kornison-tursusu", icon: "🥒" },
-    { label: "Ev Usulü Salatalık", href: "/urun/ev-usulu-salatalik-tursusu", icon: "🌱" },
-    { label: "Acılı Şalgam", href: "/urun/acili-salgam-suyu", icon: "🍷" },
-    { label: "Gurme Hediye Kutusu", href: "/kategori/hediye-kutulari", icon: "🎁" },
-  ];
 
-  return (
-    <section className="relative overflow-hidden pt-2 pb-6 sm:pt-4">
-      <div className="relative min-h-[500px] sm:min-h-[560px] lg:min-h-[620px] w-full overflow-hidden rounded-3xl border border-slate-200/70 bg-[#fdfbf7] shadow-xl shadow-stone-900/[0.04]">
-        {/* Panoramik Arka Plan Görseli */}
-        <div className="absolute inset-0">
-          <Image
-            src="/images/hero/hero-panoramic.jpg"
-            alt="Kaplan Doğal Fermente Gurme Turşular ve Şalgam Suyu"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-right-bottom md:object-right lg:object-center"
-          />
-          {/* Yumuşak Sol Işık / Metin Okunabilirlik Degradeli Katman */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#fdfbf7] via-[#fdfbf7]/90 to-transparent lg:w-[62%] md:w-[70%] w-full" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#fdfbf7]/60 via-transparent to-transparent md:hidden" />
-        </div>
-
-        {/* Ön Katman İçerik */}
-        <div className="relative z-10 flex min-h-[500px] sm:min-h-[560px] lg:min-h-[620px] max-w-2xl flex-col justify-center p-6 sm:p-10 lg:p-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white/85 px-3.5 py-1 text-xs font-bold text-emerald-900 shadow-2xs backdrop-blur-xs w-fit">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-600"></span>
-            <span>1986&apos;DAN BERİ · GELENEKSEL FERMANTASYON</span>
-          </div>
-
-          <h1 className="mt-4 font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 leading-[1.06]">
-            Doğal Sabır,{" "}
-            <span className="italic text-primary font-normal block sm:inline">
-              Gerçek Çıtırlık.
-            </span>
-          </h1>
-
-          <p className="mt-4 max-w-lg text-base sm:text-lg text-slate-700 leading-relaxed">
-            Mevsiminde toplanan sebzeler, Çankırı kaya tuzu ve sarımsakla meşe fıçılarda ağır ağır dinlendirilir. Katkısız, probiyotik dolu asırlık ev lezzeti sofranızda.
-          </p>
-
-          <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Link
-              href="/ara"
-              className="inline-flex h-12 items-center gap-2.5 rounded-full bg-primary px-8 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0b2318] hover:shadow-xl active:translate-y-0"
-            >
-              <span>Hemen Alışverişe Başla</span>
-              <ArrowRightIcon width={16} height={16} />
-            </Link>
-            <Link
-              href="/kategori/hediye-kutulari"
-              className="inline-flex h-12 items-center rounded-full border border-slate-300 bg-white/90 px-6 text-sm font-semibold text-slate-800 shadow-2xs transition hover:bg-white hover:border-slate-400"
-            >
-              Hediye Paketleri
-            </Link>
-          </div>
-
-          {/* Hızlı Kategori / Ürün Geçiş Rayı */}
-          <div className="mt-8 pt-6 border-t border-slate-300/60">
-            <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase block mb-2.5">
-              Popüler Lezzetler
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {quickTags.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs transition hover:border-primary hover:bg-white hover:text-primary"
-                >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function Marquee() {
   const items = [
@@ -453,7 +372,7 @@ export default function HomePage() {
         <SiteJsonLd />
       </Suspense>
 
-      <Hero />
+      <HeroSlider />
       <Marquee />
 
       <section className="flex flex-col gap-6">
