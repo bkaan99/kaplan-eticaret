@@ -54,7 +54,6 @@ async function OrderContent({
       })
     : null;
 
-  const address = order.shippingAddress;
   const awaitingPayment = order.status === "PENDING_PAYMENT";
   const failedReturn = query["durum"] === "basarisiz";
 
@@ -154,24 +153,56 @@ async function OrderContent({
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Ürünler</h2>
         <ul className="flex flex-col divide-y divide-border">
-          {order.items.map((item, index) => (
-            <li
-              key={`${item.sku}-${index}`}
-              className="flex justify-between gap-4 py-3 text-sm"
-            >
-              <span>
-                {item.productName}
-                {item.variantName ? (
-                  <span className="text-muted-foreground">
-                    {" "}
-                    · {item.variantName}
+          {order.items.map((item, index) => {
+            const custom = item.customization as
+              | {
+                  kind?: string;
+                  ingredients?: { name: string; unitExtra?: string }[];
+                  brine?: string;
+                  spice?: string;
+                  note?: string | null;
+                }
+              | undefined;
+
+            return (
+              <li
+                key={`${item.sku}-${index}`}
+                className="flex flex-col gap-1 py-3 text-sm"
+              >
+                <div className="flex justify-between gap-4">
+                  <span>
+                    <span className="font-semibold">{item.productName}</span>
+                    {item.variantName ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · {item.variantName}
+                      </span>
+                    ) : null}{" "}
+                    × {item.quantity}
                   </span>
-                ) : null}{" "}
-                × {item.quantity}
-              </span>
-              <Price value={item.lineTotal} currency={order.currency} />
-            </li>
-          ))}
+                  <Price value={item.lineTotal} currency={order.currency} />
+                </div>
+                {custom?.kind === "custom-pickle" ? (
+                  <div className="mt-1 rounded-xl bg-muted/60 p-2.5 text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground">
+                      🥒 Özel Reçeteniz:
+                    </p>
+                    <p className="mt-0.5">
+                      <strong>Malzemeler:</strong>{" "}
+                      {custom.ingredients?.map((i) => i.name).join(", ") || "-"}
+                    </p>
+                    <p>
+                      <strong>Salamura:</strong> {custom.brine || "-"} ·{" "}
+                      <strong>Acılık:</strong> {custom.spice || "-"}
+                    </p>
+                    {custom.note ? (
+                      <p className="italic">Not: {custom.note}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
         <dl className="ml-auto flex w-full max-w-xs flex-col gap-1 text-sm">
           <div className="flex justify-between">
@@ -203,17 +234,57 @@ async function OrderContent({
         </dl>
       </section>
 
-      <section className="flex flex-col gap-1 text-sm">
-        <h2 className="text-lg font-semibold">Teslimat adresi</h2>
-        <p>
-          {address.firstName} {address.lastName} · {address.phone}
-        </p>
-        <p className="text-muted-foreground">
-          {address.addressLine}
-          {address.neighborhood ? `, ${address.neighborhood}` : ""}{" "}
-          {address.district}/{address.city}
-        </p>
-      </section>
+      {/* Adresler: Teslimat ve Fatura Adresi */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        {/* Teslimat Adresi */}
+        <section className="flex flex-col gap-1.5 rounded-2xl border border-border bg-white p-5 text-sm shadow-xs">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <span>📦 Teslimat Adresi</span>
+          </div>
+          <p className="font-medium">
+            {order.shippingAddress.firstName} {order.shippingAddress.lastName} · {order.shippingAddress.phone}
+          </p>
+          <p className="text-muted-foreground leading-relaxed">
+            {order.shippingAddress.addressLine}
+            {order.shippingAddress.neighborhood ? `, ${order.shippingAddress.neighborhood}` : ""}
+            <br />
+            {order.shippingAddress.district} / {order.shippingAddress.city}
+            {order.shippingAddress.postalCode ? ` (${order.shippingAddress.postalCode})` : ""}
+          </p>
+        </section>
+
+        {/* Fatura Adresi */}
+        <section className="flex flex-col gap-1.5 rounded-2xl border border-border bg-white p-5 text-sm shadow-xs">
+          <div className="flex items-center justify-between gap-2 font-semibold text-foreground">
+            <span>🧾 Fatura Adresi</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-normal text-muted-foreground">
+              {order.billingAddress.invoiceType === "CORPORATE" ? "Kurumsal Fatura" : "Bireysel Fatura"}
+            </span>
+          </div>
+          <p className="font-medium">
+            {order.billingAddress.firstName} {order.billingAddress.lastName} · {order.billingAddress.phone}
+          </p>
+          <p className="text-muted-foreground leading-relaxed">
+            {order.billingAddress.addressLine}
+            {order.billingAddress.neighborhood ? `, ${order.billingAddress.neighborhood}` : ""}
+            <br />
+            {order.billingAddress.district} / {order.billingAddress.city}
+            {order.billingAddress.postalCode ? ` (${order.billingAddress.postalCode})` : ""}
+          </p>
+          {order.billingAddress.companyName ? (
+            <div className="mt-2 border-t border-border/60 pt-2 text-xs">
+              <p className="font-medium text-foreground">{order.billingAddress.companyName}</p>
+              <p className="text-muted-foreground">
+                VKN: {order.billingAddress.taxNumber} · Vergi Dairesi: {order.billingAddress.taxOffice}
+              </p>
+            </div>
+          ) : order.billingAddress.nationalId ? (
+            <div className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+              <span>TCKN: <span className="font-mono">{order.billingAddress.nationalId}</span></span>
+            </div>
+          ) : null}
+        </section>
+      </div>
 
       {returnEligibility?.eligible ? (
         <ReturnForm

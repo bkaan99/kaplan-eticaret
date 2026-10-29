@@ -142,9 +142,13 @@ Proje genel olarak temiz katmanlı mimariye (Service / Repository / Domain Event
   - `AddressBlock` bileşeni güncellendi; bireysel fatura kesilen siparişlerde müşterinin beyan ettiği 11 haneli TCKN (`nationalId`) muhasebenin e-arşiv fatura düzenleyebilmesi için sipariş detayında gösterildi.
   - Sipariş detayındaki ürün listesinde "Kendi Turşunu Yap" bidonlarının reçete dökümü (seçilen sebze ve baharatlar, salamura türü, acılık derecesi ve müşteri özel notu) net bir reçete kartı olarak yöneticilere sunuldu.
 
-### 4.3. Müşteri Sipariş Takibinde Fatura Adresinin Gösterilmemesi
+### 4.3. Müşteri Sipariş Takibinde Fatura Adresi ve Özel Reçete Gösterimi - [TAMAMLANDI]
 - **İlgili Dosya:** `src/app/(storefront)/siparis/[orderNumber]/page.tsx`
-- **Sorun:** Müşteri sipariş takip ekranında sadece "Teslimat Adresi" görünmektedir. Fatura adresi farklı olan veya kurumsal sipariş veren müşteriler fatura detaylarını teyit edememektedir.
+- **Durum:** ✅ Tamamlandı.
+- **Yapılan İyileştirme:**
+  - Müşteri sipariş sorgulama/takip ekranına hem Teslimat Adresi hem de Fatura Adresi yan yana kartlar olarak yerleştirildi.
+  - Fatura kartında Bireysel / Kurumsal fatura türü rozeti, kurumsal müşteriler için Şirket Ünvanı, VKN ve Vergi Dairesi, bireysel müşteriler için TCKN bilgisi net şekilde listelendi.
+  - Müşteri ürün listesinde "Kendi Turşunu Yap" ürünü varsa, müşterinin hazırladığı özel reçetenin (malzemeler, salamura formülü, acılık derecesi ve not) sipariş detayında görüntülenmesi sağlandı.
 
 ---
 
@@ -173,9 +177,14 @@ Proje genel olarak temiz katmanlı mimariye (Service / Repository / Domain Event
 - **Durum:** Müşterilerin sipariş tamamlandıktan sonra ürüne fotoğraf, yıldız puanı ve yorum bırakabileceği interaktif bir altyapı yoktur. Anasayfadaki yorumlar statik metin olarak kodlanmıştır.
 - **Öneri:** `Review` modeli, admin onay mekanizması ve ürün detayında "Müşteri Yorumları" sekmesi geliştirilmelidir.
 
-### 5.4. İletişim Bilgilerinde Dummy Veri Bulunması
-- **İlgili Dosya:** `src/config/project.json`
-- **Sorun:** Telefon numarası `"+90 000 000 00 00"` olarak tanımlıdır. Footer'daki doğrudan arama butonu bu geçersiz numarayı aramaktadır. Canlıya çıkış öncesi güncellenmelidir.
+### 5.4. İletişim Bilgilerinde Dummy Veri Bulunması - [TAMAMLANDI]
+- **İlgili Dosyalar:** `src/modules/settings/`, `src/app/(admin)/admin/ayarlar/`, `src/components/storefront/site-header.tsx`, `src/components/storefront/site-footer.tsx`, `src/app/(storefront)/page.tsx`
+- **Durum:** ✅ Tamamlandı.
+- **Yapılan İyileştirme:** İletişim bilgileri statik koddan/JSON dosyasından kurtarılarak yönetim panelinden dinamik yönetilebilir hale getirildi:
+  - Admin paneline `/admin/ayarlar` rotasında "Site & İletişim Ayarları" sayfası eklendi.
+  - Telefon numarası, WhatsApp destek hattı, e-posta adresi, fiziksel mağaza/fabrika adresi ve çalışma saatleri alanları form üzerinden anlık önizleme eşliğinde güncellenebilir yapıldı.
+  - Güncellenen veriler PostgreSQL `Setting` tablosunda saklanır ve `next/cache` etiketleri (`contact_settings`) ile verimli şekilde önbelleğe alınır.
+  - Header mobil menüsü, footer iletişim alanı ve anasayfa Schema.org Organization JSON-LD işaretlemeleri bu dinamik ayarlara bağlandı.
 
 ---
 
@@ -210,9 +219,11 @@ Proje genel olarak temiz katmanlı mimariye (Service / Repository / Domain Event
 | 🔴 **P1 - Acil** | Havale/vadeli sipariş bildirim e-postalarının listener bağlantısı | `src/modules/orders/container.ts` | Düşük |
 | ✅ **Tamamlandı** | Özel turşu siparişlerinde "Tekrar Sipariş Ver" fonksiyonunun düzeltilmesi | `src/modules/orders/reorder.service.ts` | Tamamlandı |
 | ✅ **Tamamlandı** | Admin sipariş detayında turşu reçetesi ve TCKN gösterimi | `src/app/(admin)/admin/siparisler/[orderNumber]/page.tsx` | Tamamlandı |
+| ✅ **Tamamlandı** | Müşteri sipariş takibinde fatura adresi ve özel reçete gösterimi | `src/app/(storefront)/siparis/[orderNumber]/page.tsx` | Tamamlandı |
 | ✅ **Tamamlandı** | Salamura ve acılık seçeneklerinin panelde dinamik yönetilmesi | `src/modules/custom-pickle/`, `admin/tursu-malzemeleri/` | Tamamlandı |
 | ✅ **Tamamlandı** | Gıda ürünleri için KDV varsayılanının %1 olarak düzenlenmesi | `prisma/schema.prisma`, `product-form.tsx`, `seed.ts` | Tamamlandı |
 | ✅ **Tamamlandı** | Mobil cihazlar için açılır hamburger menü bileşeni (`MobileNav`) | `src/components/storefront/mobile-nav.tsx` | Tamamlandı |
 | ✅ **Tamamlandı** | Sitemap ve `metadataBase` SEO yapılandırmaları | `src/app/sitemap.ts`, `src/app/layout.tsx` | Tamamlandı |
 | ✅ **Tamamlandı** | Ürün kartlarındaki sahte puanların temizlenmesi ve gerçekçi etiketleme | `src/components/storefront/product-card.tsx` | Tamamlandı |
+| ✅ **Tamamlandı** | Site & iletişim bilgilerinin admin panelinden dinamik yönetimi | `src/modules/settings/`, `admin/ayarlar/` | Tamamlandı |
 | 🟢 **P3 - Geliştirme** | Canlı kargo API entegrasyonu (Yurtiçi/Aras/MNG) | `src/integrations/shipping/` | Yüksek |

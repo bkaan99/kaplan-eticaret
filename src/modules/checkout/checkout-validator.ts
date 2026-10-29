@@ -20,6 +20,10 @@ import type {
   DealerTerms,
   PaymentOption,
 } from "./checkout.types";
+import {
+  CheckoutPaymentStrategyRegistry,
+  createDefaultCheckoutPaymentStrategies,
+} from "./checkout-payment-strategy";
 import type { CustomizationPricer } from "../custom-pickle/custom-pickle.types";
 import { quoteCustomizations } from "./checkout-customizations";
 
@@ -31,6 +35,7 @@ export interface CheckoutValidatorDeps {
   customizations?: CustomizationPricer;
   settings: CheckoutSettings;
   now: () => Date;
+  strategies?: CheckoutPaymentStrategyRegistry;
 }
 
 export type DealerProfileResult = Awaited<
@@ -39,7 +44,12 @@ export type DealerProfileResult = Awaited<
 
 /** Checkout doğrulama ve ön koşul denetimlerinden sorumlu sınıf. */
 export class CheckoutValidator {
-  constructor(private readonly deps: CheckoutValidatorDeps) {}
+  private readonly strategies: CheckoutPaymentStrategyRegistry;
+
+  constructor(private readonly deps: CheckoutValidatorDeps) {
+    this.strategies =
+      deps.strategies ?? createDefaultCheckoutPaymentStrategies();
+  }
 
   /** Misafir checkout kapalıysa giriş kontrolü yapar. */
   assertGuestCheckoutAllowed(userId: string | null): void {
@@ -81,39 +91,21 @@ export class CheckoutValidator {
     }
   }
 
-  /** Seçilen ödeme yönteminin müşteri ve sepet için geçerli olduğunu doğrular. */
+  /** Seçilen ödeme yönteminin müşteri ve sepet için geçerli olduğunu doğrular (OCP). */
   async assertPaymentMethod(
     method: PaymentOption["method"],
     dealer: DealerProfileResult,
     userId: string | null,
     grandTotal: string,
   ): Promise<void> {
-    if (method === "CARD") return;
-
-    if (dealer?.status !== "APPROVED") {
-      throw new ForbiddenError(
-        "Bu ödeme yöntemi yalnızca onaylı bayiler içindir",
-      );
-    }
-
-    if (method === "BANK_TRANSFER") {
-      if (!this.deps.settings.bankTransferConfigured) {
-        throw new ValidationError("Havale/EFT şu anda kullanılamıyor");
-      }
-      return;
-    }
-
-    const limit = dealer.creditLimit ? toDecimal(dealer.creditLimit) : null;
-    if (!limit || limit.lte(0)) {
-      throw new ValidationError(
-        "Vadeli ödeme için kredi limitiniz tanımlı değil",
-      );
-    }
-
-    const outstanding = await this.deps.dealers!.outstandingDeferredTotal(
-      userId!,
-    );
-    CreditLimitPolicy.assertAllowed(outstanding, grandTotal, limit);
+    const strategy = this.strategies.get(method);
+    await strategy.validate({
+      dealer,
+      userId,
+      grandTotal,
+      settings: this.deps.settings,
+      dealers: this.deps.dealers,
+    });
   }
 
   /** Sepetteki satırları yükler, stok ve satış durumlarını doğrular. */

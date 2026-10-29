@@ -85,12 +85,29 @@ Aşağıda bu bulgular SOLID ve Clean Code başlıkları altında detaylandırı
 - **Etki:** Yarın bu şablonla giyim, takı veya elektronik satan bir mağaza kurulduğunda ya da yeni bir özelleştirilebilir ürün (hediye kutusu, baskılı kupa vb.) eklendiğinde çekirdek `CartService` ve `CheckoutService` dosyaları değiştirilmek zorundadır.
 - **Çözüm:** `ProductCustomizationProvider` veya `ItemCustomizationHandler` adında genel bir arayüz tanımlanmalı; `custom-pickle` modülü bu arayüzü uygulayan bir eklenti (plugin) haline getirilmelidir.
 
-#### 2. Ödeme Yöntemlerinde Sert Kodlanmış (Hardcoded) Dallanmalar
+#### 2. Ödeme Yöntemlerinde Sert Kodlanmış (Hardcoded) Dallanmalar — [✅ ÇÖZÜLDÜ]
 - **Dosyalar:**
-  - `src/modules/orders/order.service.ts` (Satır 96-108)
-  - `src/modules/checkout/checkout.service.ts` (Satır 230-250)
-- **Sorun:** İptal, iade ve sipariş onay süreçlerinde `payment.method === "CARD" ? ... : ...` kontrolleri bulunmaktadır. Havale/EFT ve vadeli ödemelerin her biri için `if/else` blokları yazılmıştır.
-- **Çözüm:** Ödeme yöntemleri Strategy Pattern ile yönetilmelidir. Her ödeme yöntemi kendi `PaymentMethodStrategy` sınıfını uygulamalı (örn: `CardPaymentStrategy`, `BankTransferPaymentStrategy`, `DeferredPaymentStrategy`); sipariş oluşturma, rezervasyon süresi ve iade akışını kendisi yönetmelidir.
+  - `src/modules/orders/payment-refund-strategy.ts` (Yeni strateji ve registry)
+  - `src/modules/orders/payment-refund-strategy.test.ts` (Birim testleri)
+  - `src/modules/orders/order.service.ts`
+  - `src/modules/checkout/checkout-payment-strategy.ts` (Yeni checkout ödeme stratejisi)
+  - `src/modules/checkout/checkout-payment-strategy.test.ts` (Birim testleri)
+  - `src/modules/checkout/checkout-validator.ts`
+  - `src/modules/checkout/order-placement.ts`
+  - `src/modules/checkout/checkout.service.ts`
+- **Uygulanan Refactoring:** Ödeme yöntemlerine ilişkin tüm `if (method === "CARD")` ve `if (method === "DEFERRED")` gibi sert kodlanmış dallanmalar Strategy Pattern doğrultusunda polimorfik strateji sınıflarına devredildi:
+  - **İptal & İade Akışı (`PaymentRefundStrategy`):**
+    - `CardRefundStrategy`: Sağlayıcı API'si üzerinden otomatik iadeyi yürütür ve `"İptal"` gerekçesiyle sağlayıcı referansını döner.
+    - `ManualRefundStrategy`: Havale/EFT ve Vadeli siparişler için muhasebe tarafında `"İptal (manuel iade)"` kaydı oluşturur.
+    - `PaymentRefundStrategyRegistry`: Ödeme yöntemine göre ilgili iade stratejisini dinamik olarak çözer. `OrderService` içerisindeki tüm `payment.method === "CARD"` kontrolleri kaldırıldı.
+  - **Checkout Doğrulama ve Sipariş Kaydı (`CheckoutPaymentStrategy`):**
+    - `CardPaymentStrategy`, `BankTransferPaymentStrategy`, `DeferredPaymentStrategy`:
+      - `validate`: Yönteme özgü bayi onayı, havale yapılandırması ve kredi limiti denetimlerini yürütür (`CheckoutValidator` sadeleşti).
+      - `getReservationMinutes` & `getPaymentProvider`: Yönteme özgü rezervasyon süresini ve sağlayıcı adını belirler.
+      - `placeOrder`: Pending sipariş veya vadeli sipariş kaydını oluşturur.
+      - `publishPlacedEvent`: Havale ve vadeli siparişler için `order.placed` olayını yayınlar.
+    - `CheckoutPaymentStrategyRegistry`: Yönteme göre doğru stratejiyi seçer. `OrderPlacementService` ve `CheckoutValidator` içerisindeki tüm `if/else` ödeme dallanmaları temizlendi.
+  - Yeni bir ödeme yöntemi (ör. PayPal, Sodexo) eklendiğinde mevcut servis kodları değiştirilmeden (Closed for modification) sadece yeni strateji sınıfları eklenerek (Open for extension) sistem genişletilebilir hale getirildi.
 
 ---
 
@@ -223,10 +240,13 @@ Aşağıda bu bulgular SOLID ve Clean Code başlıkları altında detaylandırı
   - Sayfa önbellek yenilemelerini (`revalidate`) tek elden deterministik olarak yürütür.
   - Böylece vitrin action dosyalarındaki yüzlerce satırlık kopya `try/catch/isAppError/reportError` kodları temizlenerek DRY ilkesi sağlandı.
 
-### 3.5 Sessiz Başarısızlıklar (Silent Failures)
+### 3.5 Sessiz Başarısızlıklar (Silent Failures) — [✅ ÇÖZÜLDÜ]
 - **Dosyalar:**
-  - `src/modules/checkout/discounts.ts` (Satır 145-160): Kampanya konfigürasyon JSON'u geçersiz olduğunda `createCampaignRule` sessizce `null` döner. Neden indirimin uygulanmadığına dair log veya uyarı üretilmez.
-  - `src/modules/notifications/notification.service.ts` (Satır 44): Sipariş bulunamazsa (`if (!order) return;`) metod sessizce sonlanır. Hatalı ID ile çağrıldığında sistemde iz bırakmaz.
+  - `src/modules/checkout/discounts.ts`
+  - `src/modules/notifications/handlers/order-notification.handler.ts`
+- **Uygulanan Refactoring:** Sistem akışını kırmadan hata/uyarı durumlarının teşhis edilebilmesi için yapılandırılmış (structured) loglama eklendi:
+  - `discounts.ts` (`createCampaignRule`): Geçersiz JSON konfigürasyonu veya bilinmeyen kural tipiyle karşılaşıldığında, sessizce `null` dönmek yerine `logger.warn` ile kampanya adı, kural tipi ve Zod doğrulama hata detayları loglandı.
+  - `order-notification.handler.ts`: Sipariş yaşam döngüsü olaylarında (`order.paid`, `order.placed`, `order.cancelled`, `order.shipped`), veritabanında sipariş bulunamadığında sessizce sonlanmak yerine `logger.warn` ile ilgili sipariş ID'si ve tetiklenen olay adı loglanarak izlenebilirlik sağlandı.
 
 ### 3.6 İsimlendirme ve Dil Karışıklığı
 - **Sorun:** Kod tabanında Türkçe ve İngilizce iç içe geçmiştir.
@@ -253,7 +273,9 @@ Aşağıda bu bulgular SOLID ve Clean Code başlıkları altında detaylandırı
 | **Faz 1** | `NotificationService` monolitik yapısını `NotificationDispatcher` ve domain handler'lara bölmek | SRP / Facade | ✅ **Tamamlandı** | Düşük (1-2 saat) |
 | **Faz 1** | `stock.replenished` ölü olayını temizlemek veya worker'a bağlamak | Clean Code / Dead Code | ⏳ Bekliyor | Düşük (1 saat) |
 | **Faz 1** | Sepet ve ödeme sorgularındaki veritabanı DRY ihlalini gidermek (`CartRepository` delegasyonu) | DRY / Single Source of Truth | ✅ **Tamamlandı** | Düşük (1 saat) |
+| **Faz 1** | Sessiz başarısızlıkları (`discounts.ts` & `notification`) yapılandırılmış loglarla gidermek | Clean Code / Observability | ✅ **Tamamlandı** | Düşük (30 dk) |
 | **Faz 2** | `CheckoutService` "God Service" refactoring'i (Validator, Pricing, PaymentOptions, OrderPlacement) | SRP / Facade | ✅ **Tamamlandı** | Orta (3-4 saat) |
+| **Faz 2** | Ödeme yöntemlerinde Strategy Pattern (`PaymentRefundStrategy`, `CheckoutPaymentStrategy`) | OCP / Strategy Pattern | ✅ **Tamamlandı** | Orta (2-3 saat) |
 | **Faz 2** | `custom-pickle` bağımlılığını genel `ItemCustomizationHandler` arayüzü arkasına almak | OCP / Modülerlik | ⏳ Bekliyor | Orta (3-4 saat) |
 | **Faz 2** | `OrderRepository` içindeki kredi limiti mantığını policy katmanına çekmek (`CreditLimitPolicy`) | SRP / Separation of Concerns | ✅ **Tamamlandı** | Orta (2-3 saat) |
 | **Faz 2** | `OrderRepository` arayüzünü okuma, yazma ve ödeme olarak segmente etmek | ISP | ✅ **Tamamlandı** | Orta (3 saat) |

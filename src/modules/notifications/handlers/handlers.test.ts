@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { NotificationDispatcher } from "../notification-dispatcher";
 import { AccountNotificationHandler } from "./account-notification.handler";
 import { DealerNotificationHandler } from "./dealer-notification.handler";
+import { OrderNotificationHandler } from "./order-notification.handler";
 import { ReturnNotificationHandler } from "./return-notification.handler";
 import { StockAlertNotificationHandler } from "./stock-alert-notification.handler";
 
@@ -87,4 +88,28 @@ describe("Notification Handlers", () => {
     expect(dispatch.mock.calls[0]?.[0]).toBe("alici@test.com");
     expect(dispatch.mock.calls[0]?.[1].subject).toContain("Salatalık Turşusu");
   });
+
+  it("OrderNotificationHandler sipariş bulunamadığında hata fırlatmadan güvenle sonlanır", async () => {
+    const dispatch = vi.fn<NotificationDispatcher["dispatch"]>(async () => {});
+    const dispatcher: NotificationDispatcher = { dispatch };
+    const orders = {
+      findById: vi.fn(async () => null),
+    };
+
+    const handler = new OrderNotificationHandler({
+      orders,
+      dispatcher,
+      context: { siteName: "Test Mağaza", baseUrl: "https://site.test" },
+      adminEmail: "admin@test.com",
+    });
+
+    await handler.onOrderPaid("non-existent-order");
+    await handler.onOrderPlaced("non-existent-order", "BANK_TRANSFER");
+    await handler.onOrderCancelled("non-existent-order", false);
+    await handler.onOrderShipped("non-existent-order");
+
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(orders.findById).toHaveBeenCalledTimes(4);
+  });
 });
+

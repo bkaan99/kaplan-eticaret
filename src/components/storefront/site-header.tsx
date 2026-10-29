@@ -5,6 +5,7 @@ import { isFeatureEnabled } from "@/config/features";
 import { siteConfig } from "@/config/site.config";
 import { getCategoryTree } from "@/modules/catalog/cached";
 import { getCachedMenu } from "@/modules/content/cached";
+import { getCachedContactSettings } from "@/modules/settings/cached";
 import { formatMoney } from "@/shared/money";
 import { AccountLink } from "./account-link";
 import { CartBadge } from "./cart-badge";
@@ -15,17 +16,18 @@ import { MobileNav } from "./mobile-nav";
 
 async function MobileNavContainer() {
   await connection();
-  const [tree, extra] = await Promise.all([
+  const [tree, extra, contact] = await Promise.all([
     getCategoryTree(),
     getCachedMenu("header"),
+    getCachedContactSettings(),
   ]);
 
   return (
     <MobileNav
       categories={tree}
       extraItems={extra.map((item) => ({ label: item.label, url: item.url }))}
-      sitePhone={siteConfig.contact.phone}
-      siteEmail={siteConfig.contact.email}
+      sitePhone={contact.phone}
+      siteEmail={contact.email}
       freeShippingThreshold={siteConfig.shipping.freeShippingThreshold}
       wishlistEnabled={isFeatureEnabled("wishlist")}
       b2bEnabled={isFeatureEnabled("b2b")}

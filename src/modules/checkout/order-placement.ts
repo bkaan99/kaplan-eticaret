@@ -13,6 +13,10 @@ import {
   type CheckoutSettings,
   type ComputedCheckout,
 } from "./checkout.types";
+import {
+  CheckoutPaymentStrategyRegistry,
+  createDefaultCheckoutPaymentStrategies,
+} from "./checkout-payment-strategy";
 import type { DealerProfileResult } from "./checkout-validator";
 
 export interface OrderPlacementDeps {
@@ -20,6 +24,7 @@ export interface OrderPlacementDeps {
   settings: CheckoutSettings;
   events?: EventBus;
   now: () => Date;
+  strategies?: CheckoutPaymentStrategyRegistry;
 }
 
 export interface PlaceOrderParams {
@@ -32,7 +37,12 @@ export interface PlaceOrderParams {
 
 /** Sipariş nesnesinin oluşturulması, kaydedilmesi ve olay yayınlanmasından sorumlu servis. */
 export class OrderPlacementService {
-  constructor(private readonly deps: OrderPlacementDeps) {}
+  private readonly strategies: CheckoutPaymentStrategyRegistry;
+
+  constructor(private readonly deps: OrderPlacementDeps) {
+    this.strategies =
+      deps.strategies ?? createDefaultCheckoutPaymentStrategies();
+  }
 
   /** Hesaplanmış checkout verisinden sipariş oluşturur ve ilgili olayları tetikler. */
   async place(
@@ -57,7 +67,7 @@ export class OrderPlacementService {
     const billing: AddressSnapshot =
       input.billingAddress ?? input.shippingAddress;
 
-    const method = input.paymentMethod;
+    const strategy = this.strategies.get(input.paymentMethod);
     const settings = this.deps.settings;
 
     const newOrder = {
@@ -75,32 +85,20 @@ export class OrderPlacementService {
       billingAddress: billing,
       customerNote: input.customerNote,
       items,
-      reservationMinutes:
-        method === "BANK_TRANSFER"
-          ? (settings.bankTransferHoldHours ?? 72) * 60
-          : settings.reservationMinutes,
-      paymentProvider:
-        method === "CARD" ? settings.paymentProvider : method.toLowerCase(),
-      paymentMethod: method,
+      reservationMinutes: strategy.getReservationMinutes(settings),
+      paymentProvider: strategy.getPaymentProvider(settings),
+      paymentMethod: input.paymentMethod,
     };
 
-    let created: CreatedOrder;
-    if (method === "DEFERRED") {
-      const days = settings.deferredPaymentDays ?? 30;
-      created = await this.deps.orders.createDeferredOrder(newOrder, {
-        creditLimit: dealer!.creditLimit!,
-        dueAt: new Date(this.deps.now().getTime() + days * 24 * 60 * 60 * 1000),
-      });
-    } else {
-      created = await this.deps.orders.createPendingOrder(newOrder);
-    }
+    const created = await strategy.placeOrder({
+      orders: this.deps.orders,
+      newOrder,
+      dealer,
+      settings,
+      now: this.deps.now,
+    });
 
-    if (method !== "CARD") {
-      await this.deps.events?.publish("order.placed", {
-        orderId: created.orderId,
-        method,
-      });
-    }
+    await strategy.publishPlacedEvent(this.deps.events, created.orderId);
 
     return { ...created, grandTotal: computed.quote.grandTotal };
   }

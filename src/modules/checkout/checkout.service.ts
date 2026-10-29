@@ -50,6 +50,7 @@ export class CheckoutService {
       dealers: deps.dealers,
       customizations: deps.customizations,
       settings: deps.settings,
+      strategies: deps.paymentStrategies,
       now,
     });
 
@@ -72,6 +73,7 @@ export class CheckoutService {
       orders: deps.orders,
       settings: deps.settings,
       events: deps.events,
+      strategies: deps.paymentStrategies,
       now,
     });
   }

@@ -11,6 +11,7 @@ import type { CheckoutLineRecord, CheckoutRepository } from "./checkout.reposito
 import type { ShippingRateCalculator } from "./shipping";
 import type { OrderTotals } from "./totals";
 import type { AppliedDiscount } from "./discounts";
+import type { CheckoutPaymentStrategyRegistry } from "./checkout-payment-strategy";
 
 /** Checkout'un sepetten yalnızca ihtiyaç duyduğu parça. */
 export interface CartSource {
@@ -99,5 +100,6 @@ export interface CheckoutDeps {
   events?: EventBus;
   /** Kendi turşunu yap satırlarının ek ücretleri */
   customizations?: CustomizationPricer;
+  paymentStrategies?: CheckoutPaymentStrategyRegistry;
   now?: () => Date;
 }

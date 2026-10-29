@@ -1,3 +1,4 @@
+import { logger } from "@/shared/logger";
 import type { OrderLookupRepository } from "../../orders/order.repository";
 import type { NotificationDispatcher } from "../notification-dispatcher";
 import {
@@ -24,7 +25,13 @@ export class OrderNotificationHandler {
 
   async onOrderPaid(orderId: string): Promise<void> {
     const order = await this.deps.orders.findById(orderId);
-    if (!order) return;
+    if (!order) {
+      logger.warn(
+        { orderId, event: "order.paid" },
+        "Bildirim gönderilecek sipariş bulunamadı",
+      );
+      return;
+    }
 
     await this.deps.dispatcher.dispatch(
       order.email,
@@ -41,7 +48,13 @@ export class OrderNotificationHandler {
     method: "BANK_TRANSFER" | "DEFERRED",
   ): Promise<void> {
     const order = await this.deps.orders.findById(orderId);
-    if (!order) return;
+    if (!order) {
+      logger.warn(
+        { orderId, event: "order.placed", method },
+        "Bildirim gönderilecek sipariş bulunamadı",
+      );
+      return;
+    }
 
     const bankAccounts = this.deps.bankAccounts ?? [];
     await this.deps.dispatcher.dispatch(
@@ -56,7 +69,13 @@ export class OrderNotificationHandler {
 
   async onOrderCancelled(orderId: string, refunded: boolean): Promise<void> {
     const order = await this.deps.orders.findById(orderId);
-    if (!order) return;
+    if (!order) {
+      logger.warn(
+        { orderId, event: "order.cancelled", refunded },
+        "Bildirim gönderilecek sipariş bulunamadı",
+      );
+      return;
+    }
 
     await this.deps.dispatcher.dispatch(
       order.email,
@@ -66,7 +85,13 @@ export class OrderNotificationHandler {
 
   async onOrderShipped(orderId: string): Promise<void> {
     const order = await this.deps.orders.findById(orderId);
-    if (!order) return;
+    if (!order) {
+      logger.warn(
+        { orderId, event: "order.shipped" },
+        "Bildirim gönderilecek sipariş bulunamadı",
+      );
+      return;
+    }
 
     await this.deps.dispatcher.dispatch(
       order.email,

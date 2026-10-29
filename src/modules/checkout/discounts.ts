@@ -1,5 +1,6 @@
 import type Decimal from "decimal.js";
 import { z } from "zod";
+import { logger } from "@/shared/logger";
 import { roundMoney, toDecimal } from "@/shared/money";
 
 export interface DiscountLineInput {
@@ -145,17 +146,39 @@ export function createCampaignRule(campaign: {
   switch (campaign.ruleType) {
     case "category": {
       const parsed = categoryConfigSchema.safeParse(campaign.config);
-      return parsed.success
-        ? new CategoryDiscountRule(campaign.name, parsed.data)
-        : null;
+      if (!parsed.success) {
+        logger.warn(
+          {
+            campaign: campaign.name,
+            ruleType: campaign.ruleType,
+            issues: parsed.error.issues,
+          },
+          "Kampanya yapılandırması geçersiz olduğu için atlandı",
+        );
+        return null;
+      }
+      return new CategoryDiscountRule(campaign.name, parsed.data);
     }
     case "cart-threshold": {
       const parsed = thresholdConfigSchema.safeParse(campaign.config);
-      return parsed.success
-        ? new CartThresholdDiscountRule(campaign.name, parsed.data)
-        : null;
+      if (!parsed.success) {
+        logger.warn(
+          {
+            campaign: campaign.name,
+            ruleType: campaign.ruleType,
+            issues: parsed.error.issues,
+          },
+          "Kampanya yapılandırması geçersiz olduğu için atlandı",
+        );
+        return null;
+      }
+      return new CartThresholdDiscountRule(campaign.name, parsed.data);
     }
     default:
+      logger.warn(
+        { campaign: campaign.name, ruleType: campaign.ruleType },
+        "Bilinmeyen kampanya kural tipi, kampanya atlandı",
+      );
       return null;
   }
 }
