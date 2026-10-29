@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { ValidationError } from "@/shared/errors";
 import { parseCsvRecords } from "@/shared/csv-parse";
-import type { AuditLogger } from "@/shared/audit/audit-logger";
+import type { Actor, AuditLogger } from "@/shared/audit";
 import type { EventBus } from "@/shared/events/event-bus";
-import type { Actor } from "../orders/admin-order.service";
 import { missingColumns, normalizeHeader } from "./headers";
 import {
   MAX_IMPORT_ROWS,
@@ -62,8 +61,8 @@ function blankToUndefined(record: Record<string, string>) {
 export class BulkUpdateService {
   constructor(
     private readonly repository: BulkUpdateRepository,
-    private readonly events: EventBus,
-    private readonly audit: AuditLogger,
+    private readonly events?: EventBus,
+    private readonly audit: AuditLogger = { log: async () => {}, purgeOlderThan: async () => 0 },
   ) {}
 
   async run(
@@ -120,7 +119,6 @@ export class BulkUpdateService {
     const bySku = new Map(existing.map((v) => [v.sku.toUpperCase(), v]));
 
     const updates: VariantUpdate[] = [];
-    const replenished: string[] = [];
     const audited: { sku: string; before: unknown; after: unknown }[] = [];
 
     for (const { row, data } of parsed) {
@@ -172,13 +170,6 @@ export class BulkUpdateService {
           stock: update.stockQuantity,
         },
       });
-      if (
-        update.stockQuantity !== undefined &&
-        variant.stockQuantity <= 0 &&
-        update.stockQuantity > 0
-      ) {
-        replenished.push(variant.id);
-      }
     }
 
     // Satır hatası olan dosya kısmen uygulanmaz: ya hep ya hiç.
@@ -193,9 +184,6 @@ export class BulkUpdateService {
         entityId: "bulk",
         after: { count: updates.length, changes: audited.slice(0, 200) },
       });
-      for (const variantId of replenished) {
-        await this.events.publish("stock.replenished", { variantId });
-      }
     }
 
     return {

@@ -4,9 +4,8 @@ import {
   NotFoundError,
   ValidationError,
 } from "@/shared/errors";
-import type { AuditLogger } from "@/shared/audit/audit-logger";
+import type { Actor, AuditLogger } from "@/shared/audit";
 import { PERMISSIONS } from "@/shared/permissions";
-import type { Actor } from "../orders/admin-order.service";
 import { roleInputSchema, staffInviteSchema } from "./role.schema";
 import type {
   RoleRecord,

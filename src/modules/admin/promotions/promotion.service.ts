@@ -1,6 +1,5 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
-import type { AuditLogger } from "@/shared/audit/audit-logger";
-import type { Actor } from "../orders/admin-order.service";
+import type { Actor, AuditLogger } from "@/shared/audit";
 import type {
   CampaignView,
   CouponView,

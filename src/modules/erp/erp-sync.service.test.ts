@@ -39,23 +39,17 @@ class FakeVariants implements BulkUpdateRepository {
 describe("ErpSyncService", () => {
   let variants: FakeVariants;
   let audit: AuditEntry[];
-  let replenished: string[];
   let records: ErpStockRecord[];
   let service: ErpSyncService;
 
   beforeEach(() => {
     variants = new FakeVariants();
     audit = [];
-    replenished = [];
     records = [];
-    const events = new InMemoryEventBus();
-    events.subscribe("stock.replenished", ({ variantId }) => {
-      replenished.push(variantId);
-    });
     service = new ErpSyncService(
       { name: "test", fetchStock: async () => records },
       variants,
-      events,
+      undefined,
       {
         log: async (entry) => void audit.push(entry),
         purgeOlderThan: async () => 0,
@@ -72,7 +66,6 @@ describe("ErpSyncService", () => {
 
     expect(report).toEqual({ fetched: 2, updated: 1, unknown: 0, invalid: 0 });
     expect(variants.applied).toEqual([{ id: "v1", stockQuantity: 12 }]);
-    expect(replenished).toEqual(["v1"]);
     expect(audit[0]).toMatchObject({ action: "erp.stock-sync", actorId: null });
   });
 

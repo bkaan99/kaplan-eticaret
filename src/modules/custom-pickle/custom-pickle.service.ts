@@ -1,12 +1,11 @@
 import { createHash } from "node:crypto";
 import type Decimal from "decimal.js";
-import type { AuditLogger } from "@/shared/audit/audit-logger";
+import type { Actor, AuditLogger } from "@/shared/audit";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import { roundMoney, toDecimal } from "@/shared/money";
 import { slugify } from "@/shared/slug";
 import { availableQuantity } from "../catalog/availability";
 import type { PriceResolver, PricingContext } from "../catalog/pricing";
-import type { Actor } from "../admin/orders/admin-order.service";
 import type {
   CustomPickleRepository,
   IngredientRecord,

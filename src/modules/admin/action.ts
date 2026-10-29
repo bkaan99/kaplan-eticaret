@@ -6,7 +6,9 @@ import { getClientIp } from "@/shared/rate-limit";
 import type { Permission } from "@/shared/permissions";
 import { invalidateStorefrontCaches } from "@/shared/cache/registry";
 import { requirePermission, type CurrentUser } from "../auth/session";
-import type { Actor } from "./orders/admin-order.service";
+import type { Actor } from "@/shared/audit";
+
+export type { Actor };
 
 export interface AdminActionResult {
   ok: boolean;

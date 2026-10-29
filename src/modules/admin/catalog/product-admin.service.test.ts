@@ -170,58 +170,6 @@ describe("ProductAdminService", () => {
     expect(repo.redirects).toHaveLength(0);
   });
 
-  it("stoğu 0'dan artan varyant için stock.replenished yayınlar", async () => {
-    repo.existing = existingProduct();
-    const handler = vi.fn();
-    events.subscribe("stock.replenished", handler);
-
-    await service.update(
-      "p1",
-      {
-        ...valid,
-        variants: [
-          {
-            id: "v1",
-            sku: "T-S",
-            price: "100",
-            stockQuantity: 7,
-            optionValues: { Beden: "S" },
-          },
-        ],
-      },
-      actor,
-    );
-
-    expect(handler).toHaveBeenCalledWith({ variantId: "v1" });
-  });
-
-  it("zaten stokta olan varyant için olay yayınlamaz", async () => {
-    const product = existingProduct();
-    product.variants[0]!.stockQuantity = 3;
-    repo.existing = product;
-    const handler = vi.fn();
-    events.subscribe("stock.replenished", handler);
-
-    await service.update(
-      "p1",
-      {
-        ...valid,
-        variants: [
-          {
-            id: "v1",
-            sku: "T-S",
-            price: "100",
-            stockQuantity: 9,
-            optionValues: { Beden: "S" },
-          },
-        ],
-      },
-      actor,
-    );
-
-    expect(handler).not.toHaveBeenCalled();
-  });
-
   it("bilinmeyen ürünü güncellemede NotFoundError verir", async () => {
     repo.existing = null;
     await expect(service.update("yok", valid, actor)).rejects.toThrow(

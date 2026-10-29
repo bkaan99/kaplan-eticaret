@@ -1,5 +1,5 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
-import type { AuditLogger } from "@/shared/audit";
+import type { Actor, AuditLogger } from "@/shared/audit";
 import type { EventBus } from "@/shared/events/event-bus";
 import type { OrderPaymentRepository } from "../../orders/order.repository";
 import type { OrderService } from "../../orders/order.service";
@@ -12,10 +12,7 @@ import type {
 } from "./admin-order.repository";
 import { allowedTransitions, isStaffCancellable } from "./order-state";
 
-export interface Actor {
-  userId: string;
-  ip?: string | null;
-}
+export type { Actor };
 
 export interface ShipInput {
   carrier: string;

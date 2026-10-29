@@ -1,7 +1,7 @@
 import { ValidationError, isAppError } from "@/shared/errors";
 import { parseCsvRecords } from "@/shared/csv-parse";
 import { slugify } from "@/shared/slug";
-import type { Actor } from "../orders/admin-order.service";
+import type { Actor } from "@/shared/audit";
 import {
   ProductValidationError,
   type ProductAdminService,

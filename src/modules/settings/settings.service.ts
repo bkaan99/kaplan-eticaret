@@ -1,8 +1,7 @@
 import { siteConfig } from "@/config/site.config";
 import { ValidationError } from "@/shared/errors";
 import type { PrismaClient } from "@/shared/prisma-client";
-import type { Actor } from "../admin/orders/admin-order.service";
-import type { AuditLogger } from "@/shared/audit";
+import type { Actor, AuditLogger } from "@/shared/audit";
 import {
   contactSettingsSchema,
   type ContactSettingsInput,

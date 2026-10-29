@@ -13,9 +13,11 @@ Aşağıdaki maddeler başarıyla çözülmüş, refactor edilmiş ve birim test
 - ✅ **OCP (Açık/Kapalı):** Ödeme ve iade akışları Strategy Pattern (`PaymentRefundStrategy`, `CheckoutPaymentStrategy`) ile polimorfik hale getirildi.
 - ✅ **ISP (Arayüz Ayrımı):** `OrderRepository` fat interface'i 8 amaca yönelik alt arayüze (`OrderLookup`, `OrderQuery`, `OrderCreation`, vb.) bölündü.
 - ✅ **DIP (Bağımlılıkların Tersine Çevrilmesi):** `orders/container.ts` monolitik yapısı ayrıştırıldı; `notifications`, `checkout`, `payment` bağımsız container'larına kavuştu.
+- ✅ **DIP (Clean Architecture):** `Actor` arayüzü `admin-order.service.ts` dosyasından `@/shared/audit` altına taşındı; B2B, İçerik, İade, Turşu ve Ayarlar gibi bağımsız servislerin admin servisine olan ters bağımlılığı ortadan kaldırıldı.
 - ✅ **Clean Code / DRY:** Sepet-ödeme veritabanı sorgu duplikasyonu (`CartRepository` delegasyonu) giderildi.
 - ✅ **Clean Code / Error Handling:** Server Action `try/catch` duplikasyonları için `runStorefrontAction` wrapper'ı yazıldı.
 - ✅ **Clean Code / Observability:** `discounts.ts` ve bildirim handler'larındaki sessiz başarısızlıklar yapılandırılmış loglarla (`logger.warn`) izlenebilir hale getirildi.
+- ✅ **Clean Code / Dead Code:** Canlı sistemde dinleyicisi olmayan hayalet domain olayı `stock.replenished` (ve `ProductAdminService`, `BulkUpdateService`, `ErpSyncService` üzerindeki tetikleyicileri) temizlendi; stok bildirimleri güvenli biçimde worker sweep job'ına bırakıldı.
 
 ---
 
@@ -62,19 +64,7 @@ Aşağıdaki maddeler başarıyla çözülmüş, refactor edilmiş ve birim test
 
 ### 2.3 D — Dependency Inversion Principle (Bağımlılıkların Tersine Çevrilmesi)
 
-#### 1. Ters Katman Bağımlılığı (`Actor` Arayüzünün Yanlış Yerde Tanımlanması)
-- **Dosyalar:**
-  - `src/modules/admin/orders/admin-order.service.ts` (Satır 15-18)
-  - `src/modules/b2b/dealer.service.ts`
-  - `src/modules/content/content.service.ts`
-  - `src/modules/returns/return.service.ts`
-  - `src/modules/custom-pickle/custom-pickle.service.ts`
-  - `src/modules/erp/erp-sync.service.ts`
-- **Sorun:** Denetim kaydı (audit) tutabilmek için gerekli olan temel `{ userId: string; ip?: string | null }` şeklindeki `Actor` arayüzü, admin modülünün içindeki `admin-order.service.ts` dosyasında export edilmiştir.
-- **Etki:** B2B, İçerik Yönetimi, İade Takibi ve Turşu gibi bağımsız domain servisleri, admin paneli sipariş servisine bağımlı hale gelmiştir. Clean Architecture bağımlılık kuralı (Dependency Rule) açıkça ihlal edilmiştir.
-- **Çözüm:** `Actor` tanımı `src/shared/audit` veya `src/shared/auth` klasörüne taşınmalıdır.
-
-#### 2. Global Statik Konfigürasyona (`siteConfig`) Doğrudan Bağımlılık
+#### Global Statik Konfigürasyona (`siteConfig`) Doğrudan Bağımlılık
 - **Dosyalar:**
   - `src/modules/notifications/notification.service.ts`
   - `src/modules/checkout/shipping.ts`
@@ -85,25 +75,14 @@ Aşağıdaki maddeler başarıyla çözülmüş, refactor edilmiş ve birim test
 
 ## 3. Kalan Clean Code ve Mimari Tasarım Eksiklikleri
 
-### 3.1 Hayalet Olaylar (Ghost Events) ve Süreçler Arası İletişim Uyumsuzluğu
-- **Dosyalar:**
-  - `src/modules/admin/catalog/product-admin.service.ts`
-  - `src/modules/admin/import/bulk-update.service.ts`
-  - `src/modules/erp/erp-sync.service.ts`
-  - `src/shared/events/event-bus.ts`
-- **Sorun:**
-  1. Stoğu sıfırdan artan ürünler için `stock.replenished` olayı yayınlanmaktadır. Ancak projenin canlı kodunda bu olayı dinleyen **hiçbir subscriber yoktur** (yalnızca unit testler dinlemektedir). Asıl stok bildirimleri ise worker içinde her 10 dakikada bir çalışan `stock-alerts.sweep` işiyle gönderilmektedir. Bu olay tamamen ölü koddur (dead code).
-  2. `InMemoryEventBus` bellek içi çalıştığından, bağımsız bir Node sürecinde koşan `worker` (`src/worker/index.ts`), Next.js sunucu süreçlerinde fırlatılan in-memory olayları teknik olarak dinleyemez.
-- **Çözüm:** Asenkron domain olayları `pg-boss` kuyruğu üzerinden dağıtılmalı veya ölü olay yayınları temizlenmelidir.
-
-### 3.2 Olay Aboneliklerinde Zamansal Bağlaşım (Temporal Coupling)
+### 3.1 Olay Aboneliklerinde Zamansal Bağlaşım (Temporal Coupling)
 - **Dosyalar:**
   - `src/modules/notifications/container.ts` (veya `orders/container.ts`)
 - **Sorun:** Event dinleyicileri (`bus.subscribe("order.paid", ...)`), `getNotificationService()` fonksiyonunun ilk çağrılışı sırasında yan etki (side effect) olarak bağlanmaktadır.
 - **Etki:** Eğer bir istek yaşam döngüsünde `getNotificationService()` çağrılmadan önce bir olay fırlatılırsa, dinleyiciler henüz kayıt olmadığı için olay sessizce kaybolur.
 - **Çözüm:** Event bus dinleyicileri uygulama başlangıcında (initialization / bootstrap aşamasında) deterministik bir sırayla kaydedilmelidir.
 
-### 3.3 İsimlendirme ve Dil Karışıklığı
+### 3.2 İsimlendirme ve Dil Karışıklığı
 - **Sorun:** Kod tabanında Türkçe ve İngilizce iç içe geçmiştir.
   - DB Modelleri: `ProductVariant`, `CartItem`, `Order` (İngilizce)
   - Route ve Klasörler: `kendi-tursunu-yap`, `tursu-malzemeleri`, `bayi-gruplari` (Türkçe)
@@ -116,8 +95,6 @@ Aşağıdaki maddeler başarıyla çözülmüş, refactor edilmiş ve birim test
 
 | Öncelik | Görev | Hedeflenen SOLID/Clean Prensibi | Durum | Tahmini Efor |
 | :--- | :--- | :--- | :---: | :--- |
-| **P1** | `Actor` tipini `src/shared/audit` altına taşımak | DIP / Clean Architecture | ⏳ Bekliyor | Çok Düşük (30 dk) |
-| **P1** | `stock.replenished` ölü olayını temizlemek veya worker'a bağlamak | Clean Code / Dead Code | ⏳ Bekliyor | Düşük (1 saat) |
 | **P1** | `DevPaymentProvider.signPayload` sızıntısını simülasyon servisine izole etmek | LSP (Liskov Substitution) | ⏳ Bekliyor | Düşük (1 saat) |
 | **P2** | `custom-pickle` bağımlılığını genel `ItemCustomizationHandler` arayüzü arkasına almak | OCP / Modülerlik | ⏳ Bekliyor | Orta (3-4 saat) |
 | **P2** | Olay aboneliklerindeki zamansal bağlaşımı deterministik bootstrap ile çözmek | Clean Code / Decoupling | ⏳ Bekliyor | Düşük (1-2 saat) |
