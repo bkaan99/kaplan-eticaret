@@ -33,18 +33,117 @@ export const INGREDIENT_GROUP_LABELS: Record<IngredientGroup, string> = {
   AROMA: "Baharat ve aroma",
 };
 
-export const BRINE_OPTIONS = {
+export interface PickleBrineOption {
+  key: string;
+  label: string;
+  description: string;
+  color: string;
+  hasBubbles?: boolean;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface PickleSpiceOption {
+  key: string;
+  label: string;
+  description?: string | null;
+  peppers: number;
+  tint: number;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface CustomPickleConfig {
+  brines: PickleBrineOption[];
+  spices: PickleSpiceOption[];
+}
+
+export const DEFAULT_BRINE_CONFIG: PickleBrineOption[] = [
+  {
+    key: "VINEGAR",
+    label: "Sirkeli",
+    description:
+      "Geleneksel sirke ve kaya tuzu dengesi. Klasik kıtır lezzet, net asidite.",
+    color: "#d6e29a",
+    hasBubbles: false,
+    isActive: true,
+    sortOrder: 0,
+  },
+  {
+    key: "NATURAL",
+    label: "Doğal fermente",
+    description:
+      "Yalnızca kaya tuzu ve sarımsak; fermantasyon probiyotik bakterilerle gerçekleşir.",
+    color: "#e7d9a0",
+    hasBubbles: true,
+    isActive: true,
+    sortOrder: 1,
+  },
+  {
+    key: "APPLE_CIDER",
+    label: "Elma Sirkeli",
+    description:
+      "Yumuşak içimli, meyvemsi dengeli asidite ve kaya tuzu aroması.",
+    color: "#fef08a",
+    hasBubbles: false,
+    isActive: true,
+    sortOrder: 2,
+  },
+];
+
+export const DEFAULT_SPICE_CONFIG: PickleSpiceOption[] = [
+  {
+    key: "MILD",
+    label: "Acısız",
+    description: "Sıfır acı, çocukların ve hassas damakların tercihi.",
+    peppers: 0,
+    tint: 0,
+    isActive: true,
+    sortOrder: 0,
+  },
+  {
+    key: "MEDIUM",
+    label: "Orta acı",
+    description: "Hafif acı biber dokunuşuyla dengeli ve leziz.",
+    peppers: 1,
+    tint: 0.1,
+    isActive: true,
+    sortOrder: 1,
+  },
+  {
+    key: "HOT",
+    label: "Acılı",
+    description: "Damakta iz bırakan geleneksel acı biber lezzeti.",
+    peppers: 3,
+    tint: 0.22,
+    isActive: true,
+    sortOrder: 2,
+  },
+  {
+    key: "EXTRA_HOT",
+    label: "Çok Acılı (Atom)",
+    description: "Acı tutkunlarına özel ekstra Arnavut biberi takviyeli.",
+    peppers: 4,
+    tint: 0.38,
+    isActive: true,
+    sortOrder: 3,
+  },
+];
+
+export const BRINE_OPTIONS: Record<string, string> = {
   VINEGAR: "Sirkeli",
   NATURAL: "Doğal fermente",
-} as const;
-export type BrineOption = keyof typeof BRINE_OPTIONS;
+  APPLE_CIDER: "Elma Sirkeli",
+};
+export type BrineOption = string;
 
-export const SPICE_OPTIONS = {
+export const SPICE_OPTIONS: Record<string, string> = {
   MILD: "Acısız",
   MEDIUM: "Orta acı",
   HOT: "Acılı",
-} as const;
-export type SpiceOption = keyof typeof SPICE_OPTIONS;
+  EXTRA_HOT: "Çok Acılı (Atom)",
+};
+export type SpiceOption = string;
 
 /** Sepette saklanan seçim; fiyatlar her hesaplamada güncel malzeme fiyatlarından gelir. */
 export interface StoredCustomization {

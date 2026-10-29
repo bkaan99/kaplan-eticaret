@@ -1,6 +1,11 @@
 import type Decimal from "decimal.js";
 import type { PrismaClient } from "@/shared/prisma-client";
-import type { IngredientGroup } from "./custom-pickle.types";
+import {
+  DEFAULT_BRINE_CONFIG,
+  DEFAULT_SPICE_CONFIG,
+  type CustomPickleConfig,
+  type IngredientGroup,
+} from "./custom-pickle.types";
 import type { IngredientInput } from "./custom-pickle.schema";
 
 export interface IngredientRecord {
@@ -47,6 +52,8 @@ export interface CustomPickleRepository {
   updateIngredient(id: string, input: IngredientInput): Promise<void>;
   deleteIngredient(id: string): Promise<void>;
   findBuilderProduct(slug: string): Promise<BuilderProductRecord | null>;
+  getPickleOptions(): Promise<CustomPickleConfig>;
+  savePickleOptions(config: CustomPickleConfig): Promise<void>;
 }
 
 const ingredientSelect = {
@@ -184,5 +191,36 @@ export class PrismaCustomPickleRepository implements CustomPickleRepository {
         reservedQuantity: variant.reservedQuantity,
       })),
     };
+  }
+
+  async getPickleOptions(): Promise<CustomPickleConfig> {
+    try {
+      const record = await this.db().setting.findUnique({
+        where: { key: "custom_pickle_options" },
+      });
+      if (record && record.value && typeof record.value === "object") {
+        const val = record.value as Partial<CustomPickleConfig>;
+        if (Array.isArray(val.brines) && Array.isArray(val.spices)) {
+          return {
+            brines: val.brines,
+            spices: val.spices,
+          };
+        }
+      }
+    } catch {
+      // Varsayılan yapılandırmaya dön
+    }
+    return {
+      brines: DEFAULT_BRINE_CONFIG,
+      spices: DEFAULT_SPICE_CONFIG,
+    };
+  }
+
+  async savePickleOptions(config: CustomPickleConfig): Promise<void> {
+    await this.db().setting.upsert({
+      where: { key: "custom_pickle_options" },
+      update: { value: config as unknown as object },
+      create: { key: "custom_pickle_options", value: config as unknown as object },
+    });
   }
 }

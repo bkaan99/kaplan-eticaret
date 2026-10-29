@@ -1,7 +1,7 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { AuditLogger } from "@/shared/audit";
 import type { EventBus } from "@/shared/events/event-bus";
-import type { OrderRepository } from "../../orders/order.repository";
+import type { OrderPaymentRepository } from "../../orders/order.repository";
 import type { OrderService } from "../../orders/order.service";
 import type { OrderStatus } from "../../orders/order.types";
 import type {
@@ -37,10 +37,7 @@ export class AdminOrderService {
     private readonly orderService: Pick<OrderService, "cancelByStaff">,
     private readonly events: EventBus,
     private readonly audit: AuditLogger,
-    private readonly payments: Pick<
-      OrderRepository,
-      "applyPaymentResult" | "markDeferredPaid"
-    >,
+    private readonly payments: OrderPaymentRepository,
   ) {}
 
   list(query: AdminOrderListQuery): Promise<AdminOrderList> {

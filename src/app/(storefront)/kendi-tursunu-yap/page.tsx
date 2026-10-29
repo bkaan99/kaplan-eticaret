@@ -51,7 +51,14 @@ async function BuilderContent() {
     );
   }
 
-  return <Builder sizes={data.sizes} ingredients={data.ingredients} />;
+  return (
+    <Builder
+      sizes={data.sizes}
+      ingredients={data.ingredients}
+      brines={data.brines}
+      spices={data.spices}
+    />
+  );
 }
 
 export default function CustomPicklePage() {

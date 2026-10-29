@@ -4,12 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
+  DEFAULT_BRINE_CONFIG,
+  DEFAULT_SPICE_CONFIG,
   INGREDIENT_GROUP_LABELS,
+  type CustomPickleConfig,
   type IngredientGroup,
   type IngredientView,
 } from "@/modules/custom-pickle/custom-pickle.types";
 import { formatMoney } from "@/shared/money";
 import { deleteIngredientAction, saveIngredientAction } from "./actions";
+import { PickleOptionsManager } from "./pickle-options-manager";
 
 interface FormState {
   name: string;
@@ -61,10 +65,17 @@ const inputClass =
 export function IngredientManager({
   ingredients,
   productId,
+  initialOptions,
 }: {
   ingredients: IngredientView[];
   productId: string | null;
+  initialOptions?: CustomPickleConfig;
 }) {
+  const [tab, setTab] = useState<"ingredients" | "brines" | "spices">("ingredients");
+  const options = initialOptions ?? {
+    brines: DEFAULT_BRINE_CONFIG,
+    spices: DEFAULT_SPICE_CONFIG,
+  };
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [error, setError] = useState<string | null>(null);
@@ -158,28 +169,81 @@ export function IngredientManager({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-        <p>
-          Bidon boyutları ve taban fiyatları{" "}
-          <strong>“Kendi Turşunu Yap”</strong> ürününün varyantlarından
-          yönetilir. Boyut adını <strong>“5 kg bidon”</strong> gibi kilo
-          içerecek şekilde yazın; malzeme ücreti bu kiloya göre hesaplanır.
-        </p>
-        {productId ? (
-          <Link
-            href={`/admin/urunler/${productId}`}
-            className="inline-flex h-9 shrink-0 items-center rounded-full bg-amber-900 px-4 text-xs font-semibold text-white hover:bg-amber-800"
-          >
-            Bidon boyutlarını düzenle
-          </Link>
-        ) : (
-          <span className="font-semibold">
-            “kendi-tursunu-yap” adresli ürün bulunamadı
+      {/* Üst Sekmeler */}
+      <div className="flex border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setTab("ingredients")}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
+            tab === "ingredients"
+              ? "border-primary text-primary"
+              : "border-transparent text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>🥗 Sebze ve Baharatlar</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+            {ingredients.length}
           </span>
-        )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("brines")}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
+            tab === "brines"
+              ? "border-primary text-primary"
+              : "border-transparent text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>🧪 Salamura Tarifleri</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+            {options.brines.length}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("spices")}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
+            tab === "spices"
+              ? "border-primary text-primary"
+              : "border-transparent text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>🌶️ Acılık Seviyeleri</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+            {options.spices.length}
+          </span>
+        </button>
       </div>
 
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      {tab !== "ingredients" ? (
+        <PickleOptionsManager
+          initialOptions={options}
+          activeSection={tab}
+        />
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            <p>
+              Bidon boyutları ve taban fiyatları{" "}
+              <strong>“Kendi Turşunu Yap”</strong> ürününün varyantlarından
+              yönetilir. Boyut adını <strong>“5 kg bidon”</strong> gibi kilo
+              içerecek şekilde yazın; malzeme ücreti bu kiloya göre hesaplanır.
+            </p>
+            {productId ? (
+              <Link
+                href={`/admin/urunler/${productId}`}
+                className="inline-flex h-9 shrink-0 items-center rounded-full bg-amber-900 px-4 text-xs font-semibold text-white hover:bg-amber-800"
+              >
+                Bidon boyutlarını düzenle
+              </Link>
+            ) : (
+              <span className="font-semibold">
+                “kendi-tursunu-yap” adresli ürün bulunamadı
+              </span>
+            )}
+          </div>
+
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
         <h2 className="mb-4 text-sm font-bold text-slate-900">
           {editingId ? "Malzemeyi düzenle" : "Yeni malzeme"}
         </h2>
@@ -417,6 +481,8 @@ export function IngredientManager({
           </tbody>
         </table>
       </section>
+      </>
+      )}
     </div>
   );
 }

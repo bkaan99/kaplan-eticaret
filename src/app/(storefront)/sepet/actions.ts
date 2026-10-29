@@ -8,8 +8,7 @@ import {
   persistCartCookie,
 } from "@/modules/cart/cart.session";
 import type { CartView } from "@/modules/cart/cart.types";
-import { isAppError } from "@/shared/errors";
-import { reportError } from "@/shared/error-reporter";
+import { runStorefrontAction } from "@/shared/action";
 
 export interface CartActionResult {
   ok: boolean;
@@ -22,16 +21,19 @@ async function run(
     identity: Awaited<ReturnType<typeof getCartIdentity>>,
   ) => ReturnType<typeof cartService.addItem>,
 ): Promise<CartActionResult> {
-  try {
-    const result = await operation(await getCartIdentity());
-    await persistCartCookie(result);
-    revalidatePath("/", "layout");
-    return { ok: true, cart: result.cart };
-  } catch (error) {
-    if (isAppError(error)) return { ok: false, error: error.message };
-    reportError(error, { action: "cart" });
-    return { ok: false, error: "İşlem tamamlanamadı, lütfen tekrar deneyin." };
-  }
+  const result = await runStorefrontAction(
+    async () => {
+      const outcome = await operation(await getCartIdentity());
+      await persistCartCookie(outcome);
+      return outcome.cart;
+    },
+    {
+      actionName: "cart",
+      revalidate: ["/"],
+    },
+  );
+
+  return { ok: result.ok, error: result.error, cart: result.data };
 }
 
 export async function addToCartAction(

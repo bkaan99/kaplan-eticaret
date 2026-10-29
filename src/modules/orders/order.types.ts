@@ -26,6 +26,7 @@ export interface AddressSnapshot {
 }
 
 export interface OrderItemView {
+  id?: string;
   /** Katalogdaki varyant (silinmişse null) */
   variantId: string | null;
   productName: string;
@@ -34,6 +35,7 @@ export interface OrderItemView {
   unitPrice: string;
   quantity: number;
   lineTotal: string;
+  customization?: unknown;
 }
 
 export interface OrderView {

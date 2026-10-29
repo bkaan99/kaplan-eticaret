@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { JobQueue } from "@/shared/queue";
-import type { OrderRepository } from "../orders/order.repository";
+import type { OrderLookupRepository } from "../orders/order.repository";
 import type { OrderView } from "../orders/order.types";
 import { JOB_SEND_EMAIL, NotificationService } from "./notification.service";
 import { escapeHtml } from "./templates/layout";
@@ -60,9 +60,9 @@ const order: OrderView = {
 function setup(found: OrderView | null = order) {
   const enqueue = vi.fn(async () => "job");
   const queue = { enqueue } as unknown as JobQueue;
-  const orders = {
+  const orders: OrderLookupRepository = {
     findById: async () => found,
-  } as unknown as OrderRepository;
+  };
   const service = new NotificationService(
     orders,
     queue,

@@ -20,6 +20,22 @@ function Icon({ children, ...props }: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function MenuIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </Icon>
+  );
+}
+
+export function XIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </Icon>
+  );
+}
+
 export function SearchIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

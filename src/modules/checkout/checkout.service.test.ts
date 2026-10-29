@@ -1,7 +1,10 @@
 import Decimal from "decimal.js";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { CartIdentity } from "../cart/cart.types";
-import type { OrderRepository } from "../orders/order.repository";
+import type {
+  CouponUsageRepository,
+  OrderCreationRepository,
+} from "../orders/order.repository";
 import type { NewOrder } from "../orders/order.types";
 import type { CheckoutInput } from "./checkout.schema";
 import type {
@@ -101,7 +104,7 @@ class FakeCheckoutRepo implements CheckoutRepository {
   }
 }
 
-class FakeOrders implements OrderRepository {
+class FakeOrders implements OrderCreationRepository, CouponUsageRepository {
   created: NewOrder[] = [];
   deferred: NewOrder[] = [];
   couponUses = 0;
@@ -126,32 +129,6 @@ class FakeOrders implements OrderRepository {
       lookupToken: "tok2",
       merchantOid: "SDEF",
     };
-  }
-  async markDeferredPaid() {
-    return true;
-  }
-  async findById() {
-    return null;
-  }
-  async findByOrderNumber() {
-    return null;
-  }
-  async findByLookupToken() {
-    return null;
-  }
-  async listByUser() {
-    return [];
-  }
-  async getPaymentForOrder() {
-    return null;
-  }
-  async applyPaymentResult() {
-    return { kind: "not-found" as const };
-  }
-  async cancelOrder() {}
-  async recordRefund() {}
-  async releaseExpired() {
-    return 0;
   }
 }
 

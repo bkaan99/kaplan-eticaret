@@ -1,21 +1,10 @@
 import { z } from "zod";
 import {
-  BRINE_OPTIONS,
   MAX_INGREDIENTS,
   MAX_NOTE_LENGTH,
-  SPICE_OPTIONS,
 } from "./custom-pickle.types";
 
-const brineKeys = Object.keys(BRINE_OPTIONS) as [
-  keyof typeof BRINE_OPTIONS,
-  ...(keyof typeof BRINE_OPTIONS)[],
-];
-const spiceKeys = Object.keys(SPICE_OPTIONS) as [
-  keyof typeof SPICE_OPTIONS,
-  ...(keyof typeof SPICE_OPTIONS)[],
-];
-
-/** Müşterinin oluşturduğu bidon; malzemelerin geçerliliğini servis ayrıca denetler. */
+/** Müşterinin oluşturduğu bidon; malzemelerin ve seçeneklerin geçerliliğini servis ayrıca denetler. */
 export const customPickleInputSchema = z.object({
   variantId: z.string().min(1, "Bidon boyutu seçin"),
   ingredientIds: z
@@ -23,18 +12,69 @@ export const customPickleInputSchema = z.object({
     .min(1, "En az bir malzeme seçin")
     .max(MAX_INGREDIENTS, `En fazla ${MAX_INGREDIENTS} malzeme seçebilirsiniz`)
     .transform((ids) => [...new Set(ids)].sort()),
-  brine: z.enum(brineKeys, { message: "Salamura türü seçin" }),
-  spice: z.enum(spiceKeys, { message: "Acılık seçin" }),
+  brine: z.string().trim().min(1, "Salamura türü seçin"),
+  spice: z.string().trim().min(1, "Acılık seçin"),
   note: z
     .string()
     .trim()
     .max(MAX_NOTE_LENGTH, `Not en fazla ${MAX_NOTE_LENGTH} karakter olabilir`)
+    .nullable()
     .optional()
     .transform((value) => (value ? value : null)),
   quantity: z.number().int().min(1).max(20).default(1),
 });
 
 export type CustomPickleInput = z.infer<typeof customPickleInputSchema>;
+
+/** Yönetim panelindeki salamura ve acılık seçenekleri şeması. */
+export const pickleBrineOptionSchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .min(2, "Anahtar en az 2 karakter olmalıdır")
+    .max(40)
+    .regex(/^[A-Z0-9_-]+$/i, "Anahtar yalnızca harf, rakam ve tire içerebilir")
+    .transform((v) => v.toUpperCase()),
+  label: z.string().trim().min(2, "Başlık en az 2 karakter olmalıdır").max(60),
+  description: z.string().trim().max(300).default(""),
+  color: z.string().trim().default("#d6e29a"),
+  hasBubbles: z.boolean().default(false),
+  isActive: z.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+});
+
+export const pickleSpiceOptionSchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .min(2, "Anahtar en az 2 karakter olmalıdır")
+    .max(40)
+    .regex(/^[A-Z0-9_-]+$/i, "Anahtar yalnızca harf, rakam ve tire içerebilir")
+    .transform((v) => v.toUpperCase()),
+  label: z.string().trim().min(2, "Başlık en az 2 karakter olmalıdır").max(60),
+  description: z
+    .string()
+    .trim()
+    .max(300)
+    .optional()
+    .nullable()
+    .transform((v) => (v ? v : null)),
+  peppers: z.coerce.number().int().min(0).max(5).default(0),
+  tint: z.coerce.number().min(0).max(1).default(0),
+  isActive: z.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+});
+
+export const pickleOptionsConfigSchema = z.object({
+  brines: z
+    .array(pickleBrineOptionSchema)
+    .min(1, "En az bir salamura seçeneği olmalıdır"),
+  spices: z
+    .array(pickleSpiceOptionSchema)
+    .min(1, "En az bir acılık seçeneği olmalıdır"),
+});
+
+export type PickleOptionsConfigInput = z.infer<typeof pickleOptionsConfigSchema>;
 
 /** Yönetim panelindeki malzeme formu. */
 export const ingredientInputSchema = z.object({

@@ -41,12 +41,18 @@ export function Bidon({
   items,
   brine,
   spice,
+  brineColor,
+  spiceTint,
+  hasBubbles,
   sizeLabel,
   scale,
 }: {
   items: BidonItem[];
-  brine: BrineOption;
-  spice: SpiceOption;
+  brine: string;
+  spice: string;
+  brineColor?: string;
+  spiceTint?: number;
+  hasBubbles?: boolean;
   sizeLabel: string;
   /** Bidon boyutuna göre görsel ölçek (0.8–1) */
   scale: number;
@@ -54,6 +60,16 @@ export function Bidon({
   // Malzeme eklendikçe salamura yükselir.
   const level = Math.min(0.92, 0.22 + items.length * 0.088);
   const liquidTop = 384 - level * (384 - 120);
+  const liquidFill =
+    brineColor ??
+    BRINE_COLOR[brine as keyof typeof BRINE_COLOR] ??
+    "#d6e29a";
+  const pepperOpacity =
+    spiceTint !== undefined
+      ? spiceTint
+      : (SPICE_TINT[spice as keyof typeof SPICE_TINT] ?? 0.1);
+  const showBubbles =
+    hasBubbles !== undefined ? hasBubbles : brine === "NATURAL";
 
   return (
     <motion.svg
@@ -113,7 +129,7 @@ export function Bidon({
         >
           <motion.path
             d="M-160 0 Q -120 -10 -80 0 T 0 0 T 80 0 T 160 0 T 240 0 T 320 0 T 400 0 T 480 0 V 400 H -160 Z"
-            fill={BRINE_COLOR[brine]}
+            fill={liquidFill}
             animate={{ x: [0, 160] }}
             transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
             style={{ fillOpacity: 0.85 }}
@@ -125,7 +141,7 @@ export function Bidon({
             height="420"
             fill="#d9442b"
             initial={false}
-            animate={{ opacity: SPICE_TINT[spice] }}
+            animate={{ opacity: pepperOpacity }}
             transition={{ duration: 0.6 }}
           />
         </motion.g>
@@ -166,7 +182,7 @@ export function Bidon({
         </AnimatePresence>
 
         {/* Doğal fermantasyonda kabarcıklar yükselir */}
-        {brine === "NATURAL"
+        {showBubbles
           ? [70, 120, 160, 205, 245].map((x, index) => (
               <motion.circle
                 key={x}

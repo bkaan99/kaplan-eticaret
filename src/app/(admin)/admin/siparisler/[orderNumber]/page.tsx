@@ -53,6 +53,10 @@ function AddressBlock({
             {address["companyName"]} · VKN {address["taxNumber"]} (
             {address["taxOffice"]})
           </p>
+        ) : address["nationalId"] ? (
+          <p className="font-mono text-xs text-slate-700">
+            TCKN: {address["nationalId"]}
+          </p>
         ) : null}
       </CardContent>
     </Card>
@@ -133,22 +137,60 @@ async function OrderDetail({
         </CardHeader>
         <CardContent>
           <ul className="flex flex-col divide-y divide-border text-sm">
-            {order.items.map((item) => (
-              <li key={item.id} className="flex justify-between gap-4 py-2">
-                <span>
-                  {item.productName}
-                  {item.variantName ? (
-                    <span className="text-muted-foreground">
-                      {" "}
-                      · {item.variantName}
+            {order.items.map((item) => {
+              const custom = item.customization as
+                | {
+                    kind?: string;
+                    ingredients?: { name: string; unitExtra?: string }[];
+                    brine?: string;
+                    spice?: string;
+                    note?: string | null;
+                  }
+                | undefined;
+
+              return (
+                <li
+                  key={item.id ?? item.sku}
+                  className="flex flex-col gap-1 py-3"
+                >
+                  <div className="flex justify-between gap-4">
+                    <span>
+                      <span className="font-semibold">{item.productName}</span>
+                      {item.variantName ? (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {item.variantName}
+                        </span>
+                      ) : null}
+                      <span className="text-muted-foreground"> ({item.sku})</span>{" "}
+                      × {item.quantity}
                     </span>
+                    <Price value={item.lineTotal} currency={order.currency} />
+                  </div>
+                  {custom?.kind === "custom-pickle" ? (
+                    <div className="mt-1 rounded-xl bg-slate-50 p-2.5 text-xs text-slate-700">
+                      <p className="font-semibold text-primary">
+                        🥒 Özel Turşu Reçetesi:
+                      </p>
+                      <p className="mt-0.5">
+                        <strong>Malzemeler:</strong>{" "}
+                        {custom.ingredients?.map((i) => i.name).join(", ") ||
+                          "-"}
+                      </p>
+                      <p>
+                        <strong>Salamura:</strong> {custom.brine || "-"} ·{" "}
+                        <strong>Acılık:</strong> {custom.spice || "-"}
+                      </p>
+                      {custom.note ? (
+                        <p className="italic text-muted-foreground">
+                          Not: {custom.note}
+                        </p>
+                      ) : null}
+                    </div>
                   ) : null}
-                  <span className="text-muted-foreground"> ({item.sku})</span> ×{" "}
-                  {item.quantity}
-                </span>
-                <Price value={item.lineTotal} currency={order.currency} />
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
           <dl className="ml-auto mt-4 flex max-w-xs flex-col gap-1 text-sm">
             <div className="flex justify-between">

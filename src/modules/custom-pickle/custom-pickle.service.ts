@@ -14,15 +14,19 @@ import type {
 import {
   customPickleInputSchema,
   ingredientInputSchema,
+  pickleOptionsConfigSchema,
 } from "./custom-pickle.schema";
 import {
   bidonWeightGram,
   BRINE_OPTIONS,
   CUSTOM_PICKLE_PRODUCT_SLUG,
   SPICE_OPTIONS,
+  type CustomPickleConfig,
   type CustomizationPricer,
   type CustomizationQuote,
   type IngredientView,
+  type PickleBrineOption,
+  type PickleSpiceOption,
   type StoredCustomization,
 } from "./custom-pickle.types";
 
@@ -102,11 +106,22 @@ export interface BuilderSize {
   inStock: boolean;
 }
 
+function registerOptions(config: CustomPickleConfig) {
+  for (const b of config.brines) {
+    BRINE_OPTIONS[b.key] = b.label;
+  }
+  for (const s of config.spices) {
+    SPICE_OPTIONS[s.key] = s.label;
+  }
+}
+
 export interface BuilderData {
   productName: string;
   description: string | null;
   sizes: BuilderSize[];
   ingredients: IngredientView[];
+  brines: PickleBrineOption[];
+  spices: PickleSpiceOption[];
 }
 
 export interface PreparedCustomPickle {
@@ -133,7 +148,7 @@ export class CustomPickleService implements CustomizationPricer {
     const variants = product.variants.filter((variant) => variant.isActive);
     if (variants.length === 0) return null;
 
-    const [prices, ingredients] = await Promise.all([
+    const [prices, ingredients, options] = await Promise.all([
       this.priceResolver.resolveUnitPrices(
         variants.map((variant) => ({
           variantId: variant.id,
@@ -143,6 +158,7 @@ export class CustomPickleService implements CustomizationPricer {
         context,
       ),
       this.repository.listIngredients({ activeOnly: true }),
+      this.getOptions(),
     ]);
 
     return {
@@ -169,6 +185,12 @@ export class CustomPickleService implements CustomizationPricer {
         };
       }),
       ingredients: ingredients.map(toView),
+      brines: options.brines
+        .filter((item) => item.isActive)
+        .sort((a, b) => a.sortOrder - b.sortOrder),
+      spices: options.spices
+        .filter((item) => item.isActive)
+        .sort((a, b) => a.sortOrder - b.sortOrder),
     };
   }
 
@@ -201,6 +223,28 @@ export class CustomPickleService implements CustomizationPricer {
       throw new ValidationError("Bidona en az bir sebze eklemelisiniz");
     }
 
+    const options = await this.getOptions();
+    const activeBrines = new Set(
+      options.brines.filter((item) => item.isActive).map((item) => item.key),
+    );
+    const activeSpices = new Set(
+      options.spices.filter((item) => item.isActive).map((item) => item.key),
+    );
+    if (
+      activeBrines.size > 0 &&
+      !activeBrines.has(input.brine) &&
+      !(input.brine in BRINE_OPTIONS)
+    ) {
+      throw new ValidationError("Seçtiğiniz salamura seçeneği mevcut değil");
+    }
+    if (
+      activeSpices.size > 0 &&
+      !activeSpices.has(input.spice) &&
+      !(input.spice in SPICE_OPTIONS)
+    ) {
+      throw new ValidationError("Seçtiğiniz acılık seçeneği mevcut değil");
+    }
+
     const customization: StoredCustomization = {
       kind: "custom-pickle",
       ingredientIds: input.ingredientIds,
@@ -224,11 +268,16 @@ export class CustomPickleService implements CustomizationPricer {
     const ids = [
       ...new Set(lines.flatMap((line) => line.customization.ingredientIds)),
     ];
-    const records = new Map(
-      (await this.repository.findIngredients(ids)).map((item) => [
-        item.id,
-        item,
-      ]),
+    const [rawIngredients, options] = await Promise.all([
+      this.repository.findIngredients(ids),
+      this.getOptions(),
+    ]);
+    const records = new Map(rawIngredients.map((item) => [item.id, item]));
+    const brineLabels = new Map(
+      options.brines.map((item) => [item.key, item.label]),
+    );
+    const spiceLabels = new Map(
+      options.spices.map((item) => [item.key, item.label]),
     );
 
     return lines.map(({ customization, weightGram }) => {
@@ -253,8 +302,14 @@ export class CustomPickleService implements CustomizationPricer {
         toDecimal(0),
       );
 
-      const brine = BRINE_OPTIONS[customization.brine];
-      const spice = SPICE_OPTIONS[customization.spice];
+      const brine =
+        brineLabels.get(customization.brine) ??
+        BRINE_OPTIONS[customization.brine] ??
+        customization.brine;
+      const spice =
+        spiceLabels.get(customization.spice) ??
+        SPICE_OPTIONS[customization.spice] ??
+        customization.spice;
       const parts = [priced.map((item) => item.name).join(", "), brine, spice];
       if (customization.note) parts.push(`Not: ${customization.note}`);
 
@@ -337,6 +392,31 @@ export class CustomPickleService implements CustomizationPricer {
       action: "pickle-ingredient.delete",
       entityType: "PickleIngredient",
       entityId: id,
+    });
+  }
+
+  async getOptions(): Promise<CustomPickleConfig> {
+    const config = await this.repository.getPickleOptions();
+    registerOptions(config);
+    return config;
+  }
+
+  async saveOptions(raw: unknown, actor: Actor): Promise<void> {
+    const parsed = pickleOptionsConfigSchema.safeParse(raw);
+    if (!parsed.success) {
+      throw new ValidationError(firstIssue(parsed.error));
+    }
+    const before = await this.repository.getPickleOptions();
+    await this.repository.savePickleOptions(parsed.data);
+    registerOptions(parsed.data);
+
+    await this.audit?.log({
+      actorId: actor.userId,
+      ip: actor.ip,
+      action: "custom-pickle.options.update",
+      entityType: "CustomPickleOptions",
+      before,
+      after: parsed.data,
     });
   }
 }

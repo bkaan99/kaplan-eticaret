@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/modules/auth/session";
 import { getCartIdentity } from "@/modules/cart/cart.session";
 import { getAddressService } from "@/modules/account/container";
 import { getCachedLegalLinks } from "@/modules/content/cached";
-import { getCheckoutService } from "@/modules/orders/container";
+import { getCheckoutService } from "@/modules/checkout/container";
 import { isAppError } from "@/shared/errors";
 import type { PaymentOption } from "@/modules/checkout/checkout.service";
 import { CheckoutForm } from "./checkout-form";

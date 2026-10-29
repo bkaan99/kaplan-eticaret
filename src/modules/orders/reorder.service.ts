@@ -1,5 +1,7 @@
 import { isAppError } from "@/shared/errors";
 import type { CartIdentity, CartMutationResult } from "../cart/cart.types";
+import { customizationKey } from "../custom-pickle/custom-pickle.service";
+import type { StoredCustomization } from "../custom-pickle/custom-pickle.types";
 import type { OrderAccess } from "./order.service";
 import type { OrderView } from "./order.types";
 
@@ -8,6 +10,14 @@ export interface ReorderResult {
   skipped: { productName: string; reason: string }[];
   /** İlk ekleme yeni misafir sepeti oluşturduysa çerezde saklanacak belirteç */
   sessionToken?: string;
+}
+
+interface CustomizationSnapshotLike {
+  kind?: string;
+  ingredients?: { id: string }[];
+  brine?: string;
+  spice?: string;
+  note?: string | null;
 }
 
 /** "Tekrar sipariş ver": önceki siparişin ürünlerini mevcut stok ve fiyatla sepete ekler. */
@@ -23,6 +33,12 @@ export class ReorderService {
       addItem(
         identity: CartIdentity,
         variantId: string,
+        quantity: number,
+      ): Promise<CartMutationResult>;
+      addCustomItem?(
+        identity: CartIdentity,
+        variantId: string,
+        line: { key: string; customization: StoredCustomization },
         quantity: number,
       ): Promise<CartMutationResult>;
     },
@@ -50,11 +66,36 @@ export class ReorderService {
       }
 
       try {
-        const result = await this.cart.addItem(
-          current,
-          item.variantId,
-          item.quantity,
-        );
+        const snap = item.customization as CustomizationSnapshotLike | undefined;
+        let result: CartMutationResult;
+
+        if (
+          snap?.kind === "custom-pickle" &&
+          Array.isArray(snap.ingredients) &&
+          this.cart.addCustomItem
+        ) {
+          const stored: StoredCustomization = {
+            kind: "custom-pickle",
+            ingredientIds: snap.ingredients.map((i) => i.id),
+            brine: snap.brine ?? "VINEGAR",
+            spice: snap.spice ?? "MEDIUM",
+            note: snap.note ?? null,
+          };
+          const key = customizationKey(stored);
+          result = await this.cart.addCustomItem(
+            current,
+            item.variantId,
+            { key, customization: stored },
+            item.quantity,
+          );
+        } else {
+          result = await this.cart.addItem(
+            current,
+            item.variantId,
+            item.quantity,
+          );
+        }
+
         added += 1;
 
         // Misafir için oluşan sepet belirteci sonraki eklemelerde kullanılır.

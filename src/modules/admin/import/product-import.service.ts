@@ -24,7 +24,7 @@ export interface ImportRepository {
 
 const REQUIRED = ["urun_adi", "kategori", "sku", "fiyat", "stok"];
 const MAX_OPTION_AXES = 3;
-const DEFAULT_TAX_RATE = 20;
+const DEFAULT_TAX_RATE = 1;
 
 const STATUS_MAP: Record<string, "DRAFT" | "ACTIVE" | "ARCHIVED"> = {
   aktif: "ACTIVE",
