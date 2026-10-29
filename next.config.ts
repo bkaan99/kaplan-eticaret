@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   serverExternalPackages: ["pino", "pg", "pg-boss", "@node-rs/argon2"],
+  experimental: {
+    agentUpgrade: "security",
+  },
   async headers() {
     return [
       {
