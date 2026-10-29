@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatMoney } from "@/shared/money";
 import { getAdminOrderService } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
 import {
@@ -255,28 +256,35 @@ async function OrderDetail({
           </CardHeader>
           <CardContent className="flex flex-col gap-2 text-sm">
             {order.payments.map((payment) => (
-              <p key={payment.merchantOid}>
-                {METHOD_LABELS[payment.method]} · {payment.status} ·{" "}
-                <Price value={payment.amount} currency={order.currency} />
+              <div
+                key={payment.merchantOid}
+                className="flex flex-wrap items-baseline gap-1.5"
+              >
+                <span>
+                  {METHOD_LABELS[payment.method]} · {payment.status} ·
+                </span>
+                <span className="font-semibold text-foreground">
+                  {formatMoney(payment.amount, order.currency)}
+                </span>
                 <span className="text-muted-foreground">
-                  {" "}
                   ({payment.merchantOid})
                 </span>
                 {payment.dueAt ? (
                   <span className="text-muted-foreground">
-                    {" "}
                     · vade {payment.dueAt.toLocaleDateString("tr-TR")}
                   </span>
                 ) : null}
-              </p>
+              </div>
             ))}
             {order.shipments.map((shipment, index) => (
-              <p key={index}>
-                {shipment.carrier}
-                {shipment.trackingNumber ? ` · ${shipment.trackingNumber}` : ""}
+              <div key={index} className="flex flex-wrap items-baseline gap-1">
+                <span>
+                  {shipment.carrier}
+                  {shipment.trackingNumber ? ` · ${shipment.trackingNumber}` : ""}
+                </span>
                 {trackingUrl(shipment.carrier, shipment.trackingNumber) ? (
                   <>
-                    {" · "}
+                    <span className="text-muted-foreground">·</span>
                     <a
                       href={trackingUrl(
                         shipment.carrier,
@@ -290,15 +298,15 @@ async function OrderDetail({
                     </a>
                   </>
                 ) : null}
-              </p>
+              </div>
             ))}
             {order.returns.map((request) => (
-              <p key={request.id}>
+              <div key={request.id}>
                 <Link href="/admin/iadeler" className="underline">
                   İade talebi
                 </Link>{" "}
                 · {request.status}
-              </p>
+              </div>
             ))}
           </CardContent>
         </Card>
