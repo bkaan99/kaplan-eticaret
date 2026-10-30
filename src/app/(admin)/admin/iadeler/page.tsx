@@ -2,10 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import {
+  AdminEmpty,
+  AdminLoading,
+  AdminPanel,
+  AdminTabs,
+} from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { adminPage } from "@/modules/admin/guard";
 import { getReturnService } from "@/modules/returns/container";
 import type { ReturnStatus } from "@/modules/returns/return.types";
@@ -35,51 +40,51 @@ async function ReturnsContent({
   if (!user) return <AccessDenied />;
 
   const params = await searchParams;
-  const filter = params["tum"] ? undefined : ("REQUESTED" as const);
+  const showAll = Boolean(params["tum"]);
+  const filter = showAll ? undefined : ("REQUESTED" as const);
   const requests = await getReturnService().list(filter);
 
   return (
     <div className="flex flex-col gap-4">
-      <nav className="flex gap-3 text-sm">
-        <Link
-          href="/admin/iadeler"
-          className={
-            filter ? "text-muted-foreground" : "font-semibold underline"
-          }
-        >
-          Bekleyenler
-        </Link>
-        <Link
-          href="/admin/iadeler?tum=1"
-          className={
-            filter ? "font-semibold underline" : "text-muted-foreground"
-          }
-        >
-          Tümü
-        </Link>
-      </nav>
+      <AdminTabs
+        active={showAll ? "ALL" : "REQUESTED"}
+        items={[
+          { href: "/admin/iadeler", label: "Bekleyenler", value: "REQUESTED" },
+          { href: "/admin/iadeler?tum=1", label: "Tümü", value: "ALL" },
+        ]}
+      />
 
       {requests.length === 0 ? (
-        <p className="text-muted-foreground">Gösterilecek iade talebi yok.</p>
+        <AdminPanel>
+          <AdminEmpty
+            title="Gösterilecek iade talebi yok"
+            description={
+              showAll
+                ? "Henüz oluşturulmuş bir iade kaydı bulunmuyor."
+                : "Bekleyen iade talebi yok. Tüm kayıtlara geçerek geçmiş talepleri görebilirsiniz."
+            }
+          />
+        </AdminPanel>
       ) : (
-        requests.map((request) => (
-          <Card key={request.id}>
-            <CardContent className="flex flex-col gap-3 pt-5">
-              <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-3">
+          {requests.map((request) => (
+            <AdminPanel key={request.id} className="p-5">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <Link
                   href={`/admin/siparisler/${request.orderNumber}`}
-                  className="font-medium underline"
+                  className="text-base font-bold text-slate-900 hover:text-primary"
                 >
                   {request.orderNumber}
                 </Link>
                 <Badge tone={TONES[request.status]}>
                   {STATUS_LABELS[request.status]}
                 </Badge>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-slate-500">
                   {request.email} · {request.createdAt.toLocaleString("tr-TR")}
                 </span>
               </div>
-              <ul className="text-sm">
+
+              <ul className="mt-3 space-y-1 text-sm text-slate-700">
                 {request.items.map((item, index) => (
                   <li key={index}>
                     {item.productName}
@@ -88,30 +93,35 @@ async function ReturnsContent({
                   </li>
                 ))}
               </ul>
-              <p className="text-sm">
-                <strong>Neden:</strong> {request.reason}
-                {request.note ? ` — ${request.note}` : ""}
-              </p>
-              <p className="text-sm">
-                İade tutarı:{" "}
-                <strong>
-                  <Price value={request.refundAmount} />
-                </strong>
-              </p>
-              {request.adminNote ? (
-                <p className="text-sm text-muted-foreground">
-                  Not: {request.adminNote}
+
+              <div className="mt-3 grid gap-1 text-sm">
+                <p>
+                  <span className="font-semibold text-slate-800">Neden:</span>{" "}
+                  {request.reason}
+                  {request.note ? ` — ${request.note}` : ""}
                 </p>
-              ) : null}
+                <p>
+                  İade tutarı:{" "}
+                  <strong className="text-slate-900">
+                    <Price value={request.refundAmount} />
+                  </strong>
+                </p>
+                {request.adminNote ? (
+                  <p className="text-slate-500">Not: {request.adminNote}</p>
+                ) : null}
+              </div>
+
               {request.status === "REQUESTED" ? (
-                <ReturnRowActions
-                  requestId={request.id}
-                  amount={request.refundAmount}
-                />
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <ReturnRowActions
+                    requestId={request.id}
+                    amount={request.refundAmount}
+                  />
+                </div>
               ) : null}
-            </CardContent>
-          </Card>
-        ))
+            </AdminPanel>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -122,10 +132,11 @@ export default function AdminReturnsPage({
 }: PageProps<"/admin/iadeler">) {
   return (
     <>
-      <PageHeader title="İade talepleri" />
-      <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
-      >
+      <PageHeader
+        title="İade talepleri"
+        description="Müşteri iade taleplerini inceleyin, onaylayın veya reddedin."
+      />
+      <Suspense fallback={<AdminLoading label="İade talepleri yükleniyor..." />}>
         <ReturnsContent searchParams={searchParams} />
       </Suspense>
     </>

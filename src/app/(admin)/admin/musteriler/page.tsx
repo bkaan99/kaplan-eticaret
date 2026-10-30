@@ -2,6 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import {
+  AdminEmpty,
+  AdminLoading,
+  AdminMeta,
+  AdminPagination,
+  AdminPanel,
+  AdminToolbar,
+} from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
@@ -42,86 +50,91 @@ async function CustomersContent({
 
   return (
     <div className="flex flex-col gap-4">
-      <form action="/admin/musteriler" className="flex gap-2">
-        <Input
-          name="q"
-          defaultValue={search}
-          placeholder="Ad veya e-posta"
-          className="max-w-xs"
-          aria-label="Ara"
-        />
-        <Button type="submit" variant="outline">
-          Ara
-        </Button>
-      </form>
+      <AdminToolbar>
+        <form
+          action="/admin/musteriler"
+          className="flex flex-1 flex-wrap items-end gap-2.5"
+        >
+          <label className="flex min-w-[14rem] flex-1 flex-col gap-1.5 text-xs font-semibold text-slate-600">
+            Ara
+            <Input
+              name="q"
+              defaultValue={search}
+              placeholder="Ad veya e-posta"
+              aria-label="Ara"
+            />
+          </label>
+          <Button type="submit" variant="outline">
+            Ara
+          </Button>
+        </form>
+      </AdminToolbar>
 
-      <p className="text-sm text-muted-foreground">{result.total} müşteri</p>
+      <AdminMeta>{result.total} müşteri</AdminMeta>
 
-      <Table>
-        <THead>
-          <tr>
-            <TH>Müşteri</TH>
-            <TH>Durum</TH>
-            <TH>Sipariş</TH>
-            <TH className="text-right">Toplam harcama</TH>
-            <TH>Kayıt</TH>
-          </tr>
-        </THead>
-        <TBody>
-          {result.items.map((customer) => (
-            <TR key={customer.id}>
-              <TD>
-                <Link
-                  href={`/admin/musteriler/${customer.id}`}
-                  className="font-medium underline"
-                >
-                  {customer.name}
-                </Link>
-                <div className="text-xs text-muted-foreground">
-                  {customer.email}
-                </div>
-              </TD>
-              <TD>
-                <div className="flex gap-1">
-                  <Badge tone={customer.emailVerified ? "success" : "warning"}>
-                    {customer.emailVerified ? "Doğrulandı" : "Doğrulanmadı"}
-                  </Badge>
-                  {!customer.isActive ? (
-                    <Badge tone="danger">Pasif</Badge>
-                  ) : null}
-                </div>
-              </TD>
-              <TD>{customer.orderCount}</TD>
-              <TD className="text-right">
-                <Price value={customer.totalSpent} />
-              </TD>
-              <TD>{customer.createdAt.toLocaleDateString("tr-TR")}</TD>
-            </TR>
-          ))}
-          {result.items.length === 0 ? (
-            <TR>
-              <TD
-                colSpan={5}
-                className="py-8 text-center text-muted-foreground"
-              >
-                Müşteri bulunamadı.
-              </TD>
-            </TR>
-          ) : null}
-        </TBody>
-      </Table>
+      <AdminPanel>
+        <Table>
+          <THead>
+            <tr>
+              <TH>Müşteri</TH>
+              <TH>Durum</TH>
+              <TH>Sipariş</TH>
+              <TH className="text-right">Toplam harcama</TH>
+              <TH>Kayıt</TH>
+            </tr>
+          </THead>
+          <TBody>
+            {result.items.map((customer) => (
+              <TR key={customer.id}>
+                <TD>
+                  <Link
+                    href={`/admin/musteriler/${customer.id}`}
+                    className="font-semibold text-slate-900 hover:text-primary"
+                  >
+                    {customer.name}
+                  </Link>
+                  <div className="text-xs text-slate-500">{customer.email}</div>
+                </TD>
+                <TD>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge tone={customer.emailVerified ? "success" : "warning"}>
+                      {customer.emailVerified ? "Doğrulandı" : "Doğrulanmadı"}
+                    </Badge>
+                    {!customer.isActive ? (
+                      <Badge tone="danger">Pasif</Badge>
+                    ) : null}
+                  </div>
+                </TD>
+                <TD className="font-semibold text-slate-800">
+                  {customer.orderCount}
+                </TD>
+                <TD className="text-right font-semibold text-slate-900">
+                  <Price value={customer.totalSpent} />
+                </TD>
+                <TD className="text-slate-500">
+                  {customer.createdAt.toLocaleDateString("tr-TR")}
+                </TD>
+              </TR>
+            ))}
+            {result.items.length === 0 ? (
+              <TR>
+                <TD colSpan={5} className="p-0">
+                  <AdminEmpty
+                    title="Müşteri bulunamadı"
+                    description="Arama terimini değiştirerek tekrar deneyin."
+                  />
+                </TD>
+              </TR>
+            ) : null}
+          </TBody>
+        </Table>
+      </AdminPanel>
 
-      {result.totalPages > 1 ? (
-        <nav className="flex items-center gap-3 text-sm" aria-label="Sayfalama">
-          {page > 1 ? <Link href={queryFor(page - 1)}>Önceki</Link> : null}
-          <span className="text-muted-foreground">
-            {page} / {result.totalPages}
-          </span>
-          {page < result.totalPages ? (
-            <Link href={queryFor(page + 1)}>Sonraki</Link>
-          ) : null}
-        </nav>
-      ) : null}
+      <AdminPagination
+        page={page}
+        totalPages={result.totalPages}
+        hrefFor={queryFor}
+      />
     </div>
   );
 }
@@ -131,10 +144,11 @@ export default function AdminCustomersPage({
 }: PageProps<"/admin/musteriler">) {
   return (
     <>
-      <PageHeader title="Müşteriler" />
-      <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
-      >
+      <PageHeader
+        title="Müşteriler"
+        description="Kayıtlı müşterileri, doğrulama durumunu ve harcamalarını inceleyin."
+      />
+      <Suspense fallback={<AdminLoading label="Müşteriler yükleniyor..." />}>
         <CustomersContent searchParams={searchParams} />
       </Suspense>
     </>

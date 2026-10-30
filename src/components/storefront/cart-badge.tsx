@@ -9,7 +9,7 @@ export async function CartBadge() {
   return (
     <Link
       href="/sepet"
-      className="relative ml-1 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-dark"
+      className="relative ml-1 inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-dark sm:px-4"
       aria-label={`Sepet, ${cart.itemCount} ürün`}
     >
       <BagIcon />

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { features } from "@/config/features";
 import { siteConfig } from "@/config/site.config";
@@ -17,8 +18,8 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
   const nav = visibleNav(user.permissions, { b2bEnabled: features.b2b });
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
-      {/* Sol Menü / Sidebar */}
+    <div className="flex min-h-screen flex-col bg-[#f8fafc] md:flex-row">
+      {/* Sol Menü / Sidebar (sabit) */}
       <AdminSidebar
         nav={nav}
         user={{
@@ -29,28 +30,35 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
       />
 
       {/* Sağ Ana İçerik Alanı */}
-      <div className="flex flex-1 flex-col min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Üst Yönetici Başlık Çubuğu */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/95 px-6 shadow-2xs backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-slate-400">Yönetim</span>
-            <span className="text-slate-300">/</span>
-            <span className="text-sm font-bold text-slate-800">Kontrol Merkezi</span>
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-slate-200/80 bg-white/95 px-4 shadow-2xs backdrop-blur-md sm:px-6">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-slate-900">
+              {siteConfig.name}
+            </p>
+            <p className="truncate text-xs text-slate-500">
+              {user.name || user.email} · Yönetici oturumu
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/"
               target="_blank"
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 sm:px-3.5"
             >
-              <span>Mağazayı Görüntüle</span>
+              <span className="hidden sm:inline">Mağazayı Görüntüle</span>
+              <span className="sm:hidden">Mağaza</span>
               <span className="text-slate-400">↗</span>
             </Link>
-            <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span className="text-xs font-medium text-slate-500">Çevrimiçi</span>
+            <div className="hidden items-center gap-2 border-l border-slate-200 pl-3 sm:flex">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="text-xs font-medium text-slate-500">
+                Çevrimiçi
+              </span>
             </div>
+            <AdminLogoutButton variant="header" />
           </div>
         </header>
 

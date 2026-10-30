@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { getStaffService } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
@@ -38,9 +39,12 @@ async function StaffContent() {
 export default function StaffPage() {
   return (
     <>
-      <PageHeader title="Personel" />
+      <PageHeader
+        title="Personel"
+        description="Yönetim paneline erişecek personeli davet edin ve rollerini yönetin."
+      />
       <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
+        fallback={<AdminLoading />}
       >
         <StaffContent />
       </Suspense>

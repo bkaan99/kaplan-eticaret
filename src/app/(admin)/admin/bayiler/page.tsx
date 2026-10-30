@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import {
+  AdminEmpty,
+  AdminLoading,
+  AdminPanel,
+  AdminTabs,
+} from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { features } from "@/config/features";
 import { adminPage } from "@/modules/admin/guard";
@@ -33,39 +38,46 @@ async function DealersContent({
     service.listGroups(),
   ]);
 
-  const tabs: { label: string; value: string }[] = [
-    { label: "Bekleyenler", value: "PENDING" },
-    { label: "Onaylılar", value: "APPROVED" },
-    { label: "Reddedilenler", value: "REJECTED" },
-    { label: "Tümü", value: "ALL" },
-  ];
-
   return (
     <div className="flex flex-col gap-4">
-      <nav className="flex gap-4 text-sm">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.value}
-            href={`/admin/bayiler?durum=${tab.value}`}
-            className={
-              raw === tab.value
-                ? "font-semibold underline"
-                : "text-muted-foreground"
-            }
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <AdminTabs
+        active={raw}
+        items={[
+          {
+            href: "/admin/bayiler?durum=PENDING",
+            label: "Bekleyenler",
+            value: "PENDING",
+          },
+          {
+            href: "/admin/bayiler?durum=APPROVED",
+            label: "Onaylılar",
+            value: "APPROVED",
+          },
+          {
+            href: "/admin/bayiler?durum=REJECTED",
+            label: "Reddedilenler",
+            value: "REJECTED",
+          },
+          { href: "/admin/bayiler?durum=ALL", label: "Tümü", value: "ALL" },
+        ]}
+      />
 
       {groups.length === 0 ? (
-        <p role="alert" className="text-sm text-red-600">
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800"
+        >
           Onaylamadan önce en az bir müşteri grubu tanımlayın (Bayi grupları).
-        </p>
+        </div>
       ) : null}
 
       {dealers.length === 0 ? (
-        <p className="text-muted-foreground">Gösterilecek kayıt yok.</p>
+        <AdminPanel>
+          <AdminEmpty
+            title="Gösterilecek kayıt yok"
+            description="Seçili durum için bayi başvurusu bulunmuyor."
+          />
+        </AdminPanel>
       ) : (
         <ul className="flex flex-col gap-3">
           {dealers.map((dealer) => (
@@ -108,9 +120,7 @@ export default function AdminDealersPage({
         title="Bayiler"
         description="Bayi başvurularını değerlendirin; grup, kredi limiti ve minimum sipariş tutarını belirleyin."
       />
-      <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
-      >
+      <Suspense fallback={<AdminLoading label="Bayiler yükleniyor..." />}>
         <DealersContent searchParams={searchParams} />
       </Suspense>
     </>

@@ -3,6 +3,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import {
+  AdminEmpty,
+  AdminLoading,
+  AdminMeta,
+  AdminPagination,
+  AdminPanel,
+  AdminToolbar,
+} from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +22,7 @@ import { getProductAdminService } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
 import { cn } from "@/shared/cn";
 import { PERMISSIONS } from "@/shared/permissions";
+import { NewProductButton } from "./new-product-button";
 
 export const metadata: Metadata = { title: "Ürünler" };
 
@@ -41,18 +50,24 @@ async function ProductsContent({
   const user = await adminPage(PERMISSIONS.PRODUCT_READ);
   if (!user) return <AccessDenied />;
 
+  const canWrite = user.permissions.includes(PERMISSIONS.PRODUCT_WRITE);
+  const service = getProductAdminService();
+
   const params = await searchParams;
   const search = typeof params["q"] === "string" ? params["q"] : "";
   const rawStatus =
     typeof params["durum"] === "string" ? params["durum"] : undefined;
   const page = Math.max(1, Number(params["sayfa"]) || 1);
 
-  const result = await getProductAdminService().list({
-    search,
-    status: isStatus(rawStatus) ? rawStatus : undefined,
-    page,
-    pageSize: PAGE_SIZE,
-  });
+  const [result, references] = await Promise.all([
+    service.list({
+      search,
+      status: isStatus(rawStatus) ? rawStatus : undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    canWrite ? service.references() : Promise.resolve(null),
+  ]);
 
   const queryFor = (target: number) => {
     const query = new URLSearchParams();
@@ -64,102 +79,149 @@ async function ProductsContent({
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <form action="/admin/urunler" className="flex flex-wrap gap-2">
-        <Input
-          name="q"
-          defaultValue={search}
-          placeholder="Ürün adı veya SKU"
-          className="max-w-xs"
-          aria-label="Ara"
-        />
-        <Select
-          name="durum"
-          defaultValue={rawStatus ?? ""}
-          className="max-w-40"
-          aria-label="Durum"
-        >
-          <option value="">Tüm durumlar</option>
-          <option value="ACTIVE">Yayında</option>
-          <option value="DRAFT">Taslak</option>
-          <option value="ARCHIVED">Arşiv</option>
-        </Select>
-        <Button type="submit" variant="outline">
-          Filtrele
-        </Button>
-      </form>
-
-      <p className="text-sm text-muted-foreground">{result.total} ürün</p>
-
-      <Table>
-        <THead>
-          <tr>
-            <TH>Ürün</TH>
-            <TH>Kategori</TH>
-            <TH>Durum</TH>
-            <TH>Varyant</TH>
-            <TH>Stok</TH>
-            <TH className="text-right">Fiyat</TH>
-          </tr>
-        </THead>
-        <TBody>
-          {result.items.map((product) => (
-            <TR key={product.id}>
-              <TD>
-                <Link
-                  href={`/admin/urunler/${product.id}`}
-                  className="flex items-center gap-3"
-                >
-                  <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-theme bg-muted">
-                    <Image
-                      src={product.imageUrl ?? "/placeholder.svg"}
-                      alt=""
-                      fill
-                      sizes="40px"
-                      className="object-cover"
-                    />
-                  </span>
-                  <span className="font-medium underline">{product.name}</span>
-                </Link>
-              </TD>
-              <TD>{product.categoryName}</TD>
-              <TD>
-                <Badge tone={TONES[product.status]}>
-                  {STATUS_LABELS[product.status]}
-                </Badge>
-              </TD>
-              <TD>{product.variantCount}</TD>
-              <TD>{product.totalStock}</TD>
-              <TD className="text-right">
-                {product.minPrice ? <Price value={product.minPrice} /> : "–"}
-              </TD>
-            </TR>
-          ))}
-          {result.items.length === 0 ? (
-            <TR>
-              <TD
-                colSpan={6}
-                className="py-8 text-center text-muted-foreground"
+    <>
+      <PageHeader
+        title="Ürünler"
+        description="Katalog, stok ve yayın durumunu yönetin."
+        actions={
+          <>
+            <a
+              href="/admin/disa-aktar/urunler"
+              className={cn(buttonVariants({ variant: "outline" }))}
+              download
+            >
+              CSV indir
+            </a>
+            {canWrite ? (
+              <Link
+                href="/admin/urunler/ice-aktar"
+                className={cn(buttonVariants({ variant: "outline" }))}
               >
-                Ürün bulunamadı.
-              </TD>
-            </TR>
-          ) : null}
-        </TBody>
-      </Table>
+                İçe aktar
+              </Link>
+            ) : null}
+            {references ? <NewProductButton references={references} /> : null}
+          </>
+        }
+      />
 
-      {result.totalPages > 1 ? (
-        <nav className="flex items-center gap-3 text-sm" aria-label="Sayfalama">
-          {page > 1 ? <Link href={queryFor(page - 1)}>Önceki</Link> : null}
-          <span className="text-muted-foreground">
-            {page} / {result.totalPages}
-          </span>
-          {page < result.totalPages ? (
-            <Link href={queryFor(page + 1)}>Sonraki</Link>
-          ) : null}
-        </nav>
-      ) : null}
-    </div>
+      <div className="flex flex-col gap-4">
+        <AdminToolbar>
+          <form
+            action="/admin/urunler"
+            className="flex flex-1 flex-wrap items-end gap-2.5"
+          >
+            <label className="flex min-w-[12rem] flex-1 flex-col gap-1.5 text-xs font-semibold text-slate-600">
+              Ara
+              <Input
+                name="q"
+                defaultValue={search}
+                placeholder="Ürün adı veya SKU"
+                aria-label="Ara"
+              />
+            </label>
+            <label className="flex w-40 flex-col gap-1.5 text-xs font-semibold text-slate-600">
+              Durum
+              <Select
+                name="durum"
+                defaultValue={rawStatus ?? ""}
+                aria-label="Durum"
+              >
+                <option value="">Tüm durumlar</option>
+                <option value="ACTIVE">Yayında</option>
+                <option value="DRAFT">Taslak</option>
+                <option value="ARCHIVED">Arşiv</option>
+              </Select>
+            </label>
+            <Button type="submit" variant="outline">
+              Filtrele
+            </Button>
+          </form>
+        </AdminToolbar>
+
+        <AdminMeta>{result.total} ürün</AdminMeta>
+
+        <AdminPanel>
+          <Table>
+            <THead>
+              <tr>
+                <TH>Ürün</TH>
+                <TH>Kategori</TH>
+                <TH>Durum</TH>
+                <TH>Varyant</TH>
+                <TH>Stok</TH>
+                <TH className="text-right">Fiyat</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {result.items.map((product) => (
+                <TR key={product.id}>
+                  <TD>
+                    <Link
+                      href={`/admin/urunler/${product.id}`}
+                      className="flex items-center gap-3"
+                    >
+                      <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200/80">
+                        <Image
+                          src={product.imageUrl ?? "/placeholder.svg"}
+                          alt=""
+                          fill
+                          sizes="44px"
+                          className="object-cover"
+                        />
+                      </span>
+                      <span className="font-semibold text-slate-900 hover:text-primary">
+                        {product.name}
+                      </span>
+                    </Link>
+                  </TD>
+                  <TD className="text-slate-600">{product.categoryName}</TD>
+                  <TD>
+                    <Badge tone={TONES[product.status]}>
+                      {STATUS_LABELS[product.status]}
+                    </Badge>
+                  </TD>
+                  <TD>{product.variantCount}</TD>
+                  <TD>
+                    <span
+                      className={cn(
+                        "font-semibold",
+                        product.totalStock === 0
+                          ? "text-rose-600"
+                          : product.totalStock < 10
+                            ? "text-amber-700"
+                            : "text-slate-800",
+                      )}
+                    >
+                      {product.totalStock}
+                    </span>
+                  </TD>
+                  <TD className="text-right font-semibold text-slate-900">
+                    {product.minPrice ? <Price value={product.minPrice} /> : "–"}
+                  </TD>
+                </TR>
+              ))}
+              {result.items.length === 0 ? (
+                <TR>
+                  <TD colSpan={6} className="p-0">
+                    <AdminEmpty
+                      title="Ürün bulunamadı"
+                      description="Yeni ürün ekleyin veya arama filtresini temizleyin."
+                    />
+                  </TD>
+                </TR>
+              ) : null}
+            </TBody>
+          </Table>
+        </AdminPanel>
+
+        <AdminPagination
+          page={page}
+          totalPages={result.totalPages}
+          hrefFor={queryFor}
+        />
+      </div>
+    </>
   );
 }
 
@@ -167,35 +229,8 @@ export default function AdminProductsPage({
   searchParams,
 }: PageProps<"/admin/urunler">) {
   return (
-    <>
-      <PageHeader
-        title="Ürünler"
-        actions={
-          <>
-            <a
-              href="/admin/disa-aktar/urunler"
-              className="self-center text-sm underline"
-              download
-            >
-              CSV olarak indir
-            </a>
-            <Link
-              href="/admin/urunler/ice-aktar"
-              className={cn(buttonVariants({ variant: "outline" }))}
-            >
-              İçe aktar
-            </Link>
-            <Link href="/admin/urunler/yeni" className={cn(buttonVariants())}>
-              Yeni ürün
-            </Link>
-          </>
-        }
-      />
-      <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
-      >
-        <ProductsContent searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<AdminLoading label="Ürünler yükleniyor..." />}>
+      <ProductsContent searchParams={searchParams} />
+    </Suspense>
   );
 }

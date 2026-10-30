@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
@@ -92,14 +93,24 @@ async function OrderDetail({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={`Sipariş ${order.orderNumber}`} />
-      <div className="flex flex-wrap items-center gap-3">
+      <PageHeader
+        title={`Sipariş ${order.orderNumber}`}
+        description={`${order.createdAt.toLocaleString("tr-TR")} · Kanal: ${order.source}`}
+        actions={
+          <Link
+            href="/admin/siparisler"
+            className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50"
+          >
+            ← Siparişler
+          </Link>
+        }
+      />
+      <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-xs">
         <Badge tone={ORDER_STATUS_TONES[order.status]}>
           {ORDER_STATUS_LABELS[order.status]}
         </Badge>
-        <span className="text-sm text-muted-foreground">
-          Ödeme: {PAYMENT_STATUS_LABELS[order.paymentStatus as PaymentStatus]} ·{" "}
-          {order.createdAt.toLocaleString("tr-TR")} · Kanal: {order.source}
+        <span className="text-sm font-medium text-slate-600">
+          Ödeme: {PAYMENT_STATUS_LABELS[order.paymentStatus as PaymentStatus]}
         </span>
       </div>
 
@@ -319,7 +330,7 @@ export default function AdminOrderPage({
   params,
 }: PageProps<"/admin/siparisler/[orderNumber]">) {
   return (
-    <Suspense fallback={<p className="text-muted-foreground">Yükleniyor...</p>}>
+    <Suspense fallback={<AdminLoading />}>
       <OrderDetail params={params} />
     </Suspense>
   );

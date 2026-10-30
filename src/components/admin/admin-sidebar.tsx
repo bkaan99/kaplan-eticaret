@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { AdminNavItem } from "@/modules/admin/navigation";
+import { AdminLogoutButton } from "./admin-logout-button";
 
 interface AdminSidebarProps {
   nav: AdminNavItem[];
@@ -158,7 +159,7 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
   return (
     <>
       {/* Mobil Üst Bar */}
-      <div className="flex h-14 items-center justify-between border-b border-slate-200 bg-[#0c1a13] px-4 text-white md:hidden">
+      <div className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-[#0c1a13] px-4 text-white md:hidden">
         <Link href="/admin" className="flex items-center gap-2 font-bold">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black">
             K
@@ -179,10 +180,10 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
         </button>
       </div>
 
-      {/* Kenar Çubuğu (Sidebar) */}
+      {/* Kenar Çubuğu — masaüstünde sabit (scroll etmez) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0c1a13] text-slate-300 transition-transform duration-300 md:static md:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-64 flex-col bg-[#0c1a13] text-slate-300 transition-transform duration-300 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         {/* Logo & Marka Başlığı */}
@@ -285,16 +286,23 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
               Profilim
             </Link>
           </div>
+
+          <div className="mt-3">
+            <AdminLogoutButton variant="sidebar" />
+          </div>
         </div>
       </aside>
 
+      {/* Masaüstü spacer: fixed sidebar için yer ayırır */}
+      <div className="hidden w-64 shrink-0 md:block" aria-hidden="true" />
+
       {/* Mobil Backdrop */}
-      {mobileOpen && (
+      {mobileOpen ? (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
           onClick={() => setMobileOpen(false)}
         />
-      )}
+      ) : null}
     </>
   );
 }

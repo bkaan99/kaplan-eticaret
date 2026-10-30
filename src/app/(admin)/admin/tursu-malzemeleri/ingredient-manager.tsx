@@ -231,10 +231,11 @@ export function IngredientManager({
             </p>
             {productId ? (
               <Link
-                href={`/admin/urunler/${productId}`}
-                className="inline-flex h-9 shrink-0 items-center rounded-full bg-amber-900 px-4 text-xs font-semibold text-white hover:bg-amber-800"
+                href={`/admin/urunler/${productId}?tab=variants`}
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-amber-900 px-4 text-xs font-semibold text-white shadow-xs hover:bg-amber-800 transition"
               >
-                Bidon boyutlarını düzenle
+                <span>Bidon boyutlarını düzenle</span>
+                <span>↗</span>
               </Link>
             ) : (
               <span className="font-semibold">

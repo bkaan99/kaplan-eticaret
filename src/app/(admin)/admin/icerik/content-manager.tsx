@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,62 +86,256 @@ function Message({
   );
 }
 
-function BannerSection({ banners }: { banners: BannerRow[] }) {
-  const { pending, message, run } = useRunner();
-  const blank = {
-    id: null as string | null,
-    title: "",
-    imageUrl: "",
-    linkUrl: "",
-    sortOrder: "0",
-    startsAt: "",
-    endsAt: "",
-    isActive: true,
-  };
-  const [form, setForm] = useState(blank);
-  const set = <K extends keyof typeof blank>(
+type BannerFormState = {
+  id: string | null;
+  title: string;
+  imageUrl: string;
+  linkUrl: string;
+  sortOrder: string;
+  startsAt: string;
+  endsAt: string;
+  isActive: boolean;
+};
+
+const blankBanner: BannerFormState = {
+  id: null,
+  title: "",
+  imageUrl: "",
+  linkUrl: "",
+  sortOrder: "0",
+  startsAt: "",
+  endsAt: "",
+  isActive: true,
+};
+
+function BannerModal({
+  open,
+  form,
+  pending,
+  message,
+  onClose,
+  onChange,
+  onSave,
+}: {
+  open: boolean;
+  form: BannerFormState;
+  pending: boolean;
+  message: { text: string; error: boolean } | null;
+  onClose: () => void;
+  onChange: <K extends keyof BannerFormState>(
     key: K,
-    value: (typeof blank)[K],
-  ) => setForm((current) => ({ ...current, [key]: value }));
+    value: BannerFormState[K],
+  ) => void;
+  onSave: () => void;
+}) {
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCloseRef.current();
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    const firstField = dialogRef.current?.querySelector<HTMLElement>(
+      "input:not([type=checkbox]), textarea, select",
+    );
+    firstField?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  if (!open) return null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+      <button
+        type="button"
+        aria-label="Kapat"
+        className="absolute inset-0 bg-slate-950/50 backdrop-blur-xs"
+        onClick={onClose}
+      />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+      >
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <h2 id={titleId} className="text-base font-bold text-slate-900">
+            {form.id ? "Banner düzenle" : "Yeni banner"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Kapat"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
+          <div className="flex flex-col gap-1">
+            <Label>Başlık</Label>
+            <Input
+              value={form.title}
+              onChange={(e) => onChange("title", e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label>Görsel adresi</Label>
+            <Input
+              value={form.imageUrl}
+              onChange={(e) => onChange("imageUrl", e.target.value)}
+              placeholder="https://… veya /yol"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label>Bağlantı (isteğe bağlı)</Label>
+            <Input
+              value={form.linkUrl}
+              onChange={(e) => onChange("linkUrl", e.target.value)}
+              placeholder="/kategori/giyim"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label>Sıra</Label>
+            <Input
+              value={form.sortOrder}
+              onChange={(e) => onChange("sortOrder", e.target.value)}
+              inputMode="numeric"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <Label>Yayın başlangıcı</Label>
+              <Input
+                type="datetime-local"
+                value={form.startsAt}
+                onChange={(e) => onChange("startsAt", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Yayın bitişi</Label>
+              <Input
+                type="datetime-local"
+                value={form.endsAt}
+                onChange={(e) => onChange("endsAt", e.target.value)}
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={form.isActive}
+              onChange={(e) => onChange("isActive", e.target.checked)}
+            />
+            Aktif
+          </label>
+          <Message message={message} />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Vazgeç
+          </Button>
+          <Button type="button" disabled={pending} onClick={onSave}>
+            {pending ? "Kaydediliyor..." : "Kaydet"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BannerSection({ banners }: { banners: BannerRow[] }) {
+  const { pending, message, run } = useRunner();
+  const [form, setForm] = useState<BannerFormState>(blankBanner);
+  const [open, setOpen] = useState(false);
+
+  const set = <K extends keyof BannerFormState>(
+    key: K,
+    value: BannerFormState[K],
+  ) => setForm((current) => ({ ...current, [key]: value }));
+
+  function openCreate() {
+    setForm(blankBanner);
+    setOpen(true);
+  }
+
+  function openEdit(banner: BannerRow) {
+    setForm({
+      id: banner.id,
+      title: banner.title,
+      imageUrl: banner.imageUrl,
+      linkUrl: banner.linkUrl ?? "",
+      sortOrder: String(banner.sortOrder),
+      startsAt: toLocalInput(banner.startsAt),
+      endsAt: toLocalInput(banner.endsAt),
+      isActive: banner.isActive,
+    });
+    setOpen(true);
+  }
+
+  function closeModal() {
+    setOpen(false);
+    setForm(blankBanner);
+  }
+
+  return (
+    <>
       <Card>
-        <CardHeader>
-          <CardTitle>Ana sayfa bannerları</CardTitle>
+        <CardHeader className="flex-row items-center justify-between gap-3">
+          <div>
+            <CardTitle>Ana sayfa bannerları</CardTitle>
+            <p className="mt-1 text-xs text-slate-500">
+              Vitrin sliderında gösterilecek görselleri yönetin.
+            </p>
+          </div>
+          <Button type="button" onClick={openCreate}>
+            Yeni banner
+          </Button>
         </CardHeader>
         <CardContent>
-          <ul className="flex flex-col divide-y divide-border text-sm">
+          <ul className="flex flex-col divide-y divide-slate-100 text-sm">
             {banners.map((banner) => (
               <li
                 key={banner.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-2"
+                className="flex flex-wrap items-center justify-between gap-3 py-3"
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{banner.title}</span>
-                  <span className="text-muted-foreground">
-                    sıra {banner.sortOrder}
+                <div className="flex min-w-0 flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-slate-900">
+                      {banner.title}
+                    </span>
+                    {!banner.isActive ? (
+                      <Badge tone="warning">Pasif</Badge>
+                    ) : (
+                      <Badge tone="success">Aktif</Badge>
+                    )}
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    Sıra {banner.sortOrder}
+                    {banner.linkUrl ? ` · ${banner.linkUrl}` : ""}
                   </span>
-                  {!banner.isActive ? (
-                    <Badge tone="warning">Pasif</Badge>
-                  ) : null}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() =>
-                      setForm({
-                        id: banner.id,
-                        title: banner.title,
-                        imageUrl: banner.imageUrl,
-                        linkUrl: banner.linkUrl ?? "",
-                        sortOrder: String(banner.sortOrder),
-                        startsAt: toLocalInput(banner.startsAt),
-                        endsAt: toLocalInput(banner.endsAt),
-                        isActive: banner.isActive,
-                      })
-                    }
+                    onClick={() => openEdit(banner)}
                   >
                     Düzenle
                   </Button>
@@ -160,94 +354,30 @@ function BannerSection({ banners }: { banners: BannerRow[] }) {
               </li>
             ))}
             {banners.length === 0 ? (
-              <li className="py-4 text-muted-foreground">Banner yok.</li>
+              <li className="py-10 text-center text-slate-500">
+                Henüz banner yok. Yeni eklemek için yukarıdaki butonu kullanın.
+              </li>
             ) : null}
           </ul>
+          <Message message={!open ? message : null} />
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{form.id ? "Banner düzenle" : "Yeni banner"}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <Label>Başlık</Label>
-            <Input
-              value={form.title}
-              onChange={(e) => set("title", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label>Görsel adresi</Label>
-            <Input
-              value={form.imageUrl}
-              onChange={(e) => set("imageUrl", e.target.value)}
-              placeholder="https://… veya /yol"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label>Bağlantı (isteğe bağlı)</Label>
-            <Input
-              value={form.linkUrl}
-              onChange={(e) => set("linkUrl", e.target.value)}
-              placeholder="/kategori/giyim"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label>Sıra</Label>
-            <Input
-              value={form.sortOrder}
-              onChange={(e) => set("sortOrder", e.target.value)}
-              inputMode="numeric"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label>Yayın başlangıcı</Label>
-            <Input
-              type="datetime-local"
-              value={form.startsAt}
-              onChange={(e) => set("startsAt", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label>Yayın bitişi</Label>
-            <Input
-              type="datetime-local"
-              value={form.endsAt}
-              onChange={(e) => set("endsAt", e.target.value)}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(e) => set("isActive", e.target.checked)}
-            />
-            Aktif
-          </label>
-          <div className="flex gap-2">
-            <Button
-              disabled={pending}
-              onClick={() =>
-                run(
-                  () => saveBannerAction(form.id, form),
-                  () => !form.id && setForm(blank),
-                )
-              }
-            >
-              Kaydet
-            </Button>
-            {form.id ? (
-              <Button variant="outline" onClick={() => setForm(blank)}>
-                Yeni banner
-              </Button>
-            ) : null}
-          </div>
-          <Message message={message} />
-        </CardContent>
-      </Card>
-    </div>
+      <BannerModal
+        open={open}
+        form={form}
+        pending={pending}
+        message={message}
+        onClose={closeModal}
+        onChange={set}
+        onSave={() =>
+          run(
+            () => saveBannerAction(form.id, form),
+            () => closeModal(),
+          )
+        }
+      />
+    </>
   );
 }
 

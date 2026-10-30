@@ -108,16 +108,16 @@ export function SiteHeader() {
 
       {/* Ana Başlık Alanı */}
       <div className="relative border-b border-slate-100 bg-white/95 backdrop-blur-md">
-        {/* Satır 1: logo · arama (tam ortada) · hesap ve sepet */}
-        <div className="mx-auto grid h-16 max-w-6xl grid-cols-[auto_1fr] items-center gap-4 px-4 md:grid-cols-[1fr_minmax(0,30rem)_1fr]">
-          <div className="flex items-center gap-1.5 justify-self-start whitespace-nowrap">
+        {/* Satır 1: logo · arama · aksiyonlar (sağ/sol içeriğe göre, arama kalan alanı alır) */}
+        <div className="mx-auto grid h-16 max-w-6xl grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-4">
+          <div className="flex min-w-0 items-center gap-1.5 justify-self-start whitespace-nowrap">
             <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
               <MobileNavContainer />
             </Suspense>
             <Logo />
           </div>
-          <SearchForm className="hidden w-full md:block" />
-          <div className="flex items-center gap-1 justify-self-end">
+          <SearchForm className="hidden min-w-0 w-full md:block" />
+          <div className="flex shrink-0 items-center gap-1 justify-self-end">
             <MobileSearch />
             {isFeatureEnabled("wishlist") ? (
               <Link

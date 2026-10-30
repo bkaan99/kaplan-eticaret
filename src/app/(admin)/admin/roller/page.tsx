@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { getStaffService } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
@@ -25,7 +26,7 @@ export default function RolesPage() {
         description="Özel roller oluşturun; yalnızca kendinizde bulunan yetkileri verebilirsiniz. Sistem rolleri değiştirilemez."
       />
       <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
+        fallback={<AdminLoading />}
       >
         <RolesContent />
       </Suspense>

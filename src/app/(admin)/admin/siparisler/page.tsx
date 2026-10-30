@@ -2,10 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import {
+  AdminEmpty,
+  AdminLoading,
+  AdminMeta,
+  AdminPagination,
+  AdminPanel,
+  AdminToolbar,
+} from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -17,6 +25,7 @@ import {
   PAYMENT_STATUS_LABELS,
 } from "@/modules/orders/order-labels";
 import type { OrderStatus, PaymentStatus } from "@/modules/orders/order.types";
+import { cn } from "@/shared/cn";
 import { PERMISSIONS } from "@/shared/permissions";
 
 export const metadata: Metadata = { title: "Siparişler" };
@@ -58,102 +67,111 @@ async function OrdersContent({
 
   return (
     <div className="flex flex-col gap-4">
-      <form className="flex flex-wrap gap-2" action="/admin/siparisler">
-        <Input
-          name="q"
-          defaultValue={search}
-          placeholder="Sipariş no veya e-posta"
-          className="max-w-xs"
-          aria-label="Ara"
-        />
-        <Select
-          name="durum"
-          defaultValue={rawStatus ?? ""}
-          className="max-w-48"
-          aria-label="Durum"
+      <AdminToolbar>
+        <form
+          className="flex flex-1 flex-wrap items-end gap-2.5"
+          action="/admin/siparisler"
         >
-          <option value="">Tüm durumlar</option>
-          {STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {ORDER_STATUS_LABELS[status]}
-            </option>
-          ))}
-        </Select>
-        <Button type="submit" variant="outline">
-          Filtrele
-        </Button>
-      </form>
+          <label className="flex min-w-[12rem] flex-1 flex-col gap-1.5 text-xs font-semibold text-slate-600">
+            Ara
+            <Input
+              name="q"
+              defaultValue={search}
+              placeholder="Sipariş no veya e-posta"
+              aria-label="Ara"
+            />
+          </label>
+          <label className="flex w-44 flex-col gap-1.5 text-xs font-semibold text-slate-600">
+            Durum
+            <Select
+              name="durum"
+              defaultValue={rawStatus ?? ""}
+              aria-label="Durum"
+            >
+              <option value="">Tüm durumlar</option>
+              {STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {ORDER_STATUS_LABELS[status]}
+                </option>
+              ))}
+            </Select>
+          </label>
+          <Button type="submit" variant="outline">
+            Filtrele
+          </Button>
+        </form>
+      </AdminToolbar>
 
-      <p className="text-sm text-muted-foreground">{result.total} sipariş</p>
+      <div className="flex items-center justify-between gap-3">
+        <AdminMeta>{result.total} sipariş</AdminMeta>
+      </div>
 
-      <Table>
-        <THead>
-          <tr>
-            <TH>Sipariş</TH>
-            <TH>Müşteri</TH>
-            <TH>Durum</TH>
-            <TH>Ödeme</TH>
-            <TH>Adet</TH>
-            <TH className="text-right">Tutar</TH>
-            <TH>Tarih</TH>
-          </tr>
-        </THead>
-        <TBody>
-          {result.items.map((order) => (
-            <TR key={order.id}>
-              <TD>
-                <Link
-                  href={`/admin/siparisler/${order.orderNumber}`}
-                  className="font-medium underline"
-                >
-                  {order.orderNumber}
-                </Link>
-              </TD>
-              <TD>
-                <div>{order.customerName}</div>
-                <div className="text-xs text-muted-foreground">
-                  {order.email}
-                </div>
-              </TD>
-              <TD>
-                <Badge tone={ORDER_STATUS_TONES[order.status]}>
-                  {ORDER_STATUS_LABELS[order.status]}
-                </Badge>
-              </TD>
-              <TD>
-                {PAYMENT_STATUS_LABELS[order.paymentStatus as PaymentStatus]}
-              </TD>
-              <TD>{order.itemCount}</TD>
-              <TD className="text-right">
-                <Price value={order.grandTotal} currency={order.currency} />
-              </TD>
-              <TD>{order.createdAt.toLocaleString("tr-TR")}</TD>
-            </TR>
-          ))}
-          {result.items.length === 0 ? (
-            <TR>
-              <TD
-                colSpan={7}
-                className="py-8 text-center text-muted-foreground"
-              >
-                Sipariş bulunamadı.
-              </TD>
-            </TR>
-          ) : null}
-        </TBody>
-      </Table>
+      <AdminPanel>
+        <Table>
+          <THead>
+            <tr>
+              <TH>Sipariş</TH>
+              <TH>Müşteri</TH>
+              <TH>Durum</TH>
+              <TH>Ödeme</TH>
+              <TH>Adet</TH>
+              <TH className="text-right">Tutar</TH>
+              <TH>Tarih</TH>
+            </tr>
+          </THead>
+          <TBody>
+            {result.items.map((order) => (
+              <TR key={order.id}>
+                <TD>
+                  <Link
+                    href={`/admin/siparisler/${order.orderNumber}`}
+                    className="font-semibold text-slate-900 hover:text-primary"
+                  >
+                    {order.orderNumber}
+                  </Link>
+                </TD>
+                <TD>
+                  <div className="font-medium text-slate-800">
+                    {order.customerName}
+                  </div>
+                  <div className="text-xs text-slate-500">{order.email}</div>
+                </TD>
+                <TD>
+                  <Badge tone={ORDER_STATUS_TONES[order.status]}>
+                    {ORDER_STATUS_LABELS[order.status]}
+                  </Badge>
+                </TD>
+                <TD className="text-sm">
+                  {PAYMENT_STATUS_LABELS[order.paymentStatus as PaymentStatus]}
+                </TD>
+                <TD>{order.itemCount}</TD>
+                <TD className="text-right font-semibold text-slate-900">
+                  <Price value={order.grandTotal} currency={order.currency} />
+                </TD>
+                <TD className="whitespace-nowrap text-slate-500">
+                  {order.createdAt.toLocaleString("tr-TR")}
+                </TD>
+              </TR>
+            ))}
+            {result.items.length === 0 ? (
+              <TR>
+                <TD colSpan={7} className="p-0">
+                  <AdminEmpty
+                    title="Sipariş bulunamadı"
+                    description="Arama veya durum filtresini değiştirerek tekrar deneyin."
+                  />
+                </TD>
+              </TR>
+            ) : null}
+          </TBody>
+        </Table>
+      </AdminPanel>
 
-      {result.totalPages > 1 ? (
-        <nav className="flex items-center gap-3 text-sm" aria-label="Sayfalama">
-          {page > 1 ? <Link href={queryFor(page - 1)}>Önceki</Link> : null}
-          <span className="text-muted-foreground">
-            {page} / {result.totalPages}
-          </span>
-          {page < result.totalPages ? (
-            <Link href={queryFor(page + 1)}>Sonraki</Link>
-          ) : null}
-        </nav>
-      ) : null}
+      <AdminPagination
+        page={page}
+        totalPages={result.totalPages}
+        hrefFor={queryFor}
+      />
     </div>
   );
 }
@@ -165,19 +183,18 @@ export default function AdminOrdersPage({
     <>
       <PageHeader
         title="Siparişler"
+        description="Ödeme, hazırlık ve kargo durumlarını buradan yönetin."
         actions={
           <a
             href="/admin/disa-aktar/siparisler"
-            className="text-sm underline"
+            className={cn(buttonVariants({ variant: "outline" }))}
             download
           >
-            CSV olarak indir
+            CSV indir
           </a>
         }
       />
-      <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
-      >
+      <Suspense fallback={<AdminLoading label="Siparişler yükleniyor..." />}>
         <OrdersContent searchParams={searchParams} />
       </Suspense>
     </>

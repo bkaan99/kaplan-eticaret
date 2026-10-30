@@ -75,9 +75,11 @@ export function DealerRow({
   const terms = { groupId, creditLimit, minOrderAmount: minOrder };
 
   return (
-    <li className="flex flex-col gap-3 rounded-theme border border-border p-4">
+    <li className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="font-semibold">{dealer.companyName ?? "–"}</span>
+        <span className="text-base font-bold text-slate-900">
+          {dealer.companyName ?? "–"}
+        </span>
         <Badge tone={TONES[dealer.status]}>
           {STATUS_LABELS[dealer.status]}
         </Badge>

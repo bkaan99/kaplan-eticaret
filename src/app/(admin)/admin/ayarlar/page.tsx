@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { adminPage } from "@/modules/admin/guard";
 import { settingsService } from "@/modules/settings/container";
@@ -25,7 +26,7 @@ export default function AdminSettingsPage() {
         description="Mağazanın müşteri hizmetleri telefon numarası, WhatsApp hattı, e-posta ve fabrika/tesis açık adresini buradan dinamik olarak güncelleyebilirsiniz."
       />
       <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
+        fallback={<AdminLoading />}
       >
         <SettingsContent />
       </Suspense>
