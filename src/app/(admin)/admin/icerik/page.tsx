@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { getContentService } from "@/modules/content/container";
 import { adminPage } from "@/modules/admin/guard";
@@ -51,7 +52,7 @@ export default function AdminContentPage() {
         description="Ana sayfa bannerları, statik sayfalar (hakkımızda, SSS…) ve menüler."
       />
       <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
+        fallback={<AdminLoading />}
       >
         <ContentContent />
       </Suspense>

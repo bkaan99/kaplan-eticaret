@@ -3,7 +3,7 @@
 Türkiye pazarına yönelik e-ticaret siteleri için Next.js tabanlı, kopyalanıp kullanılan şablon.
 PayTR ödeme, B2B bayi desteği, yönetim paneli ve temiz katmanlı mimari hedefler.
 
-> **Durum:** v0.6 tamamlandı (KVKK ve hesap özellikleri, ürün içe aktarma/toplu güncelleme, personel ve rol yönetimi, görsel yükleme, ERP altyapısı, uçtan uca testler). Bilinen sınırlar için [docs/analiz.md](docs/analiz.md) bölüm 17.
+> **Durum:** v1.0.0 tamamlandı (KVKK ve hesap özellikleri, ürün içe aktarma/toplu güncelleme, personel ve rol yönetimi, görsel yükleme, ERP altyapısı, uçtan uca testler). Bilinen sınırlar için [docs/analiz.md](docs/analiz.md) bölüm 17.
 > Plan ve kararlar: [docs/analiz.md](docs/analiz.md)
 
 ## Gereksinimler

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { adminPage } from "@/modules/admin/guard";
 import { PERMISSIONS } from "@/shared/permissions";
@@ -61,7 +62,7 @@ export default function ImportPage() {
     <>
       <PageHeader title="Ürün içe aktarma" />
       <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
+        fallback={<AdminLoading />}
       >
         <ImportContent />
       </Suspense>

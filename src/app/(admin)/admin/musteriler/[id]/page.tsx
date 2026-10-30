@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import { AdminLoading, AdminPanel } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
@@ -27,14 +28,25 @@ async function CustomerContent({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={customer.name} description={customer.email} />
+      <PageHeader
+        title={customer.name}
+        description={customer.email}
+        actions={
+          <Link
+            href="/admin/musteriler"
+            className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50"
+          >
+            ← Müşteriler
+          </Link>
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Sipariş</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold">
+          <CardContent className="text-2xl font-bold tracking-tight text-slate-900">
             {customer.orderCount}
           </CardContent>
         </Card>
@@ -42,7 +54,7 @@ async function CustomerContent({
           <CardHeader>
             <CardTitle>Toplam harcama</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold">
+          <CardContent className="text-2xl font-bold tracking-tight text-slate-900">
             <Price value={customer.totalSpent} />
           </CardContent>
         </Card>
@@ -50,7 +62,7 @@ async function CustomerContent({
           <CardHeader>
             <CardTitle>Hesap</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-1 text-sm">
+          <CardContent className="flex flex-wrap gap-1.5 text-sm">
             <Badge tone={customer.emailVerified ? "success" : "warning"}>
               {customer.emailVerified
                 ? "E-posta doğrulandı"
@@ -64,37 +76,39 @@ async function CustomerContent({
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Siparişler</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {customer.orders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sipariş yok.</p>
-          ) : (
-            <ul className="flex flex-col divide-y divide-border text-sm">
-              {customer.orders.map((order) => (
-                <li
-                  key={order.orderNumber}
-                  className="flex justify-between gap-3 py-2"
+      <AdminPanel>
+        <div className="border-b border-slate-100 px-5 py-4">
+          <h2 className="text-sm font-bold text-slate-900">Siparişler</h2>
+        </div>
+        {customer.orders.length === 0 ? (
+          <p className="px-5 py-8 text-center text-sm text-slate-400">
+            Sipariş yok.
+          </p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-slate-100 text-sm">
+            {customer.orders.map((order) => (
+              <li
+                key={order.orderNumber}
+                className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5"
+              >
+                <Link
+                  href={`/admin/siparisler/${order.orderNumber}`}
+                  className="font-semibold text-slate-900 hover:text-primary"
                 >
-                  <Link
-                    href={`/admin/siparisler/${order.orderNumber}`}
-                    className="font-medium underline"
-                  >
-                    {order.orderNumber}
-                  </Link>
-                  <span className="text-muted-foreground">
-                    {order.createdAt.toLocaleDateString("tr-TR")} ·{" "}
-                    {ORDER_STATUS_LABELS[order.status as OrderStatus]}
-                  </span>
+                  {order.orderNumber}
+                </Link>
+                <span className="text-slate-500">
+                  {order.createdAt.toLocaleDateString("tr-TR")} ·{" "}
+                  {ORDER_STATUS_LABELS[order.status as OrderStatus]}
+                </span>
+                <span className="font-bold text-slate-900">
                   <Price value={order.grandTotal} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </AdminPanel>
     </div>
   );
 }
@@ -103,7 +117,7 @@ export default function AdminCustomerPage({
   params,
 }: PageProps<"/admin/musteriler/[id]">) {
   return (
-    <Suspense fallback={<p className="text-muted-foreground">Yükleniyor...</p>}>
+    <Suspense fallback={<AdminLoading label="Müşteri yükleniyor..." />}>
       <CustomerContent params={params} />
     </Suspense>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
+import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
@@ -355,11 +356,7 @@ export default function AdminDashboardPage({
         description="Mağaza cirosu, siparişler, müşteri bağlılığı ve operasyonel özet"
       />
       <Suspense
-        fallback={
-          <div className="py-12 text-center text-sm text-slate-400">
-            İstatistikler hesaplanıyor...
-          </div>
-        }
+        fallback={<AdminLoading label="İstatistikler hesaplanıyor..." />}
       >
         <DashboardContent searchParams={searchParams} />
       </Suspense>

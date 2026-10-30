@@ -158,7 +158,7 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
   return (
     <>
       {/* Mobil Üst Bar */}
-      <div className="flex h-14 items-center justify-between border-b border-slate-200 bg-[#0c1a13] px-4 text-white md:hidden">
+      <div className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-[#0c1a13] px-4 text-white md:hidden">
         <Link href="/admin" className="flex items-center gap-2 font-bold">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black">
             K
@@ -179,10 +179,10 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
         </button>
       </div>
 
-      {/* Kenar Çubuğu (Sidebar) */}
+      {/* Kenar Çubuğu — masaüstünde sabit (scroll etmez) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0c1a13] text-slate-300 transition-transform duration-300 md:static md:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-64 flex-col bg-[#0c1a13] text-slate-300 transition-transform duration-300 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         {/* Logo & Marka Başlığı */}
@@ -214,7 +214,7 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               Sistem Aktif
             </span>
-            <span className="text-[10px] text-slate-400">v0.6.2</span>
+            <span className="text-[10px] text-slate-400">v1.0.0</span>
           </div>
         </div>
 
@@ -256,45 +256,38 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
           })}
         </nav>
 
-        {/* Alt Kullanıcı & Mağaza Kartı */}
+        {/* Alt Kullanıcı Kartı */}
         <div className="border-t border-emerald-950/80 p-4">
-          <div className="flex items-center gap-3 rounded-xl bg-white/5 p-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-400 text-slate-950 font-bold text-xs">
+          <Link
+            href="/hesabim"
+            className="group flex items-center gap-3 rounded-xl bg-white/5 p-2.5 transition hover:bg-white/10"
+            title="Profilimi Görüntüle"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-400 text-slate-950 font-bold text-xs shadow-2xs">
               {initial}
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="truncate text-xs font-bold text-white">
+              <span className="truncate text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
                 {user.name || user.email}
               </span>
-              <span className="text-[10px] text-emerald-400 font-medium">Yönetici</span>
+              <span className="text-[10px] text-emerald-400 font-medium">
+                Yönetici Hesabı →
+              </span>
             </div>
-          </div>
-
-          <div className="mt-2.5 flex items-center justify-between px-1 text-xs">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-amber-400 transition-colors"
-            >
-              <span>Mağazayı Gör</span>
-              <span>↗</span>
-            </Link>
-            <Link
-              href="/hesabim"
-              className="text-slate-400 hover:text-white transition-colors"
-            >
-              Profilim
-            </Link>
-          </div>
+          </Link>
         </div>
       </aside>
 
+      {/* Masaüstü spacer: fixed sidebar için yer ayırır */}
+      <div className="hidden w-64 shrink-0 md:block" aria-hidden="true" />
+
       {/* Mobil Backdrop */}
-      {mobileOpen && (
+      {mobileOpen ? (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
           onClick={() => setMobileOpen(false)}
         />
-      )}
+      ) : null}
     </>
   );
 }

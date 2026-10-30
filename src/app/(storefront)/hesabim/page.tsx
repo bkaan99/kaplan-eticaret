@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { Price } from "@/components/storefront/price";
 import { features } from "@/config/features";
 import { getDealerService } from "@/modules/b2b/container";
@@ -26,13 +27,14 @@ async function AccountContent() {
         <h2 className="text-lg font-semibold">Bilgilerim</h2>
         <p>{user.name}</p>
         <p className="text-muted-foreground">{user.email}</p>
-        <div className="flex gap-4 pt-1 text-sm">
+        <div className="flex items-center gap-4 pt-1 text-sm">
           <Link href="/hesabim/adresler" className="underline">
             Adreslerim
           </Link>
           <Link href="/hesabim/ayarlar" className="underline">
             Hesap ayarları
           </Link>
+          <AdminLogoutButton variant="minimal" />
         </div>
       </section>
 
