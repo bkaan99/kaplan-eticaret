@@ -284,6 +284,7 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
         isFeatured: demo.featured ?? false,
         categoryId: categoryIds.get(demo.category)!,
         brandId: brandIds.get(demo.brand)!,
+        taxRate: demo.category === "salgam-ve-tursu-suyu" ? 10 : 1,
         images: {
           create: {
             url: `/images/urunler/${demo.slug}.jpg`,
@@ -447,6 +448,7 @@ async function seedCustomPickle(db: PrismaClient): Promise<void> {
       isFeatured: true,
       categoryId: category.id,
       brandId: brand?.id,
+      taxRate: 1,
       images: {
         create: {
           url: `/images/urunler/${slug}.svg`,

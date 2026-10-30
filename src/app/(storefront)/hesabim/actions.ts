@@ -8,8 +8,7 @@ import {
   getProfileService,
 } from "@/modules/account/container";
 import { requireUser } from "@/modules/auth/session";
-import { isAppError } from "@/shared/errors";
-import { reportError } from "@/shared/error-reporter";
+import { runStorefrontAction } from "@/shared/action";
 import {
   RATE_LIMIT_POLICIES,
   enforceRateLimit,
@@ -25,15 +24,10 @@ async function run(
   handler: () => Promise<void>,
   revalidate: string[] = [],
 ): Promise<AccountActionResult> {
-  try {
-    await handler();
-    for (const path of revalidate) revalidatePath(path);
-    return { ok: true };
-  } catch (error) {
-    if (isAppError(error)) return { ok: false, error: error.message };
-    reportError(error, { action: "account" });
-    return { ok: false, error: "İşlem tamamlanamadı, lütfen tekrar deneyin." };
-  }
+  return runStorefrontAction(handler, {
+    actionName: "account",
+    revalidate,
+  });
 }
 
 export async function saveAddressAction(

@@ -17,6 +17,7 @@ import { siteConfig } from "@/config/site.config";
 import { formatMoney } from "@/shared/money";
 import { getSiteUrl } from "@/shared/site-url";
 import { getCategoryTree } from "@/modules/catalog/cached";
+import { getCachedContactSettings } from "@/modules/settings/cached";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { catalogService } from "@/modules/catalog/container";
 
@@ -71,7 +72,10 @@ async function CategoryTiles() {
 
 async function SiteJsonLd() {
   await connection();
-  const url = getSiteUrl();
+  const [url, contact] = await Promise.all([
+    Promise.resolve(getSiteUrl()),
+    getCachedContactSettings(),
+  ]);
 
   return (
     <>
@@ -81,8 +85,9 @@ async function SiteJsonLd() {
           "@type": "Organization",
           name: siteConfig.name,
           url,
-          email: siteConfig.contact.email,
-          telephone: siteConfig.contact.phone,
+          email: contact.email,
+          telephone: contact.phone,
+          ...(contact.address ? { address: contact.address } : {}),
         }}
       />
       <JsonLd

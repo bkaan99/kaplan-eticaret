@@ -27,3 +27,13 @@ export async function deleteIngredientAction(
     PATHS,
   );
 }
+
+export async function savePickleOptionsAction(
+  payload: unknown,
+): Promise<AdminActionResult> {
+  return runAdminAction(
+    perm,
+    (actor) => customPickleService.saveOptions(payload, actor),
+    PATHS,
+  );
+}

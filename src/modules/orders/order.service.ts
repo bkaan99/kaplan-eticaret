@@ -4,6 +4,10 @@ import type { EventBus } from "@/shared/events/event-bus";
 import type { PaymentRefunder } from "@/integrations/payment/payment-provider";
 import type { OrderRepository } from "./order.repository";
 import type { OrderStatus, OrderView } from "./order.types";
+import {
+  PaymentRefundStrategyRegistry,
+  createDefaultRefundRegistry,
+} from "./payment-refund-strategy";
 
 /** Siparişe erişen tarafı tanımlar: giriş yapmış sahibi ya da bağlantıdaki belirteç. */
 export interface OrderAccess {
@@ -28,11 +32,18 @@ function tokensMatch(
 }
 
 export class OrderService {
+  private readonly refundStrategies: PaymentRefundStrategyRegistry;
+
   constructor(
     private readonly orders: OrderRepository,
-    private readonly refunder: PaymentRefunder,
+    refunderOrRegistry: PaymentRefunder | PaymentRefundStrategyRegistry,
     private readonly events: EventBus,
-  ) {}
+  ) {
+    this.refundStrategies =
+      "get" in refunderOrRegistry
+        ? refunderOrRegistry
+        : createDefaultRefundRegistry(refunderOrRegistry);
+  }
 
   /** Erişim yetkisi yoksa siparişin varlığını sızdırmamak için NotFoundError verir. */
   async getForAccess(
@@ -90,21 +101,18 @@ export class OrderService {
       const payment = await this.orders.getPaymentForOrder(order.id);
       if (!payment) throw new NotFoundError("Ödeme");
 
-      // Yalnızca kartla tahsil edilen ödeme sağlayıcı üzerinden iade edilir;
-      // havale ve vadeli ödemede iade manuel yapılır. İade başarısızsa hata
-      // fırlar ve sipariş değişmeden kalır.
-      const refund =
-        payment.method === "CARD"
-          ? await this.refunder.refund({
-              merchantOid: payment.merchantOid,
-              amount: payment.amount,
-            })
-          : { providerRef: null };
+      const strategy = this.refundStrategies.get(payment.method);
+      const refund = await strategy.refund({
+        orderId: order.id,
+        merchantOid: payment.merchantOid,
+        amount: payment.amount,
+        method: payment.method,
+      });
 
       await this.orders.recordRefund(
         order.id,
         payment.amount,
-        payment.method === "CARD" ? "İptal" : "İptal (manuel iade)",
+        refund.reason,
         refund.providerRef,
       );
     }

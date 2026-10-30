@@ -4,11 +4,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getCartIdentity } from "@/modules/cart/cart.session";
 import { checkoutSchema } from "@/modules/checkout/checkout.schema";
-import {
-  getCheckoutService,
-  getDevPaymentProvider,
-  getPaymentService,
-} from "@/modules/orders/container";
+import { getCheckoutService } from "@/modules/checkout/container";
+import { getDevPaymentProvider } from "@/integrations/payment/container";
+import { getPaymentService } from "@/modules/orders/container";
 import { isAppError } from "@/shared/errors";
 import { reportError } from "@/shared/error-reporter";
 import {

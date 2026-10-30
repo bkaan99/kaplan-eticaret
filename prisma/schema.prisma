@@ -258,8 +258,8 @@ model Product {
   status         ProductStatus @default(DRAFT)
   categoryId     String
   brandId        String?
-  /// KDV oranı, yüzde (örn. 20)
-  taxRate        Decimal       @default(20) @db.Decimal(5, 2)
+  /// KDV oranı, yüzde (temel gıda turşu/konservede %1, şalgam/içecekte %10)
+  taxRate        Decimal       @default(1) @db.Decimal(5, 2)
   /// false ise stok takibi yapılmaz, ürün sınırsız stoklu sayılır
   trackInventory Boolean       @default(true)
   desi           Decimal?      @db.Decimal(8, 2)

@@ -16,6 +16,7 @@ export interface CartItemRecord {
   /** Ham özelleştirme verisi (JSON) */
   customization?: unknown;
   weightGram?: number | null;
+  desi?: number;
   sku: string;
   price: Decimal;
   currency: string;
@@ -29,6 +30,9 @@ export interface CartItemRecord {
     status: "DRAFT" | "ACTIVE" | "ARCHIVED";
     trackInventory: boolean;
     imageUrl: string | null;
+    taxRate?: Decimal;
+    categoryId?: string;
+    desi?: number;
   };
   optionLabels: string[];
 }
@@ -126,6 +130,9 @@ export class PrismaCartRepository implements CartRepository {
                 slug: true,
                 status: true,
                 trackInventory: true,
+                taxRate: true,
+                categoryId: true,
+                desi: true,
                 images: {
                   orderBy: { position: "asc" },
                   take: 1,
@@ -141,33 +148,42 @@ export class PrismaCartRepository implements CartRepository {
       },
     });
 
-    return rows.map((row) => ({
-      variantId: row.variantId,
-      quantity: row.quantity,
-      customizationKey: row.customizationKey,
-      customization: row.customization,
-      weightGram: row.variant.weightGram,
-      sku: row.variant.sku,
-      price: row.variant.price,
-      currency: row.variant.currency,
-      isActive: row.variant.isActive,
-      stockQuantity: row.variant.stockQuantity,
-      reservedQuantity: row.variant.reservedQuantity,
-      product: {
-        id: row.variant.product.id,
-        name: row.variant.product.name,
-        slug: row.variant.product.slug,
-        status: row.variant.product.status,
-        trackInventory: row.variant.product.trackInventory,
-        imageUrl: row.variant.product.images[0]?.url ?? null,
-      },
-      optionLabels: row.variant.optionValues
-        .sort(
-          (a, b) =>
-            a.optionValue.option.position - b.optionValue.option.position,
-        )
-        .map((item) => item.optionValue.value),
-    }));
+    return rows.map((row) => {
+      const variant = row.variant;
+      const desi = variant.desi ?? variant.product.desi;
+
+      return {
+        variantId: row.variantId,
+        quantity: row.quantity,
+        customizationKey: row.customizationKey,
+        customization: row.customization,
+        weightGram: variant.weightGram,
+        desi: desi ? Number(desi) : 0,
+        sku: variant.sku,
+        price: variant.price,
+        currency: variant.currency,
+        isActive: variant.isActive,
+        stockQuantity: variant.stockQuantity,
+        reservedQuantity: variant.reservedQuantity,
+        product: {
+          id: variant.product.id,
+          name: variant.product.name,
+          slug: variant.product.slug,
+          status: variant.product.status,
+          trackInventory: variant.product.trackInventory,
+          imageUrl: variant.product.images[0]?.url ?? null,
+          taxRate: variant.product.taxRate,
+          categoryId: variant.product.categoryId,
+          desi: variant.product.desi ? Number(variant.product.desi) : 0,
+        },
+        optionLabels: variant.optionValues
+          .sort(
+            (a, b) =>
+              a.optionValue.option.position - b.optionValue.option.position,
+          )
+          .map((item) => item.optionValue.value),
+      };
+    });
   }
 
   async getItemQuantity(

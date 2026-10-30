@@ -6,7 +6,7 @@ test.describe("vitrin", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Kategoriler" }),
+      page.getByRole("heading", { name: /Kategoriler/i }),
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Klasik Turşular" }).first().click();

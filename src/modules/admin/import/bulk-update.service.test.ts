@@ -41,25 +41,18 @@ class FakeRepo implements BulkUpdateRepository {
 describe("BulkUpdateService", () => {
   let repo: FakeRepo;
   let audit: AuditEntry[];
-  let events: InMemoryEventBus;
-  let replenished: string[];
   let service: BulkUpdateService;
 
   beforeEach(() => {
     repo = new FakeRepo();
     audit = [];
-    replenished = [];
-    events = new InMemoryEventBus();
-    events.subscribe("stock.replenished", ({ variantId }) => {
-      replenished.push(variantId);
-    });
-    service = new BulkUpdateService(repo, events, {
+    service = new BulkUpdateService(repo, undefined, {
       log: async (entry) => void audit.push(entry),
       purgeOlderThan: async () => 0,
     });
   });
 
-  it("fiyat ve stoğu günceller, denetim yazar, yeniden stok olayı yayınlar", async () => {
+  it("fiyat ve stoğu günceller ve denetim yazar", async () => {
     const report = await service.run(
       "sku;fiyat;stok\nts-s;129,90;10\nTS-M;110;5",
       { dryRun: false },
@@ -72,7 +65,6 @@ describe("BulkUpdateService", () => {
       { id: "v2", price: "110", stockQuantity: 5 },
     ]);
     expect(audit[0]).toMatchObject({ action: "product.bulk-update" });
-    expect(replenished).toEqual(["v1"]);
   });
 
   it("önizlemede hiçbir şey uygulanmaz", async () => {

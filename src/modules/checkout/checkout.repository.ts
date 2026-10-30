@@ -1,5 +1,6 @@
 import type Decimal from "decimal.js";
 import type { PrismaClient } from "@/shared/prisma-client";
+import { PrismaCartRepository, type CartRepository } from "../cart/cart.repository";
 
 export interface CheckoutLineRecord {
   variantId: string;
@@ -54,57 +55,40 @@ export interface CheckoutRepository {
 }
 
 export class PrismaCheckoutRepository implements CheckoutRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+  private readonly carts: Pick<CartRepository, "listItems">;
+
+  constructor(
+    private readonly db: () => PrismaClient,
+    carts?: Pick<CartRepository, "listItems">,
+  ) {
+    this.carts = carts ?? new PrismaCartRepository(db);
+  }
 
   async loadCartLines(cartId: string): Promise<CheckoutLineRecord[]> {
-    const items = await this.db().cartItem.findMany({
-      where: { cartId },
-      orderBy: { createdAt: "asc" },
-      include: {
-        variant: {
-          include: {
-            product: true,
-            optionValues: {
-              include: { optionValue: { include: { option: true } } },
-            },
-          },
-        },
+    const items = await this.carts.listItems(cartId);
+    return items.map((item) => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+      customizationKey: item.customizationKey,
+      customization: item.customization,
+      weightGram: item.weightGram,
+      sku: item.sku,
+      price: item.price,
+      currency: item.currency,
+      isActive: item.isActive,
+      stockQuantity: item.stockQuantity,
+      reservedQuantity: item.reservedQuantity,
+      desi: item.desi ?? 0,
+      product: {
+        name: item.product.name,
+        status: item.product.status,
+        trackInventory: item.product.trackInventory,
+        taxRate: item.product.taxRate ?? item.price,
+        categoryId: item.product.categoryId ?? "",
+        desi: item.product.desi ?? 0,
       },
-    });
-
-    return items.map((item) => {
-      const variant = item.variant;
-      const desi = variant.desi ?? variant.product.desi;
-
-      return {
-        variantId: variant.id,
-        quantity: item.quantity,
-        customizationKey: item.customizationKey,
-        customization: item.customization,
-        weightGram: variant.weightGram,
-        sku: variant.sku,
-        price: variant.price,
-        currency: variant.currency,
-        isActive: variant.isActive,
-        stockQuantity: variant.stockQuantity,
-        reservedQuantity: variant.reservedQuantity,
-        desi: desi ? Number(desi) : 0,
-        product: {
-          name: variant.product.name,
-          status: variant.product.status,
-          trackInventory: variant.product.trackInventory,
-          taxRate: variant.product.taxRate,
-          categoryId: variant.product.categoryId,
-          desi: variant.product.desi ? Number(variant.product.desi) : 0,
-        },
-        optionLabels: variant.optionValues
-          .sort(
-            (a, b) =>
-              a.optionValue.option.position - b.optionValue.option.position,
-          )
-          .map((value) => value.optionValue.value),
-      };
-    });
+      optionLabels: item.optionLabels,
+    }));
   }
 
   async findCoupon(code: string): Promise<CouponRecord | null> {

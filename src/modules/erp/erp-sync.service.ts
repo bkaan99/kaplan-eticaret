@@ -27,8 +27,8 @@ export class ErpSyncService {
   constructor(
     private readonly connector: ErpConnector,
     private readonly variants: BulkUpdateRepository,
-    private readonly events: EventBus,
-    private readonly audit: AuditLogger,
+    private readonly events?: EventBus,
+    private readonly audit: AuditLogger = { log: async () => {}, purgeOlderThan: async () => 0 },
   ) {}
 
   async syncStock(): Promise<ErpSyncReport> {
@@ -62,7 +62,6 @@ export class ErpSyncService {
       const bySku = new Map(existing.map((v) => [v.sku.toUpperCase(), v]));
 
       const updates: VariantUpdate[] = [];
-      const replenished: string[] = [];
 
       for (const record of batch) {
         const variant = bySku.get(record.sku.toUpperCase());
@@ -77,9 +76,6 @@ export class ErpSyncService {
         if (variant.stockQuantity !== record.stockQuantity) {
           update.stockQuantity = record.stockQuantity;
           changed = true;
-          if (variant.stockQuantity <= 0 && record.stockQuantity > 0) {
-            replenished.push(variant.id);
-          }
         }
         if (
           record.price !== undefined &&
@@ -94,9 +90,6 @@ export class ErpSyncService {
       if (updates.length > 0) {
         await this.variants.applyUpdates(updates);
         report.updated += updates.length;
-      }
-      for (const variantId of replenished) {
-        await this.events.publish("stock.replenished", { variantId });
       }
     }
 

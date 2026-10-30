@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/modules/auth/session";
 import { cartService } from "@/modules/cart/container";
 import {
@@ -9,8 +8,7 @@ import {
 } from "@/modules/cart/cart.session";
 import { getOrderService } from "@/modules/orders/container";
 import { ReorderService } from "@/modules/orders/reorder.service";
-import { isAppError } from "@/shared/errors";
-import { reportError } from "@/shared/error-reporter";
+import { runStorefrontAction } from "@/shared/action";
 
 export interface ReorderActionResult {
   ok: boolean;
@@ -23,23 +21,35 @@ export async function reorderAction(
   orderNumber: string,
   lookupToken: string | null,
 ): Promise<ReorderActionResult> {
-  try {
-    const user = await getCurrentUser();
-    const service = new ReorderService(getOrderService(), cartService);
+  const result = await runStorefrontAction(
+    async () => {
+      const user = await getCurrentUser();
+      const service = new ReorderService(getOrderService(), cartService);
 
-    const result = await service.reorder(
-      orderNumber,
-      { userId: user?.id ?? null, lookupToken },
-      await getCartIdentity(),
-    );
+      const reorderResult = await service.reorder(
+        orderNumber,
+        { userId: user?.id ?? null, lookupToken },
+        await getCartIdentity(),
+      );
 
-    await persistCartCookie({ sessionToken: result.sessionToken });
-    revalidatePath("/", "layout");
+      await persistCartCookie({ sessionToken: reorderResult.sessionToken });
+      return reorderResult;
+    },
+    {
+      actionName: "reorder",
+      context: { orderNumber },
+      fallbackErrorMessage: "Ürünler sepete eklenemedi.",
+      revalidate: ["/"],
+    },
+  );
 
-    return { ok: true, added: result.added, skipped: result.skipped };
-  } catch (error) {
-    if (isAppError(error)) return { ok: false, error: error.message };
-    reportError(error, { action: "reorder", orderNumber });
-    return { ok: false, error: "Ürünler sepete eklenemedi." };
+  if (!result.ok) {
+    return { ok: false, error: result.error };
   }
+
+  return {
+    ok: true,
+    added: result.data?.added,
+    skipped: result.data?.skipped,
+  };
 }

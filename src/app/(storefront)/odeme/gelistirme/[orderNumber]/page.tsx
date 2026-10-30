@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import {
-  getDevPaymentProvider,
-  getOrderService,
-} from "@/modules/orders/container";
+import { getDevPaymentProvider } from "@/integrations/payment/container";
+import { getOrderService } from "@/modules/orders/container";
 import { getCurrentUser } from "@/modules/auth/session";
 import { Price } from "@/components/storefront/price";
 import { devPaymentAction } from "../../actions";

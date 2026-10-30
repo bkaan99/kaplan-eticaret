@@ -1,7 +1,6 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
-import type { AuditLogger } from "@/shared/audit/audit-logger";
+import type { Actor, AuditLogger } from "@/shared/audit";
 import { slugify, uniqueSlug } from "@/shared/slug";
-import type { Actor } from "../admin/orders/admin-order.service";
 import type {
   BannerView,
   ContentRepository,

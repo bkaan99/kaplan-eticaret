@@ -14,6 +14,9 @@ import {
 } from "./custom-pickle.service";
 import {
   bidonWeightGram,
+  DEFAULT_BRINE_CONFIG,
+  DEFAULT_SPICE_CONFIG,
+  type CustomPickleConfig,
   type StoredCustomization,
 } from "./custom-pickle.types";
 
@@ -80,6 +83,16 @@ class FakeRepository implements CustomPickleRepository {
   async deleteIngredient() {}
   async findBuilderProduct() {
     return this.product;
+  }
+  private pickleOptions: CustomPickleConfig = {
+    brines: DEFAULT_BRINE_CONFIG,
+    spices: DEFAULT_SPICE_CONFIG,
+  };
+  async getPickleOptions() {
+    return this.pickleOptions;
+  }
+  async savePickleOptions(config: CustomPickleConfig) {
+    this.pickleOptions = config;
   }
 }
 
@@ -256,5 +269,70 @@ describe("CustomPickleService.quote", () => {
       },
     ]);
     expect(quote!.available).toBe(false);
+  });
+
+  it("dinamik salamura ve acılık seçeneklerini kaydeder, quote ve builder'da yansıtır", async () => {
+    const repository = new FakeRepository([
+      ingredient("salatalik", {
+        name: "Salatalık",
+        pricePerKg: new Decimal("5"),
+      }),
+    ]);
+    const s = service(repository);
+
+    // Yeni salamura (Elma Sirkeli) ve yeni acılık (Atom) ekle
+    await s.saveOptions(
+      {
+        brines: [
+          {
+            key: "APPLE_CIDER",
+            label: "Elma Sirkeli",
+            description: "Meyvemsi lezzet",
+            color: "#fef08a",
+            hasBubbles: false,
+            isActive: true,
+            sortOrder: 0,
+          },
+        ],
+        spices: [
+          {
+            key: "EXTRA_HOT",
+            label: "Çok Acılı (Atom)",
+            description: "Ekstra Arnavut biberli",
+            peppers: 5,
+            tint: 0.6,
+            isActive: true,
+            sortOrder: 0,
+          },
+        ],
+      },
+      { userId: "admin-1", ip: "127.0.0.1" },
+    );
+
+    // Builder verisinde dinamik seçenekler gelmeli
+    const builder = await s.getBuilder({ customerGroupId: null });
+    expect(builder?.brines[0]?.label).toBe("Elma Sirkeli");
+    expect(builder?.spices[0]?.label).toBe("Çok Acılı (Atom)");
+
+    // Yeni seçeneklerle prepare başarılı olmalı
+    const prepared = await s.prepare({
+      variantId: "v5",
+      ingredientIds: ["salatalik"],
+      brine: "APPLE_CIDER",
+      spice: "EXTRA_HOT",
+      note: null,
+    });
+    expect(prepared.customization.brine).toBe("APPLE_CIDER");
+
+    // Quote özetinde dinamik başlıklar kullanılmalı
+    const [quote] = await s.quote([
+      {
+        customization: prepared.customization,
+        weightGram: 5000,
+      },
+    ]);
+    expect(quote!.summary).toBe("Salatalık · Elma Sirkeli · Çok Acılı (Atom)");
+    expect(quote!.snapshot.brine).toBe("Elma Sirkeli");
+    expect(quote!.snapshot.spice).toBe("Çok Acılı (Atom)");
   });
 });

@@ -1,11 +1,9 @@
 import { siteConfig } from "@/config/site.config";
 import { getAuditLogger } from "@/shared/audit";
 import { getDb } from "@/shared/db";
-import {
-  getNotificationService,
-  getOrderService,
-  getPaymentProvider,
-} from "../orders/container";
+import { getPaymentProvider } from "@/integrations/payment/container";
+import { getNotificationService } from "../notifications/container";
+import { getOrderService } from "../orders/container";
 import { PrismaReturnRepository } from "./return.repository";
 import { ReturnService } from "./return.service";
 

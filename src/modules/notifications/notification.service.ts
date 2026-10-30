@@ -1,90 +1,105 @@
 import { siteConfig } from "@/config/site.config";
 import type { JobQueue } from "@/shared/queue";
-import type { OrderRepository } from "../orders/order.repository";
-import type { EmailMessage } from "@/integrations/notification/mailer";
+import type { AccountMailer } from "../account/account.service";
+import type { DealerMailer } from "../b2b/dealer.service";
+import type { OrderLookupRepository } from "../orders/order.repository";
+import type { ReturnNotifier } from "../returns/return.service";
+import type { StockAlertMailer } from "../stock-alerts/stock-alert.service";
+import { AccountNotificationHandler } from "./handlers/account-notification.handler";
+import { DealerNotificationHandler } from "./handlers/dealer-notification.handler";
+import { OrderNotificationHandler } from "./handlers/order-notification.handler";
+import { ReturnNotificationHandler } from "./handlers/return-notification.handler";
+import { StockAlertNotificationHandler } from "./handlers/stock-alert-notification.handler";
 import {
-  renderOrderPlacedManual,
-  type BankAccountInfo,
+  JOB_SEND_EMAIL,
+  QueueNotificationDispatcher,
+  type NotificationDispatcher,
+} from "./notification-dispatcher";
+import type {
+  BankAccountInfo,
+  EmailContext,
 } from "./templates/order-emails";
-import {
-  renderAdminNewOrder,
-  renderOrderCancelled,
-  renderOrderConfirmation,
-  renderOrderShipped,
-  renderStockAvailable,
-  type EmailContext,
-} from "./templates/order-emails";
-import {
-  renderDealerApplicationForAdmin,
-  renderDealerDecision,
-} from "./templates/dealer-emails";
-import {
-  renderEmailVerification,
-  renderPasswordReset,
-} from "./templates/account-emails";
-import { renderReturnDecision } from "./templates/return-emails";
-import type { RenderedEmail } from "./templates/layout";
 
-export const JOB_SEND_EMAIL = "email.send";
-const EMAIL_RETRY_LIMIT = 5;
+export { JOB_SEND_EMAIL };
 
-/** Olaylara göre e-postaları üretir ve gönderim için kuyruğa atar. */
-export class NotificationService {
+/**
+ * Bildirim orkestratörü (Facade).
+ * E-posta kuyruklama işini `NotificationDispatcher`'a, alanlara özgü şablon
+ * ve tetikleyici mantığını ise odaklı domain handler'lara delege eder.
+ */
+export class NotificationService
+  implements AccountMailer, DealerMailer, ReturnNotifier, StockAlertMailer
+{
+  private readonly dispatcher: NotificationDispatcher;
+  private readonly orderHandler: OrderNotificationHandler;
+  private readonly accountHandler: AccountNotificationHandler;
+  private readonly dealerHandler: DealerNotificationHandler;
+  private readonly returnHandler: ReturnNotificationHandler;
+  private readonly stockAlertHandler: StockAlertNotificationHandler;
+
   constructor(
-    private readonly orders: OrderRepository,
-    private readonly queue: JobQueue,
-    private readonly context: EmailContext,
-    private readonly adminEmail: string = siteConfig.contact.email,
-    private readonly bankAccounts: readonly BankAccountInfo[] = siteConfig.b2b
-      .bankAccounts,
-  ) {}
+    orders: OrderLookupRepository,
+    queueOrDispatcher: JobQueue | NotificationDispatcher,
+    context: EmailContext,
+    adminEmail: string = siteConfig.contact.email,
+    bankAccounts: readonly BankAccountInfo[] = siteConfig.b2b.bankAccounts,
+  ) {
+    this.dispatcher =
+      "dispatch" in queueOrDispatcher
+        ? queueOrDispatcher
+        : new QueueNotificationDispatcher(queueOrDispatcher);
+
+    this.orderHandler = new OrderNotificationHandler({
+      orders,
+      dispatcher: this.dispatcher,
+      context,
+      adminEmail,
+      bankAccounts,
+    });
+
+    this.accountHandler = new AccountNotificationHandler({
+      dispatcher: this.dispatcher,
+      siteName: context.siteName,
+    });
+
+    this.dealerHandler = new DealerNotificationHandler({
+      dispatcher: this.dispatcher,
+      context,
+      adminEmail,
+    });
+
+    this.returnHandler = new ReturnNotificationHandler({
+      dispatcher: this.dispatcher,
+      context,
+    });
+
+    this.stockAlertHandler = new StockAlertNotificationHandler({
+      dispatcher: this.dispatcher,
+      context,
+    });
+  }
+
+  getDispatcher(): NotificationDispatcher {
+    return this.dispatcher;
+  }
 
   async onOrderPaid(orderId: string): Promise<void> {
-    const order = await this.orders.findById(orderId);
-    if (!order) return;
-
-    await this.enqueue(
-      order.email,
-      renderOrderConfirmation(order, this.context),
-    );
-    await this.enqueue(
-      this.adminEmail,
-      renderAdminNewOrder(order, this.context),
-    );
+    return this.orderHandler.onOrderPaid(orderId);
   }
 
   async onOrderPlaced(
     orderId: string,
     method: "BANK_TRANSFER" | "DEFERRED",
   ): Promise<void> {
-    const order = await this.orders.findById(orderId);
-    if (!order) return;
-
-    await this.enqueue(
-      order.email,
-      renderOrderPlacedManual(order, method, this.bankAccounts, this.context),
-    );
-    await this.enqueue(
-      this.adminEmail,
-      renderAdminNewOrder(order, this.context),
-    );
+    return this.orderHandler.onOrderPlaced(orderId, method);
   }
 
   async onOrderCancelled(orderId: string, refunded: boolean): Promise<void> {
-    const order = await this.orders.findById(orderId);
-    if (!order) return;
-
-    await this.enqueue(
-      order.email,
-      renderOrderCancelled(order, refunded, this.context),
-    );
+    return this.orderHandler.onOrderCancelled(orderId, refunded);
   }
 
   async onOrderShipped(orderId: string): Promise<void> {
-    const order = await this.orders.findById(orderId);
-    if (!order) return;
-
-    await this.enqueue(order.email, renderOrderShipped(order, this.context));
+    return this.orderHandler.onOrderShipped(orderId);
   }
 
   async onReturnDecided(info: {
@@ -94,19 +109,7 @@ export class NotificationService {
     amount: string | null;
     note: string | null;
   }): Promise<void> {
-    await this.enqueue(
-      info.email,
-      renderReturnDecision(
-        {
-          orderNumber: info.orderNumber,
-          approved: info.approved,
-          amount: info.amount,
-          currency: siteConfig.currency,
-          note: info.note,
-        },
-        this.context,
-      ),
-    );
+    return this.returnHandler.onReturnDecided(info);
   }
 
   async sendStockAvailable(
@@ -114,24 +117,19 @@ export class NotificationService {
     product: { name: string; slug: string },
     unsubscribeUrl: string,
   ): Promise<void> {
-    await this.enqueue(
+    return this.stockAlertHandler.sendStockAvailable(
       email,
-      renderStockAvailable(product, this.context, unsubscribeUrl),
+      product,
+      unsubscribeUrl,
     );
   }
 
   async sendEmailVerification(email: string, link: string): Promise<void> {
-    await this.enqueue(
-      email,
-      renderEmailVerification(link, { siteName: this.context.siteName }),
-    );
+    return this.accountHandler.sendEmailVerification(email, link);
   }
 
   async sendPasswordReset(email: string, link: string): Promise<void> {
-    await this.enqueue(
-      email,
-      renderPasswordReset(link, { siteName: this.context.siteName }),
-    );
+    return this.accountHandler.sendPasswordReset(email, link);
   }
 
   async sendDealerApplicationToAdmin(application: {
@@ -139,10 +137,7 @@ export class NotificationService {
     taxNumber: string;
     email: string;
   }): Promise<void> {
-    await this.enqueue(
-      this.adminEmail,
-      renderDealerApplicationForAdmin(application, this.context),
-    );
+    return this.dealerHandler.sendDealerApplicationToAdmin(application);
   }
 
   async sendDealerDecision(
@@ -150,16 +145,6 @@ export class NotificationService {
     approved: boolean,
     note: string | null,
   ): Promise<void> {
-    await this.enqueue(
-      email,
-      renderDealerDecision(approved, note, this.context),
-    );
-  }
-
-  private async enqueue(to: string, email: RenderedEmail): Promise<void> {
-    const message: EmailMessage = { to, ...email };
-    await this.queue.enqueue(JOB_SEND_EMAIL, message, {
-      retryLimit: EMAIL_RETRY_LIMIT,
-    });
+    return this.dealerHandler.sendDealerDecision(email, approved, note);
   }
 }

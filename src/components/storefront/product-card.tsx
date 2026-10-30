@@ -30,26 +30,17 @@ function getProductBadges(slug: string) {
   return { tag: "🌿 Doğal Fermente", badgeBg: "bg-emerald-50 text-emerald-800 border-emerald-200" };
 }
 
-function getProductRating(slug: string) {
-  const hash = slug.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const score = (4.8 + (hash % 3) * 0.1).toFixed(1);
-  const count = 28 + (hash % 65);
-  return { score, count };
-}
-
-function getProductSizeHint(slug: string) {
-  if (slug.includes("salgam") || slug.includes("suyu")) return "1 L Cam Şişe";
-  if (slug.includes("kutu")) return "Özel Koruyucu Ahşap/Kraft Kutu";
-  return "720 ml Cam Kavanoz";
-}
-
-export function ProductCard({ product }: { product: ProductCardData }) {
+export function ProductCard({
+  product,
+}: {
+  product: ProductCardData & {
+    rating?: { score: number; count: number };
+  };
+}) {
   const discount = product.priceVisible
     ? discountPercent(product.price, product.compareAtPrice)
     : null;
   const { tag, badgeBg } = getProductBadges(product.slug);
-  const { score, count } = getProductRating(product.slug);
-  const sizeHint = getProductSizeHint(product.slug);
 
   return (
     <article className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5">
@@ -90,7 +81,15 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             >
               {tag}
             </span>
-            <span className="text-[11px] text-slate-400 font-medium">{sizeHint}</span>
+            {product.brandName ? (
+              <span className="text-[11px] font-medium text-slate-400">
+                {product.brandName}
+              </span>
+            ) : (
+              <span className="text-[11px] font-medium text-slate-400">
+                Cam Ambalaj
+              </span>
+            )}
           </div>
 
           {/* Ürün Adı */}
@@ -98,12 +97,25 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             {product.name}
           </h3>
 
-          {/* Puan ve Değerlendirme */}
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600">
-            <span className="flex text-amber-400">★</span>
-            <span className="font-bold text-slate-900">{score}</span>
-            <span className="text-slate-400">({count})</span>
-          </div>
+          {/* Doğal Ürün Vurgusu veya Gerçek Değerlendirme */}
+          {product.rating && product.rating.count > 0 ? (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600">
+              <span className="flex text-amber-400">★</span>
+              <span className="font-bold text-slate-900">
+                {product.rating.score.toFixed(1)}
+              </span>
+              <span className="text-slate-400">({product.rating.count})</span>
+            </div>
+          ) : (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-600" />
+              <span>
+                {product.hasPriceRange
+                  ? "Farklı boy seçenekleri"
+                  : "%100 Doğal fermantasyon"}
+              </span>
+            </div>
+          )}
 
           {/* Fiyat ve Buton Satırı */}
           <div className="mt-4 flex items-end justify-between gap-2 border-t border-slate-100 pt-3">

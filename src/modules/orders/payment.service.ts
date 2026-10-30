@@ -2,7 +2,10 @@ import { ConflictError, NotFoundError } from "@/shared/errors";
 import type { EventBus } from "@/shared/events/event-bus";
 import { paymentLogger } from "@/shared/logger";
 import type { PaymentProvider } from "@/integrations/payment/payment-provider";
-import type { OrderRepository } from "./order.repository";
+import type {
+  OrderPaymentRepository,
+  OrderQueryRepository,
+} from "./order.repository";
 import type { AddressSnapshot, PaymentOutcome } from "./order.types";
 
 export interface PaymentUrls {
@@ -24,7 +27,7 @@ function formatAddress(address: AddressSnapshot): string {
 export class PaymentService {
   constructor(
     private readonly provider: PaymentProvider,
-    private readonly orders: OrderRepository,
+    private readonly orders: OrderQueryRepository & OrderPaymentRepository,
     private readonly events: EventBus,
     private readonly urls: PaymentUrls,
   ) {}

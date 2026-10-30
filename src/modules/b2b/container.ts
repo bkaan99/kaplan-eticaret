@@ -1,6 +1,6 @@
 import { getAuditLogger } from "@/shared/audit";
 import { getDb } from "@/shared/db";
-import { getNotificationService } from "../orders/container";
+import { getNotificationService } from "../notifications/container";
 import { PrismaDealerRepository } from "./dealer.repository";
 import { DealerService } from "./dealer.service";
 

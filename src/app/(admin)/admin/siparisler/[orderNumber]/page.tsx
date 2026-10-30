@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatMoney } from "@/shared/money";
 import { getAdminOrderService } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
 import {
@@ -52,6 +53,10 @@ function AddressBlock({
           <p>
             {address["companyName"]} · VKN {address["taxNumber"]} (
             {address["taxOffice"]})
+          </p>
+        ) : address["nationalId"] ? (
+          <p className="font-mono text-xs text-slate-700">
+            TCKN: {address["nationalId"]}
           </p>
         ) : null}
       </CardContent>
@@ -133,22 +138,60 @@ async function OrderDetail({
         </CardHeader>
         <CardContent>
           <ul className="flex flex-col divide-y divide-border text-sm">
-            {order.items.map((item) => (
-              <li key={item.id} className="flex justify-between gap-4 py-2">
-                <span>
-                  {item.productName}
-                  {item.variantName ? (
-                    <span className="text-muted-foreground">
-                      {" "}
-                      · {item.variantName}
+            {order.items.map((item) => {
+              const custom = item.customization as
+                | {
+                    kind?: string;
+                    ingredients?: { name: string; unitExtra?: string }[];
+                    brine?: string;
+                    spice?: string;
+                    note?: string | null;
+                  }
+                | undefined;
+
+              return (
+                <li
+                  key={item.id ?? item.sku}
+                  className="flex flex-col gap-1 py-3"
+                >
+                  <div className="flex justify-between gap-4">
+                    <span>
+                      <span className="font-semibold">{item.productName}</span>
+                      {item.variantName ? (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {item.variantName}
+                        </span>
+                      ) : null}
+                      <span className="text-muted-foreground"> ({item.sku})</span>{" "}
+                      × {item.quantity}
                     </span>
+                    <Price value={item.lineTotal} currency={order.currency} />
+                  </div>
+                  {custom?.kind === "custom-pickle" ? (
+                    <div className="mt-1 rounded-xl bg-slate-50 p-2.5 text-xs text-slate-700">
+                      <p className="font-semibold text-primary">
+                        🥒 Özel Turşu Reçetesi:
+                      </p>
+                      <p className="mt-0.5">
+                        <strong>Malzemeler:</strong>{" "}
+                        {custom.ingredients?.map((i) => i.name).join(", ") ||
+                          "-"}
+                      </p>
+                      <p>
+                        <strong>Salamura:</strong> {custom.brine || "-"} ·{" "}
+                        <strong>Acılık:</strong> {custom.spice || "-"}
+                      </p>
+                      {custom.note ? (
+                        <p className="italic text-muted-foreground">
+                          Not: {custom.note}
+                        </p>
+                      ) : null}
+                    </div>
                   ) : null}
-                  <span className="text-muted-foreground"> ({item.sku})</span> ×{" "}
-                  {item.quantity}
-                </span>
-                <Price value={item.lineTotal} currency={order.currency} />
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
           <dl className="ml-auto mt-4 flex max-w-xs flex-col gap-1 text-sm">
             <div className="flex justify-between">
@@ -213,28 +256,35 @@ async function OrderDetail({
           </CardHeader>
           <CardContent className="flex flex-col gap-2 text-sm">
             {order.payments.map((payment) => (
-              <p key={payment.merchantOid}>
-                {METHOD_LABELS[payment.method]} · {payment.status} ·{" "}
-                <Price value={payment.amount} currency={order.currency} />
+              <div
+                key={payment.merchantOid}
+                className="flex flex-wrap items-baseline gap-1.5"
+              >
+                <span>
+                  {METHOD_LABELS[payment.method]} · {payment.status} ·
+                </span>
+                <span className="font-semibold text-foreground">
+                  {formatMoney(payment.amount, order.currency)}
+                </span>
                 <span className="text-muted-foreground">
-                  {" "}
                   ({payment.merchantOid})
                 </span>
                 {payment.dueAt ? (
                   <span className="text-muted-foreground">
-                    {" "}
                     · vade {payment.dueAt.toLocaleDateString("tr-TR")}
                   </span>
                 ) : null}
-              </p>
+              </div>
             ))}
             {order.shipments.map((shipment, index) => (
-              <p key={index}>
-                {shipment.carrier}
-                {shipment.trackingNumber ? ` · ${shipment.trackingNumber}` : ""}
+              <div key={index} className="flex flex-wrap items-baseline gap-1">
+                <span>
+                  {shipment.carrier}
+                  {shipment.trackingNumber ? ` · ${shipment.trackingNumber}` : ""}
+                </span>
                 {trackingUrl(shipment.carrier, shipment.trackingNumber) ? (
                   <>
-                    {" · "}
+                    <span className="text-muted-foreground">·</span>
                     <a
                       href={trackingUrl(
                         shipment.carrier,
@@ -248,15 +298,15 @@ async function OrderDetail({
                     </a>
                   </>
                 ) : null}
-              </p>
+              </div>
             ))}
             {order.returns.map((request) => (
-              <p key={request.id}>
+              <div key={request.id}>
                 <Link href="/admin/iadeler" className="underline">
                   İade talebi
                 </Link>{" "}
                 · {request.status}
-              </p>
+              </div>
             ))}
           </CardContent>
         </Card>

@@ -1,8 +1,7 @@
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
-import type { AuditLogger } from "@/shared/audit/audit-logger";
+import type { Actor, AuditLogger } from "@/shared/audit";
 import type { EventBus } from "@/shared/events/event-bus";
 import { slugify, uniqueSlug } from "@/shared/slug";
-import type { Actor } from "../orders/admin-order.service";
 import type {
   EditableProduct,
   FormReferences,
@@ -37,8 +36,8 @@ export function toFieldErrors(
 export class ProductAdminService {
   constructor(
     private readonly products: ProductAdminRepository,
-    private readonly events: EventBus,
-    private readonly audit: AuditLogger,
+    private readonly events?: EventBus,
+    private readonly audit: AuditLogger = { log: async () => {}, purgeOlderThan: async () => 0 },
   ) {}
 
   list(query: ProductListQuery): Promise<ProductListResult> {
@@ -103,8 +102,6 @@ export class ProductAdminService {
       before: this.snapshot(before),
       after: this.inputSnapshot(input, slug),
     });
-
-    await this.publishReplenished(before, input);
   }
 
   /** Kaydetmeden doğrular; hatalarda ProductValidationError fırlatır. */
@@ -131,25 +128,6 @@ export class ProductAdminService {
     return uniqueSlug(wanted, (candidate) =>
       this.products.slugTaken(candidate),
     );
-  }
-
-  /** 0'dan fazlaya çıkan stoklar için yeniden stokta olayı yayınlar. */
-  private async publishReplenished(
-    before: EditableProduct,
-    input: ProductInput,
-  ): Promise<void> {
-    const previous = new Map(
-      before.variants.map((v) => [v.id, v.stockQuantity]),
-    );
-    for (const variant of input.variants) {
-      if (!variant.id) continue;
-      const old = previous.get(variant.id);
-      if (old !== undefined && old <= 0 && variant.stockQuantity > 0) {
-        await this.events.publish("stock.replenished", {
-          variantId: variant.id,
-        });
-      }
-    }
   }
 
   private snapshot(product: EditableProduct) {

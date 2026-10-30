@@ -16,6 +16,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
+    {
+      url: absoluteUrl("/kendi-tursunu-yap"),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    { url: absoluteUrl("/ara"), changeFrequency: "daily", priority: 0.8 },
     ...categories.map((category) => ({
       url: absoluteUrl(`/kategori/${category.slug}`),
       changeFrequency: "weekly" as const,
@@ -27,11 +33,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.4,
     })),
-    ...products.map((product) => ({
-      url: absoluteUrl(`/urun/${product.slug}`),
-      lastModified: product.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    })),
+    ...products
+      .filter((product) => product.slug !== "kendi-tursunu-yap")
+      .map((product) => ({
+        url: absoluteUrl(`/urun/${product.slug}`),
+        lastModified: product.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      })),
   ];
 }

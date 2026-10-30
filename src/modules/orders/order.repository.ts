@@ -2,6 +2,7 @@ import { randomBytes, randomInt } from "node:crypto";
 import Decimal from "decimal.js";
 import type { Prisma } from "../../../generated/prisma/client";
 import { ConflictError, NotFoundError } from "@/shared/errors";
+import { CreditLimitPolicy } from "../b2b/credit-limit.policy";
 import type { PrismaClient } from "@/shared/prisma-client";
 import type {
   AddressSnapshot,
@@ -26,19 +27,17 @@ export interface DeferredTerms {
   dueAt: Date;
 }
 
-export interface OrderRepository {
-  createPendingOrder(order: NewOrder): Promise<CreatedOrder>;
-  /**
-   * Vadeli ödemeli siparişi oluşturur: kredi limiti kontrolü ve stok düşümü
-   * tek transaction'da yapılır (aynı bayinin eşzamanlı siparişleri sıraya girer).
-   */
-  createDeferredOrder(
-    order: NewOrder,
-    terms: DeferredTerms,
-  ): Promise<CreatedOrder>;
-  /** Vadeli siparişin tahsil edildiğini işaretler; zaten ödenmişse false döner. */
-  markDeferredPaid(orderId: string): Promise<boolean>;
+/**
+ * Sipariş kimliği ile tekil sipariş sorgulama sözleşmesi (ISP - Interface Segregation).
+ */
+export interface OrderLookupRepository {
   findById(orderId: string): Promise<OrderView | null>;
+}
+
+/**
+ * Sipariş okuma ve sorgulama işlemleri sözleşmesi.
+ */
+export interface OrderQueryRepository extends OrderLookupRepository {
   findByOrderNumber(orderNumber: string): Promise<OrderView | null>;
   findByLookupToken(token: string): Promise<OrderView | null>;
   listByUser(userId: string): Promise<OrderView[]>;
@@ -50,22 +49,81 @@ export interface OrderRepository {
     provider: string;
     method: "CARD" | "BANK_TRANSFER" | "DEFERRED";
   } | null>;
-  applyPaymentResult(input: PaymentResultInput): Promise<PaymentOutcome>;
+}
+
+/**
+ * Yeni sipariş oluşturma sözleşmesi (Checkout için).
+ */
+export interface OrderCreationRepository {
+  createPendingOrder(order: NewOrder): Promise<CreatedOrder>;
+  /**
+   * Vadeli ödemeli siparişi oluşturur: kredi limiti kontrolü ve stok düşümü
+   * tek transaction'da yapılır (aynı bayinin eşzamanlı siparişleri sıraya girer).
+   */
+  createDeferredOrder(
+    order: NewOrder,
+    terms: DeferredTerms,
+  ): Promise<CreatedOrder>;
+}
+
+/**
+ * Sipariş yaşam döngüsü komutları (oluşturma ve iptal).
+ */
+export interface OrderCommandRepository extends OrderCreationRepository {
   /** Siparişi iptal eder; stoğu/rezervasyonu geri alır. İade ayrı yapılır. */
   cancelOrder(orderId: string, markRefunded: boolean): Promise<void>;
+}
+
+/**
+ * Ödeme doğrulama ve tahsilat sözleşmesi.
+ */
+export interface OrderPaymentRepository {
+  applyPaymentResult(input: PaymentResultInput): Promise<PaymentOutcome>;
+  /** Vadeli siparişin tahsil edildiğini işaretler; zaten ödenmişse false döner. */
+  markDeferredPaid(orderId: string): Promise<boolean>;
+}
+
+/**
+ * Sipariş iade kayıt sözleşmesi.
+ */
+export interface OrderRefundRepository {
   recordRefund(
     orderId: string,
     amount: string,
     reason: string | null,
     providerRef: string | null,
   ): Promise<void>;
+}
+
+/**
+ * Zaman aşımına uğrayan rezervasyonları serbest bırakma sözleşmesi (Worker için).
+ */
+export interface OrderReservationRepository {
   /** Süresi dolan rezervasyonları bırakır ve ödemesi bekleyen siparişleri iptal eder. */
   releaseExpired(now: Date): Promise<number>;
+}
+
+/**
+ * Kupon kullanım sayılarını denetleme sözleşmesi.
+ */
+export interface CouponUsageRepository {
   countCouponUses(
     code: string,
     owner: { userId: string | null; email: string },
   ): Promise<number>;
 }
+
+/**
+ * Tüm sipariş işlemlerini kapsayan birleşik (composite) repository arayüzü.
+ * Tekil sorumluluklar için istemciler amaca yönelik alt arayüzleri tercih etmelidir (ISP).
+ */
+export interface OrderRepository
+  extends OrderQueryRepository,
+    OrderCommandRepository,
+    OrderPaymentRepository,
+    OrderRefundRepository,
+    OrderReservationRepository,
+    CouponUsageRepository {}
 
 const ORDER_NUMBER_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -110,6 +168,7 @@ function toView(row: OrderRow): OrderView {
     billingAddress: toAddress(row.billingAddress),
     customerNote: row.customerNote,
     items: row.items.map((item) => ({
+      id: item.id,
       variantId: item.variantId,
       productName: item.productName,
       variantName: item.variantName,
@@ -117,6 +176,7 @@ function toView(row: OrderRow): OrderView {
       unitPrice: item.unitPrice.toFixed(2),
       quantity: item.quantity,
       lineTotal: item.lineTotal.toFixed(2),
+      customization: item.customization,
     })),
     trackingNumber: shipment?.trackingNumber ?? null,
     carrier: shipment?.carrier ?? null,
@@ -249,16 +309,11 @@ export class PrismaOrderRepository implements OrderRepository {
         },
         _sum: { grandTotal: true },
       });
-      const used = new Decimal(outstanding._sum.grandTotal?.toString() ?? 0);
-      const requested = new Decimal(order.grandTotal);
-      const limit = new Decimal(terms.creditLimit);
-
-      if (used.plus(requested).gt(limit)) {
-        const available = Decimal.max(limit.minus(used), 0);
-        throw new ConflictError(
-          `Kredi limitiniz yetersiz (kullanılabilir: ${available.toFixed(2)} TL)`,
-        );
-      }
+      CreditLimitPolicy.assertAllowed(
+        outstanding._sum.grandTotal?.toString() ?? 0,
+        order.grandTotal,
+        terms.creditLimit,
+      );
 
       // Vadeli siparişte stok rezerve edilmez, doğrudan düşülür.
       for (const item of order.items) {

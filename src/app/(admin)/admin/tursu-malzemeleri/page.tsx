@@ -14,11 +14,18 @@ async function IngredientsContent() {
   const user = await adminPage(PERMISSIONS.PRODUCT_WRITE);
   if (!user) return <AccessDenied />;
 
-  const [ingredients, productId] = await Promise.all([
+  const [ingredients, productId, options] = await Promise.all([
     customPickleService.listIngredients(),
     customPickleService.builderProductId(),
+    customPickleService.getOptions(),
   ]);
-  return <IngredientManager ingredients={ingredients} productId={productId} />;
+  return (
+    <IngredientManager
+      ingredients={ingredients}
+      productId={productId}
+      initialOptions={options}
+    />
+  );
 }
 
 export default function AdminPickleIngredientsPage() {

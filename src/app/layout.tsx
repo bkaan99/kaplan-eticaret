@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { siteConfig } from "@/config/site.config";
 import { themeToCss } from "@/config/theme";
+import { getSiteUrl } from "@/shared/site-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,6 +23,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: { default: siteConfig.name, template: `%s | ${siteConfig.name}` },
   description: siteConfig.description,
   openGraph: {

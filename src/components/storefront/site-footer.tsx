@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { siteConfig } from "@/config/site.config";
 import { getCategoryTree } from "@/modules/catalog/cached";
 import { getCachedLegalLinks, getCachedMenu } from "@/modules/content/cached";
+import { getCachedContactSettings } from "@/modules/settings/cached";
 import { JarIcon, LeafIcon, MailIcon, PhoneIcon, TruckIcon } from "./icons";
 import { Logo } from "./logo";
 
@@ -91,6 +92,68 @@ async function FooterMenu() {
   );
 }
 
+async function FooterContact() {
+  await connection();
+  const contact = await getCachedContactSettings();
+  const phoneHref = contact.phone
+    ? `tel:${contact.phone.replace(/\s/g, "")}`
+    : null;
+  const whatsappHref = contact.whatsapp
+    ? `https://wa.me/${contact.whatsapp.replace(/\D/g, "")}`
+    : null;
+
+  return (
+    <>
+      {contact.email ? (
+        <li>
+          <a
+            href={`mailto:${contact.email}`}
+            className={`inline-flex items-center gap-2 ${linkClass}`}
+          >
+            <MailIcon width={16} height={16} className="text-slate-400" />
+            <span>{contact.email}</span>
+          </a>
+        </li>
+      ) : null}
+      {contact.phone ? (
+        <li>
+          <a
+            href={phoneHref ?? "#"}
+            className={`inline-flex items-center gap-2 ${linkClass}`}
+          >
+            <PhoneIcon width={16} height={16} className="text-slate-400" />
+            <span>{contact.phone}</span>
+          </a>
+        </li>
+      ) : null}
+      {contact.whatsapp ? (
+        <li>
+          <a
+            href={whatsappHref ?? "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center gap-2 ${linkClass}`}
+          >
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
+              W
+            </span>
+            <span>WhatsApp Destek</span>
+          </a>
+        </li>
+      ) : null}
+      {contact.address ? (
+        <li className="mt-1 text-xs leading-relaxed text-slate-500">
+          📍 {contact.address}
+        </li>
+      ) : null}
+      <li className="mt-2 text-xs text-slate-500">
+        {contact.workingHours ||
+          "Sipariş sorularınız için bize her zaman e-posta veya telefon ile ulaşabilirsiniz."}
+      </li>
+    </>
+  );
+}
+
 export function SiteFooter() {
   return (
     <footer className="mt-20 border-t border-slate-200 bg-slate-50 text-slate-700">
@@ -171,27 +234,9 @@ export function SiteFooter() {
         {/* İletişim */}
         <div className="lg:col-span-3">
           <FooterColumn title="İletişim">
-            <li>
-              <a
-                href={`mailto:${siteConfig.contact.email}`}
-                className={`inline-flex items-center gap-2 ${linkClass}`}
-              >
-                <MailIcon width={16} height={16} className="text-slate-400" />
-                <span>{siteConfig.contact.email}</span>
-              </a>
-            </li>
-            <li>
-              <a
-                href={`tel:${siteConfig.contact.phone.replace(/\s/g, "")}`}
-                className={`inline-flex items-center gap-2 ${linkClass}`}
-              >
-                <PhoneIcon width={16} height={16} className="text-slate-400" />
-                <span>{siteConfig.contact.phone}</span>
-              </a>
-            </li>
-            <li className="mt-2 text-xs text-slate-500">
-              Sipariş sorularınız için bize her zaman e-posta veya telefon ile ulaşabilirsiniz.
-            </li>
+            <Suspense fallback={null}>
+              <FooterContact />
+            </Suspense>
           </FooterColumn>
         </div>
       </div>

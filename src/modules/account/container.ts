@@ -3,7 +3,7 @@ import { getDb } from "@/shared/db";
 import { getEnv } from "@/shared/env";
 import { getSiteUrl } from "@/shared/site-url";
 import { Argon2PasswordHasher } from "../auth/password-hasher";
-import { getNotificationService } from "../orders/container";
+import { getNotificationService } from "../notifications/container";
 import { PrismaAccountRepository } from "./account.repository";
 import { PrismaAddressRepository } from "./address.repository";
 import { AddressService } from "./address.service";

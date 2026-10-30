@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { cartService } from "@/modules/cart/container";
 import {
@@ -8,8 +7,8 @@ import {
   persistCartCookie,
 } from "@/modules/cart/cart.session";
 import { customPickleService } from "@/modules/custom-pickle/container";
-import { isAppError } from "@/shared/errors";
-import { reportError } from "@/shared/error-reporter";
+import { runStorefrontAction } from "@/shared/action";
+import { ValidationError } from "@/shared/errors";
 
 export interface CustomPickleActionResult {
   ok: boolean;
@@ -20,25 +19,25 @@ export interface CustomPickleActionResult {
 export async function addCustomPickleAction(
   payload: unknown,
 ): Promise<CustomPickleActionResult> {
-  try {
-    const pricing = await getRequestPricing();
-    if (!pricing.pricesVisible) {
-      return { ok: false, error: "Sipariş için bayi girişi yapmalısınız." };
-    }
-
-    const prepared = await customPickleService.prepare(payload);
-    const result = await cartService.addCustomItem(
-      await getCartIdentity(),
-      prepared.variantId,
-      { key: prepared.key, customization: prepared.customization },
-      prepared.quantity,
-    );
-    await persistCartCookie(result);
-    revalidatePath("/", "layout");
-    return { ok: true };
-  } catch (error) {
-    if (isAppError(error)) return { ok: false, error: error.message };
-    reportError(error, { action: "customPickle" });
-    return { ok: false, error: "İşlem tamamlanamadı, lütfen tekrar deneyin." };
+  const pricing = await getRequestPricing();
+  if (!pricing.pricesVisible) {
+    return { ok: false, error: "Sipariş için bayi girişi yapmalısınız." };
   }
+
+  return runStorefrontAction(
+    async () => {
+      const prepared = await customPickleService.prepare(payload);
+      const result = await cartService.addCustomItem(
+        await getCartIdentity(),
+        prepared.variantId,
+        { key: prepared.key, customization: prepared.customization },
+        prepared.quantity,
+      );
+      await persistCartCookie(result);
+    },
+    {
+      actionName: "customPickle",
+      revalidate: ["/"],
+    },
+  );
 }

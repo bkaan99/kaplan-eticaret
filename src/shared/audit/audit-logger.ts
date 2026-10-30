@@ -1,3 +1,8 @@
+export interface Actor {
+  userId: string;
+  ip?: string | null;
+}
+
 export interface AuditEntry {
   actorId: string | null;
   /** Örn. "product.price.update", "order.refund" */
@@ -15,3 +20,4 @@ export interface AuditLogger {
   /** Saklama süresi dolan kayıtları toplu siler. */
   purgeOlderThan(cutoff: Date): Promise<number>;
 }
+

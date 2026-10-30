@@ -56,6 +56,7 @@ export interface AdminOrderDetail {
     unitPrice: string;
     quantity: number;
     lineTotal: string;
+    customization?: unknown;
   }[];
   payments: {
     provider: string;
@@ -190,6 +191,7 @@ export class PrismaAdminOrderRepository implements AdminOrderRepository {
         unitPrice: item.unitPrice.toFixed(2),
         quantity: item.quantity,
         lineTotal: item.lineTotal.toFixed(2),
+        customization: item.customization,
       })),
       payments: row.payments.map((payment) => ({
         provider: payment.provider,

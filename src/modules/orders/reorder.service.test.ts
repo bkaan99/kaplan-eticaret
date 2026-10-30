@@ -85,4 +85,56 @@ describe("ReorderService", () => {
       ),
     ).rejects.toThrow("veritabanı hatası");
   });
+
+  it("özel turşu siparişini addCustomItem ile sepete aktarır", async () => {
+    const customOrder = {
+      items: [
+        {
+          variantId: "v-custom",
+          productName: "Kendi Turşunu Yap",
+          quantity: 1,
+          customization: {
+            kind: "custom-pickle",
+            ingredients: [{ id: "salatalik" }, { id: "sarimsak" }],
+            brine: "NATURAL",
+            spice: "HOT",
+            note: "Acısı bol olsun",
+          },
+        },
+      ],
+    } as unknown as OrderView;
+
+    let customItemAdded = false;
+    const service = new ReorderService(
+      { getForAccess: async () => customOrder },
+      {
+        addItem: async () => {
+          throw new Error("addItem çağrılmamalı");
+        },
+        addCustomItem: async (_identity, variantId, line, quantity) => {
+          expect(variantId).toBe("v-custom");
+          expect(quantity).toBe(1);
+          expect(line.customization.ingredientIds).toEqual([
+            "salatalik",
+            "sarimsak",
+          ]);
+          expect(line.customization.brine).toBe("NATURAL");
+          expect(line.customization.spice).toBe("HOT");
+          expect(line.customization.note).toBe("Acısı bol olsun");
+          customItemAdded = true;
+          return cartResult();
+        },
+      },
+    );
+
+    const result = await service.reorder(
+      "SXYZ",
+      { userId: "u1" },
+      { userId: "u1", sessionToken: null },
+    );
+
+    expect(customItemAdded).toBe(true);
+    expect(result.added).toBe(1);
+    expect(result.skipped).toHaveLength(0);
+  });
 });

@@ -3,7 +3,7 @@ import { getDb } from "../db";
 import type { AuditLogger } from "./audit-logger";
 import { PrismaAuditLogger } from "./prisma-audit-logger";
 
-export type { AuditEntry, AuditLogger } from "./audit-logger";
+export type { Actor, AuditEntry, AuditLogger } from "./audit-logger";
 
 let logger: AuditLogger | undefined;
 
