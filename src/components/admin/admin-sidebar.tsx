@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { AdminNavItem } from "@/modules/admin/navigation";
-import { AdminLogoutButton } from "./admin-logout-button";
 
 interface AdminSidebarProps {
   nav: AdminNavItem[];
@@ -215,7 +214,7 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               Sistem Aktif
             </span>
-            <span className="text-[10px] text-slate-400">v0.6.2</span>
+            <span className="text-[10px] text-slate-400">v1.0.0</span>
           </div>
         </div>
 
@@ -257,39 +256,25 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
           })}
         </nav>
 
-        {/* Alt Kullanıcı & Mağaza Kartı */}
+        {/* Alt Kullanıcı Kartı */}
         <div className="border-t border-emerald-950/80 p-4">
-          <div className="flex items-center gap-3 rounded-xl bg-white/5 p-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-400 text-slate-950 font-bold text-xs">
+          <Link
+            href="/hesabim"
+            className="group flex items-center gap-3 rounded-xl bg-white/5 p-2.5 transition hover:bg-white/10"
+            title="Profilimi Görüntüle"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-400 text-slate-950 font-bold text-xs shadow-2xs">
               {initial}
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="truncate text-xs font-bold text-white">
+              <span className="truncate text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
                 {user.name || user.email}
               </span>
-              <span className="text-[10px] text-emerald-400 font-medium">Yönetici</span>
+              <span className="text-[10px] text-emerald-400 font-medium">
+                Yönetici Hesabı →
+              </span>
             </div>
-          </div>
-
-          <div className="mt-2.5 flex items-center justify-between px-1 text-xs">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-amber-400 transition-colors"
-            >
-              <span>Mağazayı Gör</span>
-              <span>↗</span>
-            </Link>
-            <Link
-              href="/hesabim"
-              className="text-slate-400 hover:text-white transition-colors"
-            >
-              Profilim
-            </Link>
-          </div>
-
-          <div className="mt-3">
-            <AdminLogoutButton variant="sidebar" />
-          </div>
+          </Link>
         </div>
       </aside>
 
