@@ -1,5 +1,6 @@
+import { eq } from "drizzle-orm";
+import { user as userTable, type UserType } from "@/db";
 import { getDb } from "@/shared/db";
-import type { UserType } from "../../../generated/prisma/client";
 import type { LoginFailureState } from "./lockout-policy";
 
 export interface AuthUserRecord {
@@ -22,42 +23,36 @@ export interface AuthUserRepository {
   saveLoginState(userId: string, state: LoginFailureState): Promise<void>;
 }
 
-const userWithPermissions = {
-  roles: {
-    select: {
-      role: { select: { permissions: { select: { permission: true } } } },
-    },
-  },
-} as const;
-
-export class PrismaAuthUserRepository implements AuthUserRepository {
+export class D1AuthUserRepository implements AuthUserRepository {
   async findByEmail(email: string): Promise<AuthUserRecord | null> {
-    const user = await getDb().user.findUnique({
-      where: { email },
-      include: userWithPermissions,
-    });
-    return user ? this.toRecord(user) : null;
+    return this.find(eq(userTable.email, email));
   }
 
   async findById(id: string): Promise<AuthUserRecord | null> {
-    const user = await getDb().user.findUnique({
-      where: { id },
-      include: userWithPermissions,
+    return this.find(eq(userTable.id, id));
+  }
+
+  private async find(
+    where: ReturnType<typeof eq>,
+  ): Promise<AuthUserRecord | null> {
+    const row = await getDb().query.user.findFirst({
+      where,
+      with: { roles: { with: { role: { with: { permissions: true } } } } },
     });
-    return user ? this.toRecord(user) : null;
+    return row ? this.toRecord(row) : null;
   }
 
   async saveLoginState(
     userId: string,
     state: LoginFailureState,
   ): Promise<void> {
-    await getDb().user.update({
-      where: { id: userId },
-      data: {
+    await getDb()
+      .update(userTable)
+      .set({
         failedLoginCount: state.failedLoginCount,
         lockedUntil: state.lockedUntil,
-      },
-    });
+      })
+      .where(eq(userTable.id, userId));
   }
 
   private toRecord(user: {

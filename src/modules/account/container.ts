@@ -4,17 +4,17 @@ import { getEnv } from "@/shared/env";
 import { getSiteUrl } from "@/shared/site-url";
 import { Argon2PasswordHasher } from "../auth/password-hasher";
 import { getNotificationService } from "../notifications/container";
-import { PrismaAccountRepository } from "./account.repository";
-import { PrismaAddressRepository } from "./address.repository";
+import { D1AccountRepository } from "./account.repository";
+import { D1AddressRepository } from "./address.repository";
 import { AddressService } from "./address.service";
-import { PrismaPrivacyRepository } from "./privacy.repository";
+import { D1PrivacyRepository } from "./privacy.repository";
 import { PrivacyService } from "./privacy.service";
 import { ProfileService } from "./profile.service";
 import { AccountService } from "./account.service";
 
 export function getAccountService(): AccountService {
   return new AccountService({
-    accounts: new PrismaAccountRepository(getDb),
+    accounts: new D1AccountRepository(getDb),
     hasher: new Argon2PasswordHasher(),
     mailer: getNotificationService(),
     secret: getEnv().AUTH_SECRET,
@@ -23,19 +23,19 @@ export function getAccountService(): AccountService {
 }
 
 export function getAddressService(): AddressService {
-  return new AddressService(new PrismaAddressRepository(getDb));
+  return new AddressService(new D1AddressRepository(getDb));
 }
 
 export function getProfileService(): ProfileService {
   return new ProfileService(
-    new PrismaAccountRepository(getDb),
+    new D1AccountRepository(getDb),
     new Argon2PasswordHasher(),
   );
 }
 
 export function getPrivacyService(): PrivacyService {
   return new PrivacyService(
-    new PrismaPrivacyRepository(getDb),
+    new D1PrivacyRepository(getDb),
     new Argon2PasswordHasher(),
     getAuditLogger(),
   );

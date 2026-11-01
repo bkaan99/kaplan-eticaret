@@ -17,9 +17,7 @@ function encode(salt: Uint8Array, hash: Uint8Array): string {
   return `${PREFIX}${bytesToHex(salt)}$${bytesToHex(hash)}`;
 }
 
-function parse(
-  encoded: string,
-): { salt: Uint8Array; hash: Uint8Array } | null {
+function parse(encoded: string): { salt: Uint8Array; hash: Uint8Array } | null {
   if (!encoded.startsWith(PREFIX)) return null;
   const parts = encoded.slice(PREFIX.length).split("$");
   if (parts.length !== 2 || !parts[0] || !parts[1]) return null;

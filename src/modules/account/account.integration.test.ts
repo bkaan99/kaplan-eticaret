@@ -1,26 +1,37 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
+import {
+  createPrismaClient,
+  type PrismaClient,
+} from "@/shared/prisma-client-node";
 import { Argon2PasswordHasher } from "../auth/password-hasher";
 import { AuthService } from "../auth/auth.service";
 import type {
   AuthUserRecord,
   AuthUserRepository,
 } from "../auth/auth.repository";
-import { PrismaAccountRepository } from "./account.repository";
+import { D1AccountRepository } from "./account.repository";
 import { AccountService, type AccountMailer } from "./account.service";
 
 describe("Hesap (veritabanı)", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
+  let t: TestDb;
+  let db: Db;
 
-  beforeAll(() => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
+  beforeAll(async () => {
+    t = await createTestDb();
+    db = t.db;
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
+
+  const userByEmail = async (email: string) =>
+    db.query.user.findFirst({
+      where: eq(userTable.email, email),
+      with: { customer: true },
+    });
 
   it("kayıt olur, doğrular, şifre sıfırlar ve yeni parolayla giriş yapar", async () => {
     const sent: { verify: string[]; reset: string[] } = {
@@ -33,7 +44,7 @@ describe("Hesap (veritabanı)", () => {
     };
     const hasher = new Argon2PasswordHasher();
     const service = new AccountService({
-      accounts: new PrismaAccountRepository(() => db),
+      accounts: new D1AccountRepository(() => db),
       hasher,
       mailer,
       secret: "s".repeat(32),
@@ -51,26 +62,21 @@ describe("Hesap (veritabanı)", () => {
       phone: null,
     });
 
-    const created = await db.user.findUniqueOrThrow({
-      where: { email },
-      include: { customer: true },
-    });
+    const created = (await userByEmail(email))!;
     expect(created.type).toBe("CUSTOMER");
     expect(created.customer).not.toBeNull();
     expect(created.emailVerifiedAt).toBeNull();
     expect(created.passwordHash).not.toContain("ilkparola");
 
     await service.verifyEmail(tokenOf(sent.verify[0]!));
-    expect(
-      (await db.user.findUniqueOrThrow({ where: { email } })).emailVerifiedAt,
-    ).not.toBeNull();
+    expect((await userByEmail(email))!.emailVerifiedAt).not.toBeNull();
 
     await service.requestPasswordReset(email);
     await service.resetPassword(tokenOf(sent.reset[0]!), "yeniparola12345");
 
     const users: AuthUserRepository = {
       findByEmail: async (value) => {
-        const row = await db.user.findUnique({ where: { email: value } });
+        const row = await userByEmail(value);
         return row
           ? ({
               id: row.id,
@@ -99,7 +105,7 @@ describe("Hesap (veritabanı)", () => {
   });
 
   it("aynı e-postayla eşzamanlı iki kayıttan yalnızca biri başarılı olur", async () => {
-    const repo = new PrismaAccountRepository(() => db);
+    const repo = new D1AccountRepository(() => db);
     const hasher = new Argon2PasswordHasher();
     const service = new AccountService({
       accounts: repo,
@@ -125,6 +131,13 @@ describe("Hesap (veritabanı)", () => {
     ]);
 
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
-    expect(await db.user.count({ where: { email: input.email } })).toBe(1);
+    expect(
+      (
+        await db
+          .select({ n: count() })
+          .from(userTable)
+          .where(eq(userTable.email, input.email))
+      )[0]!.n,
+    ).toBe(1);
   });
 });

@@ -1,5 +1,5 @@
-import type { Prisma } from "../../../generated/prisma/client";
-import type { PrismaClient } from "@/shared/prisma-client";
+import { and, asc, count, desc, eq, ne } from "drizzle-orm";
+import { address, newId, runBatch, type Db } from "@/db";
 import type { SavedAddressInput } from "./address.schema";
 
 export interface SavedAddress {
@@ -35,75 +35,79 @@ export interface AddressRepository {
   delete(userId: string, id: string): Promise<boolean>;
 }
 
-const select = {
-  id: true,
-  title: true,
-  firstName: true,
-  lastName: true,
-  phone: true,
-  city: true,
-  district: true,
-  neighborhood: true,
-  addressLine: true,
-  postalCode: true,
-  invoiceType: true,
-  nationalId: true,
-  companyName: true,
-  taxNumber: true,
-  taxOffice: true,
-  isDefaultShipping: true,
-  isDefaultBilling: true,
+const columns = {
+  id: address.id,
+  title: address.title,
+  firstName: address.firstName,
+  lastName: address.lastName,
+  phone: address.phone,
+  city: address.city,
+  district: address.district,
+  neighborhood: address.neighborhood,
+  addressLine: address.addressLine,
+  postalCode: address.postalCode,
+  invoiceType: address.invoiceType,
+  nationalId: address.nationalId,
+  companyName: address.companyName,
+  taxNumber: address.taxNumber,
+  taxOffice: address.taxOffice,
+  isDefaultShipping: address.isDefaultShipping,
+  isDefaultBilling: address.isDefaultBilling,
 } as const;
 
-export class PrismaAddressRepository implements AddressRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+export class D1AddressRepository implements AddressRepository {
+  constructor(private readonly db: () => Db) {}
 
   list(userId: string): Promise<SavedAddress[]> {
-    return this.db().address.findMany({
-      where: { userId },
-      orderBy: [{ isDefaultShipping: "desc" }, { createdAt: "asc" }],
-      select,
-    });
+    return this.db()
+      .select(columns)
+      .from(address)
+      .where(eq(address.userId, userId))
+      .orderBy(desc(address.isDefaultShipping), asc(address.createdAt));
   }
 
-  count(userId: string): Promise<number> {
-    return this.db().address.count({ where: { userId } });
+  async count(userId: string): Promise<number> {
+    const [row] = await this.db()
+      .select({ n: count() })
+      .from(address)
+      .where(eq(address.userId, userId));
+    return row!.n;
   }
 
-  find(userId: string, id: string): Promise<SavedAddress | null> {
-    return this.db().address.findFirst({ where: { id, userId }, select });
+  async find(userId: string, id: string): Promise<SavedAddress | null> {
+    const [row] = await this.db()
+      .select(columns)
+      .from(address)
+      .where(and(eq(address.id, id), eq(address.userId, userId)))
+      .limit(1);
+    return row ?? null;
   }
 
   async create(userId: string, input: SavedAddressInput): Promise<string> {
     const db = this.db();
-    // Önce varsayılan bayrakları temizle, sonra ekle (dizi formu: işlemler önceden bilinir).
-    // Varsayılan bayrağı yalnızca tek adreste bulunur.
-    const ops: Prisma.PrismaPromise<unknown>[] = [];
+    // Varsayılan bayrağı yalnızca tek adreste bulunur: önce temizle, sonra ekle (tek batch, atomik).
+    const ops: Parameters<typeof runBatch>[1] = [];
     if (input.isDefaultShipping) {
       ops.push(
-        db.address.updateMany({
-          where: { userId },
-          data: { isDefaultShipping: false },
-        }),
+        db
+          .update(address)
+          .set({ isDefaultShipping: false })
+          .where(eq(address.userId, userId)),
       );
     }
     if (input.isDefaultBilling) {
       ops.push(
-        db.address.updateMany({
-          where: { userId },
-          data: { isDefaultBilling: false },
-        }),
+        db
+          .update(address)
+          .set({ isDefaultBilling: false })
+          .where(eq(address.userId, userId)),
       );
     }
-    ops.push(
-      db.address.create({
-        data: { ...input, userId },
-        select: { id: true },
-      }),
-    );
+    const id = newId();
+    ops.push(db.insert(address).values({ ...input, id, userId }));
 
-    const results = await db.$transaction(ops);
-    return (results[results.length - 1] as { id: string }).id;
+    await runBatch(db, ops);
+    return id;
   }
 
   async update(
@@ -112,39 +116,37 @@ export class PrismaAddressRepository implements AddressRepository {
     input: SavedAddressInput,
   ): Promise<boolean> {
     const db = this.db();
-    const owned = await db.address.findFirst({
-      where: { id, userId },
-      select: { id: true },
-    });
+    const owned = await this.find(userId, id);
     if (!owned) return false;
 
-    const ops: Prisma.PrismaPromise<unknown>[] = [];
+    const ops: Parameters<typeof runBatch>[1] = [];
     if (input.isDefaultShipping) {
       ops.push(
-        db.address.updateMany({
-          where: { userId, id: { not: id } },
-          data: { isDefaultShipping: false },
-        }),
+        db
+          .update(address)
+          .set({ isDefaultShipping: false })
+          .where(and(eq(address.userId, userId), ne(address.id, id))),
       );
     }
     if (input.isDefaultBilling) {
       ops.push(
-        db.address.updateMany({
-          where: { userId, id: { not: id } },
-          data: { isDefaultBilling: false },
-        }),
+        db
+          .update(address)
+          .set({ isDefaultBilling: false })
+          .where(and(eq(address.userId, userId), ne(address.id, id))),
       );
     }
-    ops.push(db.address.update({ where: { id }, data: input }));
+    ops.push(db.update(address).set(input).where(eq(address.id, id)));
 
-    await db.$transaction(ops);
+    await runBatch(db, ops);
     return true;
   }
 
   async delete(userId: string, id: string): Promise<boolean> {
-    const result = await this.db().address.deleteMany({
-      where: { id, userId },
-    });
-    return result.count > 0;
+    const result = await this.db()
+      .delete(address)
+      .where(and(eq(address.id, id), eq(address.userId, userId)))
+      .run();
+    return result.meta.changes > 0;
   }
 }

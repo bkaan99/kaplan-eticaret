@@ -4,7 +4,10 @@ import type { D1Database } from "@cloudflare/workers-types";
 import { getPlatformProxy } from "wrangler";
 import { createDb, type Db } from "../../src/db";
 
-const MIGRATIONS_DIR = path.resolve(import.meta.dirname, "../../prisma/d1-migrations");
+const MIGRATIONS_DIR = path.resolve(
+  import.meta.dirname,
+  "../../prisma/d1-migrations",
+);
 
 export interface TestDb {
   db: Db;
@@ -32,7 +35,10 @@ export async function createTestDb(): Promise<TestDb> {
   });
   const d1 = proxy.env.DB;
 
-  const sql = readFileSync(path.join(MIGRATIONS_DIR, "0001_sqlite_baseline.sql"), "utf8");
+  const sql = readFileSync(
+    path.join(MIGRATIONS_DIR, "0001_sqlite_baseline.sql"),
+    "utf8",
+  );
   await d1.batch(statements(sql).map((s) => d1.prepare(s)));
 
   return { db: createDb(d1), d1, close: () => proxy.dispose() };

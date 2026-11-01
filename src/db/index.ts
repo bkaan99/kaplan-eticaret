@@ -18,7 +18,26 @@ type BatchQuery = Parameters<Db["batch"]>[0][number];
  * D1'de interaktif transaction yok; sorgular tek `batch` içinde atomik çalışır
  * (hepsi ya da hiçbiri). Boş liste güvenle yok sayılır.
  */
-export async function runBatch(db: Db, queries: BatchQuery[]): Promise<unknown[]> {
+export async function runBatch(
+  db: Db,
+  queries: BatchQuery[],
+): Promise<unknown[]> {
   if (queries.length === 0) return [];
   return db.batch(queries as [BatchQuery, ...BatchQuery[]]);
+}
+
+/** SQLite benzersizlik (UNIQUE / PRIMARY KEY) kısıtı ihlali mi? Drizzle hatayı `cause` içinde sarar. */
+export function isUniqueViolation(error: unknown): boolean {
+  for (let e: unknown = error, depth = 0; e && depth < 4; depth++) {
+    const message = String((e as { message?: unknown }).message ?? "");
+    if (
+      /UNIQUE constraint failed|PRIMARY KEY constraint failed|SQLITE_CONSTRAINT/i.test(
+        message,
+      )
+    ) {
+      return true;
+    }
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
 }
