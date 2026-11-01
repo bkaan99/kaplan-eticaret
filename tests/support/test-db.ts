@@ -6,7 +6,7 @@ import { createDb, type Db } from "../../src/db";
 
 const MIGRATIONS_DIR = path.resolve(
   import.meta.dirname,
-  "../../prisma/d1-migrations",
+  "../../db/migrations",
 );
 
 export interface TestDb {

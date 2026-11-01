@@ -1,13 +1,32 @@
-import "dotenv/config";
+import { and, eq } from "drizzle-orm";
 import { SYSTEM_ROLES } from "../src/shared/permissions";
 import { slugify } from "../src/shared/slug";
-import { LEGAL_PAGE_TEMPLATES } from "./legal-pages";
 import {
-  createPrismaClient,
-  type PrismaClient,
-} from "../src/shared/prisma-client-node";
+  attribute,
+  attributeValue,
+  brand,
+  category,
+  customerGroup,
+  dec,
+  newId,
+  page,
+  pickleIngredient,
+  product,
+  productAttributeValue,
+  productImage,
+  productOption,
+  productOptionValue,
+  productVariant,
+  role,
+  rolePermission,
+  runBatch,
+  variantOptionValue,
+  type Db,
+} from "../src/db";
+import { LEGAL_PAGE_TEMPLATES } from "./legal-pages";
 
-export async function runSeed(db: PrismaClient): Promise<void> {
+/** Tekrar çalıştırılabilir (idempotent) başlangıç verisi: roller, demo katalog, malzemeler, yasal sayfalar. */
+export async function runSeed(db: Db): Promise<void> {
   await seedRoles(db);
   await seedCustomerGroups(db);
   await seedDemoCatalog(db);
@@ -15,40 +34,34 @@ export async function runSeed(db: PrismaClient): Promise<void> {
   await seedLegalPages(db);
 }
 
-async function seedRoles(db: PrismaClient): Promise<void> {
-  for (const role of SYSTEM_ROLES) {
-    const saved = await db.role.upsert({
-      where: { name: role.name },
-      update: { description: role.description },
-      create: {
-        name: role.name,
-        description: role.description,
-        isSystem: true,
-      },
-    });
+async function seedRoles(db: Db): Promise<void> {
+  for (const systemRole of SYSTEM_ROLES) {
+    await db
+      .insert(role)
+      .values({ name: systemRole.name, description: systemRole.description, isSystem: true })
+      .onConflictDoUpdate({ target: role.name, set: { description: systemRole.description } });
+    const [saved] = await db.select({ id: role.id }).from(role).where(eq(role.name, systemRole.name));
 
-    await db.rolePermission.deleteMany({ where: { roleId: saved.id } });
-    await db.rolePermission.createMany({
-      data: role.permissions.map((permission) => ({
-        roleId: saved.id,
-        permission,
-      })),
-    });
+    await runBatch(db, [
+      db.delete(rolePermission).where(eq(rolePermission.roleId, saved!.id)),
+      ...systemRole.permissions.map((permission) =>
+        db.insert(rolePermission).values({ roleId: saved!.id, permission }),
+      ),
+    ]);
   }
 }
 
-async function seedCustomerGroups(db: PrismaClient): Promise<void> {
+async function seedCustomerGroups(db: Db): Promise<void> {
   const groups = [
     { name: "Bayi", slug: "bayi", discountPercent: 20 },
     { name: "Toptan", slug: "toptan", discountPercent: 30 },
   ];
 
   for (const group of groups) {
-    await db.customerGroup.upsert({
-      where: { slug: group.slug },
-      update: {},
-      create: group,
-    });
+    await db
+      .insert(customerGroup)
+      .values({ name: group.name, slug: group.slug, discountPercent: dec(group.discountPercent) })
+      .onConflictDoNothing({ target: customerGroup.slug });
   }
 }
 
@@ -224,58 +237,60 @@ const DEMO_PRODUCTS: DemoProduct[] = [
   },
 ];
 
-async function seedDemoCatalog(db: PrismaClient): Promise<void> {
+/** Benzersiz anahtara göre kaydı yoksa ekler; kimliğini döndürür. */
+async function ensureId(
+  db: Db,
+  table: typeof category | typeof brand | typeof attribute,
+  slug: string,
+  values: Record<string, unknown>,
+): Promise<string> {
+  await db
+    .insert(table)
+    .values({ ...values, slug } as never)
+    .onConflictDoNothing({ target: table.slug });
+  const [row] = await db.select({ id: table.id }).from(table).where(eq(table.slug, slug));
+  return row!.id;
+}
+
+async function seedDemoCatalog(db: Db): Promise<void> {
   const categoryIds = new Map<string, string>();
-  for (const [index, category] of DEMO_CATEGORIES.entries()) {
-    const saved = await db.category.upsert({
-      where: { slug: category.slug },
-      update: {},
-      create: {
-        name: category.name,
-        slug: category.slug,
-        sortOrder: index,
-        imageUrl: `/images/kategoriler/${category.slug}.jpg`,
-        parentId: category.parent ? categoryIds.get(category.parent) : null,
-      },
+  for (const [index, demoCategory] of DEMO_CATEGORIES.entries()) {
+    const id = await ensureId(db, category, demoCategory.slug, {
+      name: demoCategory.name,
+      sortOrder: index,
+      imageUrl: `/images/kategoriler/${demoCategory.slug}.jpg`,
+      parentId: demoCategory.parent ? categoryIds.get(demoCategory.parent) : null,
     });
-    categoryIds.set(category.slug, saved.id);
+    categoryIds.set(demoCategory.slug, id);
   }
 
   const brandIds = new Map<string, string>();
   for (const name of DEMO_BRANDS) {
-    const saved = await db.brand.upsert({
-      where: { slug: slugify(name) },
-      update: {},
-      create: { name, slug: slugify(name) },
-    });
-    brandIds.set(name, saved.id);
+    brandIds.set(name, await ensureId(db, brand, slugify(name), { name }));
   }
 
   const attributeValueIds = new Map<string, string>();
-  for (const [position, attribute] of DEMO_ATTRIBUTES.entries()) {
-    const saved = await db.attribute.upsert({
-      where: { slug: attribute.slug },
-      update: {},
-      create: { name: attribute.name, slug: attribute.slug, position },
+  for (const [position, demoAttribute] of DEMO_ATTRIBUTES.entries()) {
+    const attributeId = await ensureId(db, attribute, demoAttribute.slug, {
+      name: demoAttribute.name,
+      position,
     });
-    for (const [valuePosition, value] of attribute.values.entries()) {
+    for (const [valuePosition, value] of demoAttribute.values.entries()) {
       const valueSlug = slugify(value);
-      const savedValue = await db.attributeValue.upsert({
-        where: { attributeId_slug: { attributeId: saved.id, slug: valueSlug } },
-        update: {},
-        create: {
-          attributeId: saved.id,
-          value,
-          slug: valueSlug,
-          position: valuePosition,
-        },
-      });
-      attributeValueIds.set(`${attribute.slug}:${valueSlug}`, savedValue.id);
+      await db
+        .insert(attributeValue)
+        .values({ attributeId, value, slug: valueSlug, position: valuePosition })
+        .onConflictDoNothing({ target: [attributeValue.attributeId, attributeValue.slug] });
+      const [saved] = await db
+        .select({ id: attributeValue.id })
+        .from(attributeValue)
+        .where(and(eq(attributeValue.attributeId, attributeId), eq(attributeValue.slug, valueSlug)));
+      attributeValueIds.set(`${demoAttribute.slug}:${valueSlug}`, saved!.id);
     }
   }
 
   for (const demo of DEMO_PRODUCTS) {
-    const exists = await db.product.findUnique({ where: { slug: demo.slug } });
+    const [exists] = await db.select({ id: product.id }).from(product).where(eq(product.slug, demo.slug));
     if (exists) continue;
 
     const attributeLinks = [
@@ -283,8 +298,17 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
       demo.method ? attributeValueIds.get(`yapim:${demo.method}`) : undefined,
     ].filter((id): id is string => id !== undefined);
 
-    const product = await db.product.create({
-      data: {
+    const productId = newId();
+    const optionId = newId();
+    const optionValues = demo.option
+      ? Object.keys(demo.option.prices).map((value, position) => ({ id: newId(), value, position }))
+      : [];
+    const variants = optionValues.length > 0 ? optionValues : [null];
+
+    // Ürün, görsel, öznitelik, seçenek ve varyantlar tek batch'te (atomik) oluşur.
+    await runBatch(db, [
+      db.insert(product).values({
+        id: productId,
         name: demo.name,
         slug: demo.slug,
         description: demo.description,
@@ -292,60 +316,47 @@ async function seedDemoCatalog(db: PrismaClient): Promise<void> {
         isFeatured: demo.featured ?? false,
         categoryId: categoryIds.get(demo.category)!,
         brandId: brandIds.get(demo.brand)!,
-        taxRate: demo.category === "salgam-ve-tursu-suyu" ? 10 : 1,
-        images: {
-          create: {
-            url: `/images/urunler/${demo.slug}.jpg`,
-            alt: demo.name,
-          },
-        },
-        attributes: {
-          create: attributeLinks.map((attributeValueId) => ({
-            attributeValueId,
-          })),
-        },
-        options: demo.option
-          ? {
-              create: {
-                name: demo.option.name,
-                position: 0,
-                values: {
-                  create: Object.keys(demo.option.prices).map(
-                    (value, position) => ({ value, position }),
-                  ),
-                },
-              },
-            }
-          : undefined,
-      },
-      include: { options: { include: { values: true } } },
-    });
-
-    const values = (product.options[0]?.values ?? []).sort(
-      (a, b) => a.position - b.position,
-    );
-    const variants = values.length > 0 ? values : [null];
-
-    for (const [index, value] of variants.entries()) {
-      const price = value
-        ? (demo.option?.prices[value.value] ?? demo.basePrice)
-        : demo.basePrice;
-      // İndirim yalnızca ilk (en küçük) boyutta gösterilir
-      const compareAt =
-        index === 0 && demo.compareAtPrice ? demo.compareAtPrice : undefined;
-      await db.productVariant.create({
-        data: {
-          productId: product.id,
-          sku: `${demo.slug}-${value ? slugify(value.value) : "std"}`.toUpperCase(),
-          price: price.toFixed(2),
-          compareAtPrice: compareAt?.toFixed(2),
-          stockQuantity: 30,
-          optionValues: value
-            ? { create: { optionValueId: value.id } }
-            : undefined,
-        },
-      });
-    }
+        taxRate: dec(demo.category === "salgam-ve-tursu-suyu" ? 10 : 1),
+      }),
+      db.insert(productImage).values({
+        productId,
+        url: `/images/urunler/${demo.slug}.jpg`,
+        alt: demo.name,
+      }),
+      ...attributeLinks.map((attributeValueId) =>
+        db.insert(productAttributeValue).values({ productId, attributeValueId }),
+      ),
+      ...(demo.option
+        ? [
+            db.insert(productOption).values({ id: optionId, productId, name: demo.option.name, position: 0 }),
+            ...optionValues.map((value) =>
+              db.insert(productOptionValue).values({
+                id: value.id,
+                optionId,
+                value: value.value,
+                position: value.position,
+              }),
+            ),
+          ]
+        : []),
+      ...variants.flatMap((value, index) => {
+        const price = value ? (demo.option?.prices[value.value] ?? demo.basePrice) : demo.basePrice;
+        // İndirim yalnızca ilk (en küçük) boyutta gösterilir
+        const compareAt = index === 0 && demo.compareAtPrice ? demo.compareAtPrice : undefined;
+        const variantId = newId();
+        return [
+          db.insert(productVariant).values({
+            id: variantId,
+            productId,
+            sku: `${demo.slug}-${value ? slugify(value.value) : "std"}`.toUpperCase(),
+            price: dec(price.toFixed(2)),
+            compareAtPrice: dec(compareAt?.toFixed(2)),
+            stockQuantity: 30,
+          }),
+          ...(value ? [db.insert(variantOptionValue).values({ variantId, optionValueId: value.id })] : []),
+        ];
+      }),
+    ]);
   }
 }
 
@@ -421,114 +432,74 @@ const PICKLE_INGREDIENTS: {
   },
 ];
 
-async function seedCustomPickle(db: PrismaClient): Promise<void> {
+async function seedCustomPickle(db: Db): Promise<void> {
   for (const [index, item] of PICKLE_INGREDIENTS.entries()) {
-    await db.pickleIngredient.upsert({
-      where: { slug: item.slug },
-      update: {},
-      create: {
+    await db
+      .insert(pickleIngredient)
+      .values({
         name: item.name,
         slug: item.slug,
         group: item.group,
         imageUrl: `/images/malzemeler/${item.slug}.svg`,
-        pricePerKg: item.pricePerKg.toFixed(2),
+        pricePerKg: dec(item.pricePerKg.toFixed(2)),
         sortOrder: index,
-      },
-    });
+      })
+      .onConflictDoNothing({ target: pickleIngredient.slug });
   }
 
   const slug = "kendi-tursunu-yap";
-  if (await db.product.findUnique({ where: { slug } })) return;
+  const [existing] = await db.select({ id: product.id }).from(product).where(eq(product.slug, slug));
+  if (existing) return;
 
-  const category = await db.category.findUnique({
-    where: { slug: "klasik-tursular" },
-  });
-  const brand = await db.brand.findUnique({ where: { slug: "kaplan" } });
-  if (!category) return;
+  const [parent] = await db.select({ id: category.id }).from(category).where(eq(category.slug, "klasik-tursular"));
+  const [kaplan] = await db.select({ id: brand.id }).from(brand).where(eq(brand.slug, "kaplan"));
+  if (!parent) return;
 
-  const product = await db.product.create({
-    data: {
+  const productId = newId();
+  const optionId = newId();
+  const sizes = CUSTOM_PICKLE_SIZES.map((size, position) => ({ ...size, valueId: newId(), position }));
+
+  await runBatch(db, [
+    db.insert(product).values({
+      id: productId,
       name: "Kendi Turşunu Yap",
       slug,
       description:
         "Bidon boyutunu seçin, sevdiğiniz sebze ve baharatları ekleyin; salamurasına ve acılığına siz karar verin.",
       status: "ACTIVE",
       isFeatured: true,
-      categoryId: category.id,
-      brandId: brand?.id,
-      taxRate: 1,
-      images: {
-        create: {
-          url: `/images/urunler/${slug}.svg`,
-          alt: "Kendi Turşunu Yap",
-        },
-      },
-      options: {
-        create: {
-          name: "Boyut",
-          position: 0,
-          values: {
-            create: CUSTOM_PICKLE_SIZES.map((size, position) => ({
-              value: size.label,
-              position,
-            })),
-          },
-        },
-      },
-    },
-    include: { options: { include: { values: true } } },
-  });
-
-  for (const value of product.options[0]!.values) {
-    const size = CUSTOM_PICKLE_SIZES.find(
-      (item) => item.label === value.value,
-    )!;
-    await db.productVariant.create({
-      data: {
-        productId: product.id,
-        sku: `${slug}-${slugify(size.label)}`.toUpperCase(),
-        price: size.price.toFixed(2),
-        weightGram: size.weightGram,
-        stockQuantity: 50,
-        optionValues: { create: { optionValueId: value.id } },
-      },
-    });
-  }
+      categoryId: parent.id,
+      brandId: kaplan?.id,
+      taxRate: dec(1),
+    }),
+    db.insert(productImage).values({ productId, url: `/images/urunler/${slug}.svg`, alt: "Kendi Turşunu Yap" }),
+    db.insert(productOption).values({ id: optionId, productId, name: "Boyut", position: 0 }),
+    ...sizes.flatMap((size) => {
+      const variantId = newId();
+      return [
+        db
+          .insert(productOptionValue)
+          .values({ id: size.valueId, optionId, value: size.label, position: size.position }),
+        db.insert(productVariant).values({
+          id: variantId,
+          productId,
+          sku: `${slug}-${slugify(size.label)}`.toUpperCase(),
+          price: dec(size.price.toFixed(2)),
+          weightGram: size.weightGram,
+          stockQuantity: 50,
+        }),
+        db.insert(variantOptionValue).values({ variantId, optionValueId: size.valueId }),
+      ];
+    }),
+  ]);
 }
 
-async function seedLegalPages(db: PrismaClient): Promise<void> {
-  for (const page of LEGAL_PAGE_TEMPLATES) {
-    await db.page.upsert({
-      where: { slug: page.slug },
+async function seedLegalPages(db: Db): Promise<void> {
+  for (const template of LEGAL_PAGE_TEMPLATES) {
+    await db
+      .insert(page)
       // Mevcut (düzenlenmiş) içerik asla ezilmez.
-      update: {},
-      create: { ...page, isPublished: false },
-    });
+      .values({ ...template, isPublished: false })
+      .onConflictDoNothing({ target: page.slug });
   }
-}
-
-async function main(): Promise<void> {
-  const connectionString = process.env["DATABASE_URL"];
-  if (!connectionString) {
-    throw new Error("DATABASE_URL tanımlı değil");
-  }
-
-  const db = createPrismaClient(connectionString);
-  try {
-    await runSeed(db);
-    console.log("Seed tamamlandı.");
-  } finally {
-    await db.$disconnect();
-  }
-}
-
-const isDirectRun =
-  typeof process.argv[1] === "string" &&
-  /seed\.(ts|js)$/.test(process.argv[1].replace(/\\/g, "/"));
-
-if (isDirectRun) {
-  main().catch((error: unknown) => {
-    console.error(error);
-    process.exit(1);
-  });
 }

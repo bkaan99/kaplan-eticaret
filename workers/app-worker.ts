@@ -30,11 +30,9 @@ async function callCron(env: CloudflareEnv, path: string): Promise<void> {
 
   // Kendine servis bağlaması: istek internete/Access'e çıkmaz, aynı hesaptaki Worker
   // çağrısı hatasına (1042) takılmaz ve Service Token gerektirmez.
-  let res: Response;
+  let res: { ok: boolean; status: number; text(): Promise<string> };
   if (env.WORKER_SELF_REFERENCE) {
-    res = await env.WORKER_SELF_REFERENCE.fetch(
-      new Request(`${base}${path}`, { headers }),
-    );
+    res = await env.WORKER_SELF_REFERENCE.fetch(`${base}${path}`, { headers });
   } else {
     // Bağlama yoksa (ör. yerel deneme) herkese açık adrese gidilir; Access açıksa Service Token ile geçer.
     if (env.CF_ACCESS_CLIENT_ID && env.CF_ACCESS_CLIENT_SECRET) {

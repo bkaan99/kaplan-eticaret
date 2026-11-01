@@ -31,12 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": [
-    "node_modules",
-    "workers",
-    "e2e",
-    "scripts",
-    "**/*.integration.test.ts",
-    "prisma/seed.ts"
-  ]
+  "exclude": ["node_modules"]
 }

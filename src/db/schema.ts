@@ -1,4 +1,6 @@
-// OTOMATİK ÜRETİLDİ: prisma/schema.prisma → Drizzle (scratchpad/gen-drizzle.mjs). Elle düzenlemeyin; şema değişince yeniden üretin.
+// Veri modelinin tek kaynağı (Drizzle). Tablo/kolon adları D1 migration'larıyla (db/migrations) birebir eşleşir:
+// şemayı değiştirirken yeni bir `db/migrations/NNNN_*.sql` yazın, burayı da güncelleyin.
+// İlk sürüm, Prisma şemasından otomatik üretilmiştir.
 import Decimal from "decimal.js";
 import {
   index,

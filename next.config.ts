@@ -15,15 +15,7 @@ try {
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
-  serverExternalPackages: [
-    "pino",
-    "pg",
-    "pg-boss",
-    "better-sqlite3",
-    "@prisma/adapter-better-sqlite3",
-    "@prisma/dev",
-    "prisma",
-  ],
+  serverExternalPackages: ["pino"],
   experimental: {
     agentUpgrade: "security",
   },

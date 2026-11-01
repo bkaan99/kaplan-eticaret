@@ -41,7 +41,7 @@
       "binding": "DB",
       "database_name": "kaplan-eticaret",
       "database_id": "e0697813-ccc2-4594-b6db-b45953a0d85f",
-      "migrations_dir": "prisma/d1-migrations"
+      "migrations_dir": "db/migrations"
     }
   ],
   "r2_buckets": [

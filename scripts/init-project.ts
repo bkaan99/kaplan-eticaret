@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline/promises";
-import { createPrismaClient } from "../src/shared/prisma-client-node";
+import { openDb } from "./lib/d1";
 import {
   createAdminUser,
   MIN_ADMIN_PASSWORD_LENGTH,
@@ -101,21 +101,6 @@ function run(command: string, extraEnv: Record<string, string> = {}): void {
   });
 }
 
-function waitForDatabase(): void {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    try {
-      execSync("docker compose exec -T db pg_isready", {
-        stdio: "ignore",
-        cwd: ROOT,
-      });
-      return;
-    } catch {
-      execSync("sleep 2");
-    }
-  }
-  throw new Error("Veritabanı hazır olmadı (Docker çalışıyor mu?)");
-}
-
 async function collectAnswers(): Promise<InitAnswers> {
   console.log("\nProje bilgileri\n");
 
@@ -201,15 +186,13 @@ async function writeEnv(answers: InitAnswers): Promise<string> {
   return /^DATABASE_URL=(.*)$/m.exec(env)?.[1] ?? "";
 }
 
-async function setupInfrastructure(databaseUrl: string): Promise<void> {
+async function setupInfrastructure(): Promise<void> {
   console.log("\nAltyapı\n");
 
-  run("docker compose up -d");
-  waitForDatabase();
-  console.log("✓ Veritabanı hazır");
-
-  run("npx prisma migrate deploy", { DATABASE_URL: databaseUrl });
-  run("npx prisma db seed", { DATABASE_URL: databaseUrl });
+  // Yerel D1 (.wrangler/state): migration'lar ve başlangıç verisi
+  run("npm run db:migrate-local");
+  run("npm run db:seed");
+  console.log("✓ Yerel veritabanı hazır");
 
   console.log("\nYönetici hesabı\n");
   const adminEmail = await ask("Yönetici e-postası", {
@@ -232,7 +215,7 @@ async function setupInfrastructure(databaseUrl: string): Promise<void> {
     console.log(`  Parola en az ${MIN_ADMIN_PASSWORD_LENGTH} karakter olmalı.`);
   }
 
-  const db = createPrismaClient(databaseUrl);
+  const { db, close } = await openDb();
   try {
     await createAdminUser(db, {
       email: adminEmail,
@@ -241,7 +224,7 @@ async function setupInfrastructure(databaseUrl: string): Promise<void> {
       lastName: "Kullanıcı",
     });
   } finally {
-    await db.$disconnect();
+    await close();
   }
 
   console.log(`✓ Yönetici hazır: ${adminEmail}`);
@@ -257,17 +240,16 @@ async function main(): Promise<void> {
 
   const answers = await collectAnswers();
   writeProjectConfig(answers);
-  const databaseUrl = await writeEnv(answers);
+  await writeEnv(answers);
 
   if (skipInfra) {
-    console.log("\n--skip-infra: Docker, migration ve seed atlandı.");
+    console.log("\n--skip-infra: migration ve seed atlandı.");
   } else {
-    await setupInfrastructure(databaseUrl);
+    await setupInfrastructure();
   }
 
   console.log("\nKurulum tamamlandı. Başlatmak için:\n");
-  console.log("  npm run dev      # uygulama");
-  console.log("  npm run worker   # arka plan işleri (ayrı terminalde)\n");
+  console.log("  npm run dev      # uygulama\n");
 }
 
 main()

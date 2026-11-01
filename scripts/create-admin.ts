@@ -1,33 +1,27 @@
-import "dotenv/config";
-import { createPrismaClient } from "../src/shared/prisma-client-node";
 import { createAdminUser } from "./lib/create-admin-user";
+import { openDb } from "./lib/d1";
 
 /**
- * Kullanım: npx tsx scripts/create-admin.ts <e-posta> <parola> [ad] [soyad]
+ * Kullanım: npx tsx scripts/create-admin.ts <e-posta> <parola> [ad] [soyad] [--remote]
  * Aynı e-posta varsa parola ve rol güncellenir.
  */
 async function main(): Promise<void> {
-  const [email, password, firstName = "Admin", lastName = "Kullanıcı"] =
-    process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const remote = args.includes("--remote");
+  const [email, password, firstName = "Admin", lastName = "Kullanıcı"] = args.filter(
+    (arg) => arg !== "--remote",
+  );
 
   if (!email || !password) {
-    throw new Error("Kullanım: create-admin <e-posta> <parola> [ad] [soyad]");
+    throw new Error("Kullanım: create-admin <e-posta> <parola> [ad] [soyad] [--remote]");
   }
 
-  const connectionString = process.env["DATABASE_URL"];
-  if (!connectionString) throw new Error("DATABASE_URL tanımlı değil");
-
-  const db = createPrismaClient(connectionString);
+  const { db, close } = await openDb({ remote });
   try {
-    const created = await createAdminUser(db, {
-      email,
-      password,
-      firstName,
-      lastName,
-    });
+    const created = await createAdminUser(db, { email, password, firstName, lastName });
     console.log(`Yönetici hazır: ${created}`);
   } finally {
-    await db.$disconnect();
+    await close();
   }
 }
 
