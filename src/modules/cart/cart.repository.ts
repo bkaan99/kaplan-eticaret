@@ -1,6 +1,6 @@
 import type Decimal from "decimal.js";
-import type { Prisma } from "../../../generated/prisma/client";
-import type { PrismaClient } from "@/shared/prisma-client";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { cart, cartItem, productVariant, runBatch, type Db } from "@/db";
 
 export interface CartRecord {
   id: string;
@@ -84,47 +84,58 @@ export interface CartRepository {
   ): Promise<void>;
 }
 
-export class PrismaCartRepository implements CartRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+const cartColumns = {
+  id: cart.id,
+  userId: cart.userId,
+  sessionToken: cart.sessionToken,
+} as const;
 
-  findByUserId(userId: string): Promise<CartRecord | null> {
-    return this.db().cart.findFirst({
-      where: { userId },
-      orderBy: { updatedAt: "desc" },
-      select: { id: true, userId: true, sessionToken: true },
-    });
+export class D1CartRepository implements CartRepository {
+  constructor(private readonly db: () => Db) {}
+
+  async findByUserId(userId: string): Promise<CartRecord | null> {
+    const [row] = await this.db()
+      .select(cartColumns)
+      .from(cart)
+      .where(eq(cart.userId, userId))
+      .orderBy(desc(cart.updatedAt))
+      .limit(1);
+    return row ?? null;
   }
 
-  findByToken(token: string): Promise<CartRecord | null> {
-    return this.db().cart.findUnique({
-      where: { sessionToken: token },
-      select: { id: true, userId: true, sessionToken: true },
-    });
+  async findByToken(token: string): Promise<CartRecord | null> {
+    const [row] = await this.db()
+      .select(cartColumns)
+      .from(cart)
+      .where(eq(cart.sessionToken, token))
+      .limit(1);
+    return row ?? null;
   }
 
-  create(data: {
+  async create(data: {
     userId?: string;
     sessionToken?: string;
   }): Promise<CartRecord> {
-    return this.db().cart.create({
-      data: { userId: data.userId, sessionToken: data.sessionToken },
-      select: { id: true, userId: true, sessionToken: true },
-    });
+    const [row] = await this.db()
+      .insert(cart)
+      .values({ userId: data.userId, sessionToken: data.sessionToken })
+      .returning(cartColumns);
+    return row!;
   }
 
   async delete(cartId: string): Promise<void> {
-    await this.db().cart.deleteMany({ where: { id: cartId } });
+    await this.db().delete(cart).where(eq(cart.id, cartId));
   }
 
   async listItems(cartId: string): Promise<CartItemRecord[]> {
-    const rows = await this.db().cartItem.findMany({
-      where: { cartId },
-      orderBy: { createdAt: "asc" },
-      include: {
+    const rows = await this.db().query.cartItem.findMany({
+      where: eq(cartItem.cartId, cartId),
+      orderBy: asc(cartItem.createdAt),
+      with: {
         variant: {
-          include: {
+          with: {
             product: {
-              select: {
+              columns: {
                 id: true,
                 name: true,
                 slug: true,
@@ -133,16 +144,16 @@ export class PrismaCartRepository implements CartRepository {
                 taxRate: true,
                 categoryId: true,
                 desi: true,
+              },
+              with: {
                 images: {
-                  orderBy: { position: "asc" },
-                  take: 1,
-                  select: { url: true },
+                  orderBy: (image, { asc }) => asc(image.position),
+                  limit: 1,
+                  columns: { url: true },
                 },
               },
             },
-            optionValues: {
-              include: { optionValue: { include: { option: true } } },
-            },
+            optionValues: { with: { optionValue: { with: { option: true } } } },
           },
         },
       },
@@ -191,16 +202,11 @@ export class PrismaCartRepository implements CartRepository {
     variantId: string,
     customizationKey = "",
   ): Promise<number> {
-    const item = await this.db().cartItem.findUnique({
-      where: {
-        cartId_variantId_customizationKey: {
-          cartId,
-          variantId,
-          customizationKey,
-        },
-      },
-      select: { quantity: true },
-    });
+    const [item] = await this.db()
+      .select({ quantity: cartItem.quantity })
+      .from(cartItem)
+      .where(lineKey(cartId, variantId, customizationKey))
+      .limit(1);
     return item?.quantity ?? 0;
   }
 
@@ -210,30 +216,28 @@ export class PrismaCartRepository implements CartRepository {
     quantity: number,
     line?: CartLineCustomization,
   ): Promise<void> {
+    const db = this.db();
     const customizationKey = line?.key ?? "";
-    await this.db().cartItem.upsert({
-      where: {
-        cartId_variantId_customizationKey: {
+    await runBatch(db, [
+      db
+        .insert(cartItem)
+        .values({
           cartId,
           variantId,
+          quantity,
           customizationKey,
-        },
-      },
-      update: { quantity },
-      create: {
-        cartId,
-        variantId,
-        quantity,
-        customizationKey,
-        customization: line
-          ? (line.customization as Prisma.InputJsonValue)
-          : undefined,
-      },
-    });
-    await this.db().cart.update({
-      where: { id: cartId },
-      data: { updatedAt: new Date() },
-    });
+          customization: line ? line.customization : undefined,
+        })
+        .onConflictDoUpdate({
+          target: [
+            cartItem.cartId,
+            cartItem.variantId,
+            cartItem.customizationKey,
+          ],
+          set: { quantity },
+        }),
+      db.update(cart).set({ updatedAt: new Date() }).where(eq(cart.id, cartId)),
+    ]);
   }
 
   async removeItem(
@@ -241,23 +245,25 @@ export class PrismaCartRepository implements CartRepository {
     variantId: string,
     customizationKey = "",
   ): Promise<void> {
-    await this.db().cartItem.deleteMany({
-      where: { cartId, variantId, customizationKey },
-    });
+    await this.db()
+      .delete(cartItem)
+      .where(lineKey(cartId, variantId, customizationKey));
   }
 
   async findVariantStock(
     variantId: string,
   ): Promise<VariantStockRecord | null> {
-    const variant = await this.db().productVariant.findUnique({
-      where: { id: variantId },
-      select: {
+    const variant = await this.db().query.productVariant.findFirst({
+      where: eq(productVariant.id, variantId),
+      columns: {
         id: true,
         isActive: true,
         stockQuantity: true,
         reservedQuantity: true,
+      },
+      with: {
         product: {
-          select: { status: true, trackInventory: true, slug: true },
+          columns: { status: true, trackInventory: true, slug: true },
         },
       },
     });
@@ -280,17 +286,19 @@ export class PrismaCartRepository implements CartRepository {
     maxQuantity: number,
   ): Promise<void> {
     const db = this.db();
-    const items = await db.cartItem.findMany({
-      where: { cartId: fromCartId },
-    });
+    const items = await db
+      .select()
+      .from(cartItem)
+      .where(eq(cartItem.cartId, fromCartId));
     if (items.length === 0) {
-      await db.cart.deleteMany({ where: { id: fromCartId } });
+      await db.delete(cart).where(eq(cart.id, fromCartId));
       return;
     }
 
-    const existingItems = await db.cartItem.findMany({
-      where: { cartId: toCartId },
-    });
+    const existingItems = await db
+      .select()
+      .from(cartItem)
+      .where(eq(cartItem.cartId, toCartId));
     const existingByKey = new Map(
       existingItems.map((e) => [
         `${e.variantId}\u0000${e.customizationKey}`,
@@ -298,7 +306,7 @@ export class PrismaCartRepository implements CartRepository {
       ]),
     );
 
-    // Tüm işlemler önceden bilinir: dizi formu (interaktif transaction yok).
+    // Tüm işlemler önceden bilinir: tek batch (atomik).
     const ops = items.map((item) => {
       const existing = existingByKey.get(
         `${item.variantId}\u0000${item.customizationKey}`,
@@ -308,28 +316,36 @@ export class PrismaCartRepository implements CartRepository {
         item.quantity + (existing?.quantity ?? 0),
       );
 
-      return db.cartItem.upsert({
-        where: {
-          cartId_variantId_customizationKey: {
-            cartId: toCartId,
-            variantId: item.variantId,
-            customizationKey: item.customizationKey,
-          },
-        },
-        update: { quantity },
-        create: {
+      return db
+        .insert(cartItem)
+        .values({
           cartId: toCartId,
           variantId: item.variantId,
           quantity,
           customizationKey: item.customizationKey,
           customization: item.customization ?? undefined,
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: [
+            cartItem.cartId,
+            cartItem.variantId,
+            cartItem.customizationKey,
+          ],
+          set: { quantity },
+        });
     });
 
-    await db.$transaction([
+    await runBatch(db, [
       ...ops,
-      db.cart.deleteMany({ where: { id: fromCartId } }),
+      db.delete(cart).where(eq(cart.id, fromCartId)),
     ]);
   }
+}
+
+function lineKey(cartId: string, variantId: string, customizationKey: string) {
+  return and(
+    eq(cartItem.cartId, cartId),
+    eq(cartItem.variantId, variantId),
+    eq(cartItem.customizationKey, customizationKey),
+  );
 }

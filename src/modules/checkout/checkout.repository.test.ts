@@ -1,9 +1,9 @@
 import Decimal from "decimal.js";
 import { describe, expect, it, vi } from "vitest";
 import type { CartItemRecord, CartRepository } from "../cart/cart.repository";
-import { PrismaCheckoutRepository } from "./checkout.repository";
+import { D1CheckoutRepository } from "./checkout.repository";
 
-describe("PrismaCheckoutRepository", () => {
+describe("D1CheckoutRepository", () => {
   it("loadCartLines çağrısını CartRepository.listItems metoduna delege eder", async () => {
     const mockItem: CartItemRecord = {
       variantId: "v-1",
@@ -36,7 +36,7 @@ describe("PrismaCheckoutRepository", () => {
       listItems: vi.fn(async () => [mockItem]),
     };
 
-    const repo = new PrismaCheckoutRepository(
+    const repo = new D1CheckoutRepository(
       () => ({} as any),
       mockCartRepo as CartRepository,
     );

@@ -8,7 +8,7 @@ import { priceResolver } from "../catalog/container";
 import { customPickleService } from "../custom-pickle/container";
 import { PrismaDealerRepository } from "../b2b/dealer.repository";
 import { orderRepository } from "../orders/container";
-import { PrismaCheckoutRepository } from "./checkout.repository";
+import { D1CheckoutRepository } from "./checkout.repository";
 import { CheckoutService } from "./checkout.service";
 import { ConfiguredShippingRateCalculator } from "./shipping";
 
@@ -16,7 +16,7 @@ export function getCheckoutService(): CheckoutService {
   return new CheckoutService({
     carts: cartService,
     priceResolver,
-    checkout: new PrismaCheckoutRepository(getDb),
+    checkout: new D1CheckoutRepository(getDb),
     orders: orderRepository,
     shipping: new ConfiguredShippingRateCalculator(),
     settings: {
