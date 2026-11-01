@@ -19,3 +19,4 @@ next-env.d.ts
 npm-debug.log*
 admin-giris.local.txt
 .wrangler/
+admin-giris.remote.txt
