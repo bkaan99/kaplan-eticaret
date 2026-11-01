@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "../prisma-client";
+import { createPrismaClient, type PrismaClient } from "../prisma-client-node";
 import { PrismaAuditLogger } from "./prisma-audit-logger";
 
 describe("PrismaAuditLogger", () => {

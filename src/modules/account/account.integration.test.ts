@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
+import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
 import { Argon2PasswordHasher } from "../auth/password-hasher";
 import { AuthService } from "../auth/auth.service";
 import type {

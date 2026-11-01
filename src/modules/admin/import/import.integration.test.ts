@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { InMemoryEventBus } from "@/shared/events/event-bus";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
+import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
 import { PrismaProductAdminRepository } from "../catalog/product-admin.repository";
 import { ProductAdminService } from "../catalog/product-admin.service";
 import { PrismaBulkUpdateRepository } from "./bulk-update.repository";

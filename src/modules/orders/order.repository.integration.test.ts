@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
+import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
 import { PrismaOrderRepository } from "./order.repository";
 import type { AddressSnapshot, NewOrder } from "./order.types";
 

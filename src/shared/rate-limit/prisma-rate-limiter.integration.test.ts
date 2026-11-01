@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "../prisma-client";
+import { createPrismaClient, type PrismaClient } from "../prisma-client-node";
 import { PrismaRateLimiter } from "./prisma-rate-limiter";
 
 describe("PrismaRateLimiter", () => {

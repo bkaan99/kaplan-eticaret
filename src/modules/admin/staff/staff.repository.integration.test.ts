@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PERMISSIONS } from "@/shared/permissions";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
+import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
 import { PrismaStaffRepository } from "./staff.repository";
 
 describe("PrismaStaffRepository", () => {
