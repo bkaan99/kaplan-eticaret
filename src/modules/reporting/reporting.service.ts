@@ -18,12 +18,6 @@ export interface LowStockItem {
   available: number;
 }
 
-export interface StockDemandItem {
-  productName: string;
-  sku: string;
-  waiting: number;
-}
-
 export interface CustomerMetrics {
   /** Dönemde kayıt olan müşteri sayısı */
   newCustomers: number;
@@ -50,7 +44,6 @@ export interface DashboardData {
     pendingDealers: number;
     lowStock: LowStockItem[];
   };
-  stockDemand: StockDemandItem[];
 }
 
 export interface ReportingRepository {
@@ -60,7 +53,6 @@ export interface ReportingRepository {
   countOpenReturnRequests(): Promise<number>;
   countPendingDealers(): Promise<number>;
   lowStock(threshold: number, limit: number): Promise<LowStockItem[]>;
-  stockDemand(limit: number): Promise<StockDemandItem[]>;
   customerMetrics(from: Date, to: Date): Promise<CustomerMetrics>;
 }
 
@@ -101,7 +93,6 @@ export class ReportingService {
       openReturnRequests,
       pendingDealers,
       lowStock,
-      stockDemand,
       customers,
       previousCustomers,
     ] = await Promise.all([
@@ -112,7 +103,6 @@ export class ReportingService {
       this.repository.countOpenReturnRequests(),
       this.repository.countPendingDealers(),
       this.repository.lowStock(this.lowStockThreshold, 10),
-      this.repository.stockDemand(5),
       this.repository.customerMetrics(start, end),
       this.repository.customerMetrics(previousStart, start),
     ]);
@@ -155,7 +145,6 @@ export class ReportingService {
         pendingDealers,
         lowStock,
       },
-      stockDemand,
     };
   }
 }

@@ -24,7 +24,7 @@ export function buildSecurityHeaders(isProduction: boolean): HeaderEntry[] {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.facebook.com",
+    "connect-src 'self' https://challenges.cloudflare.com https://www.google-analytics.com https://*.google-analytics.com https://www.facebook.com",
     "frame-src https://www.paytr.com https://challenges.cloudflare.com",
     "object-src 'none'",
     "base-uri 'self'",

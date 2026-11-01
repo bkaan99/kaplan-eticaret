@@ -1,6 +1,7 @@
 import type Decimal from "decimal.js";
-import type { PrismaClient } from "@/shared/prisma-client";
-import { PrismaCartRepository, type CartRepository } from "../cart/cart.repository";
+import { and, desc, eq, gte, isNull, lte, or } from "drizzle-orm";
+import { campaign, coupon, type Db } from "@/db";
+import { D1CartRepository, type CartRepository } from "../cart/cart.repository";
 
 export interface CheckoutLineRecord {
   variantId: string;
@@ -54,14 +55,14 @@ export interface CheckoutRepository {
   listActiveCampaigns(now: Date): Promise<CampaignRecord[]>;
 }
 
-export class PrismaCheckoutRepository implements CheckoutRepository {
+export class D1CheckoutRepository implements CheckoutRepository {
   private readonly carts: Pick<CartRepository, "listItems">;
 
   constructor(
-    private readonly db: () => PrismaClient,
+    private readonly db: () => Db,
     carts?: Pick<CartRepository, "listItems">,
   ) {
-    this.carts = carts ?? new PrismaCartRepository(db);
+    this.carts = carts ?? new D1CartRepository(db);
   }
 
   async loadCartLines(cartId: string): Promise<CheckoutLineRecord[]> {
@@ -92,21 +93,26 @@ export class PrismaCheckoutRepository implements CheckoutRepository {
   }
 
   async findCoupon(code: string): Promise<CouponRecord | null> {
-    const coupon = await this.db().coupon.findUnique({ where: { code } });
-    return coupon;
+    const [row] = await this.db()
+      .select()
+      .from(coupon)
+      .where(eq(coupon.code, code))
+      .limit(1);
+    return row ?? null;
   }
 
   async listActiveCampaigns(now: Date): Promise<CampaignRecord[]> {
-    const rows = await this.db().campaign.findMany({
-      where: {
-        isActive: true,
-        AND: [
-          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
-          { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
-        ],
-      },
-      orderBy: { priority: "desc" },
-    });
+    const rows = await this.db()
+      .select()
+      .from(campaign)
+      .where(
+        and(
+          eq(campaign.isActive, true),
+          or(isNull(campaign.startsAt), lte(campaign.startsAt, now)),
+          or(isNull(campaign.endsAt), gte(campaign.endsAt, now)),
+        ),
+      )
+      .orderBy(desc(campaign.priority));
 
     return rows.map((row) => ({
       name: row.name,

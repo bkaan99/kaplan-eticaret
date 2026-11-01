@@ -1,14 +1,25 @@
 import "server-only";
-import { getEnv } from "./env";
-import { createPrismaClient, type PrismaClient } from "./prisma-client";
+import { createDb, type Db } from "@/db";
+import { getCloudflareEnv } from "./cloudflare";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const globalForDb = globalThis as unknown as { db?: Db };
 
 /**
- * Uygulama genelinde tek PrismaClient. Yalnızca repository katmanı kullanır;
- * servisler ve UI doğrudan erişmez.
+ * Uygulama genelinde tek Drizzle istemcisi — yalnızca D1.
+ * Yerel `next dev` OpenNext `initOpenNextCloudflareForDev` ile D1 bağlar.
  */
-export function getDb(): PrismaClient {
-  globalForPrisma.prisma ??= createPrismaClient(getEnv().DATABASE_URL);
-  return globalForPrisma.prisma;
+export function getDb(): Db {
+  if (globalForDb.db) return globalForDb.db;
+
+  const cf = getCloudflareEnv();
+  if (!cf?.DB) {
+    throw new Error(
+      "D1 binding (env.DB) bulunamadı. Yerelde `next dev` (OpenNext) veya Workers deploy kullanın.",
+    );
+  }
+
+  globalForDb.db = createDb(cf.DB);
+  return globalForDb.db;
 }
+
+export type { Db };

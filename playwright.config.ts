@@ -34,7 +34,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run start -- --port ${PORT}`,
+    // Cloudflare çalışma zamanı (yerel D1): önce `npx opennextjs-cloudflare build` gerekir.
+    command: `npx opennextjs-cloudflare preview -- --port ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env["CI"],
     timeout: 120_000,

@@ -4,7 +4,6 @@ import { AccountNotificationHandler } from "./account-notification.handler";
 import { DealerNotificationHandler } from "./dealer-notification.handler";
 import { OrderNotificationHandler } from "./order-notification.handler";
 import { ReturnNotificationHandler } from "./return-notification.handler";
-import { StockAlertNotificationHandler } from "./stock-alert-notification.handler";
 
 describe("Notification Handlers", () => {
   it("AccountNotificationHandler şifre sıfırlama ve e-posta doğrulama dağıtır", async () => {
@@ -15,14 +14,21 @@ describe("Notification Handlers", () => {
       siteName: "Test Mağaza",
     });
 
-    await handler.sendEmailVerification("user@test.com", "https://site.test/verify");
+    await handler.sendEmailVerification(
+      "user@test.com",
+      "https://site.test/verify",
+    );
     await handler.sendPasswordReset("user@test.com", "https://site.test/reset");
 
     expect(dispatch).toHaveBeenCalledTimes(2);
     expect(dispatch.mock.calls[0]?.[0]).toBe("user@test.com");
-    expect(dispatch.mock.calls[0]?.[1].text).toContain("https://site.test/verify");
+    expect(dispatch.mock.calls[0]?.[1].text).toContain(
+      "https://site.test/verify",
+    );
     expect(dispatch.mock.calls[1]?.[0]).toBe("user@test.com");
-    expect(dispatch.mock.calls[1]?.[1].text).toContain("https://site.test/reset");
+    expect(dispatch.mock.calls[1]?.[1].text).toContain(
+      "https://site.test/reset",
+    );
   });
 
   it("DealerNotificationHandler yönetici ve bayi bildirimlerini dağıtır", async () => {
@@ -70,25 +76,6 @@ describe("Notification Handlers", () => {
     expect(dispatch.mock.calls[0]?.[1].subject).toContain("ORD-999");
   });
 
-  it("StockAlertNotificationHandler stok bildirimini dağıtır", async () => {
-    const dispatch = vi.fn<NotificationDispatcher["dispatch"]>(async () => {});
-    const dispatcher: NotificationDispatcher = { dispatch };
-    const handler = new StockAlertNotificationHandler({
-      dispatcher,
-      context: { siteName: "Test Mağaza", baseUrl: "https://site.test" },
-    });
-
-    await handler.sendStockAvailable(
-      "alici@test.com",
-      { name: "Salatalık Turşusu", slug: "salatalik-tursusu" },
-      "https://site.test/unsubscribe",
-    );
-
-    expect(dispatch).toHaveBeenCalledTimes(1);
-    expect(dispatch.mock.calls[0]?.[0]).toBe("alici@test.com");
-    expect(dispatch.mock.calls[0]?.[1].subject).toContain("Salatalık Turşusu");
-  });
-
   it("OrderNotificationHandler sipariş bulunamadığında hata fırlatmadan güvenle sonlanır", async () => {
     const dispatch = vi.fn<NotificationDispatcher["dispatch"]>(async () => {});
     const dispatcher: NotificationDispatcher = { dispatch };
@@ -112,4 +99,3 @@ describe("Notification Handlers", () => {
     expect(orders.findById).toHaveBeenCalledTimes(4);
   });
 });
-

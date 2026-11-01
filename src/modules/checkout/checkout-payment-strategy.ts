@@ -152,9 +152,7 @@ export class DeferredPaymentStrategy implements CheckoutPaymentStrategy {
 
   async placeOrder(params: CheckoutPlacementParams): Promise<CreatedOrder> {
     const days = params.settings.deferredPaymentDays ?? 30;
-    const dueAt = new Date(
-      params.now().getTime() + days * 24 * 60 * 60 * 1000,
-    );
+    const dueAt = new Date(params.now().getTime() + days * 24 * 60 * 60 * 1000);
     return params.orders.createDeferredOrder(params.newOrder, {
       creditLimit: params.dealer!.creditLimit!,
       dueAt,
@@ -176,7 +174,10 @@ export class DeferredPaymentStrategy implements CheckoutPaymentStrategy {
  * Checkout ödeme stratejilerini yöneten kayıt sınıfı.
  */
 export class CheckoutPaymentStrategyRegistry {
-  private readonly strategies = new Map<PaymentMethod, CheckoutPaymentStrategy>();
+  private readonly strategies = new Map<
+    PaymentMethod,
+    CheckoutPaymentStrategy
+  >();
 
   register(strategy: CheckoutPaymentStrategy): this {
     this.strategies.set(strategy.method, strategy);

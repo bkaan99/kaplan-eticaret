@@ -1,28 +1,36 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
+import { count, eq } from "drizzle-orm";
+import { user as userTable, type Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
 import { Argon2PasswordHasher } from "../auth/password-hasher";
 import { AuthService } from "../auth/auth.service";
 import type {
   AuthUserRecord,
   AuthUserRepository,
 } from "../auth/auth.repository";
-import { PrismaAccountRepository } from "./account.repository";
+import { D1AccountRepository } from "./account.repository";
 import { AccountService, type AccountMailer } from "./account.service";
-import { PrismaStockAlertRepository } from "../stock-alerts/stock-alert.repository";
-import { StockAlertService } from "../stock-alerts/stock-alert.service";
 
-describe("Hesap ve stok bildirimi (veritabanı)", () => {
+describe("Hesap (veritabanı)", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
+  let t: TestDb;
+  let db: Db;
 
-  beforeAll(() => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
+  beforeAll(async () => {
+    t = await createTestDb();
+    db = t.db;
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
+
+  const userByEmail = async (email: string) =>
+    db.query.user.findFirst({
+      where: eq(userTable.email, email),
+      with: { customer: true },
+    });
 
   it("kayıt olur, doğrular, şifre sıfırlar ve yeni parolayla giriş yapar", async () => {
     const sent: { verify: string[]; reset: string[] } = {
@@ -35,7 +43,7 @@ describe("Hesap ve stok bildirimi (veritabanı)", () => {
     };
     const hasher = new Argon2PasswordHasher();
     const service = new AccountService({
-      accounts: new PrismaAccountRepository(() => db),
+      accounts: new D1AccountRepository(() => db),
       hasher,
       mailer,
       secret: "s".repeat(32),
@@ -53,26 +61,21 @@ describe("Hesap ve stok bildirimi (veritabanı)", () => {
       phone: null,
     });
 
-    const created = await db.user.findUniqueOrThrow({
-      where: { email },
-      include: { customer: true },
-    });
+    const created = (await userByEmail(email))!;
     expect(created.type).toBe("CUSTOMER");
     expect(created.customer).not.toBeNull();
     expect(created.emailVerifiedAt).toBeNull();
     expect(created.passwordHash).not.toContain("ilkparola");
 
     await service.verifyEmail(tokenOf(sent.verify[0]!));
-    expect(
-      (await db.user.findUniqueOrThrow({ where: { email } })).emailVerifiedAt,
-    ).not.toBeNull();
+    expect((await userByEmail(email))!.emailVerifiedAt).not.toBeNull();
 
     await service.requestPasswordReset(email);
     await service.resetPassword(tokenOf(sent.reset[0]!), "yeniparola12345");
 
     const users: AuthUserRepository = {
       findByEmail: async (value) => {
-        const row = await db.user.findUnique({ where: { email: value } });
+        const row = await userByEmail(value);
         return row
           ? ({
               id: row.id,
@@ -101,7 +104,7 @@ describe("Hesap ve stok bildirimi (veritabanı)", () => {
   });
 
   it("aynı e-postayla eşzamanlı iki kayıttan yalnızca biri başarılı olur", async () => {
-    const repo = new PrismaAccountRepository(() => db);
+    const repo = new D1AccountRepository(() => db);
     const hasher = new Argon2PasswordHasher();
     const service = new AccountService({
       accounts: repo,
@@ -127,54 +130,13 @@ describe("Hesap ve stok bildirimi (veritabanı)", () => {
     ]);
 
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
-    expect(await db.user.count({ where: { email: input.email } })).toBe(1);
-  });
-
-  it("stok bildirimi: abonelik, stoğa girince bildirim ve tekrar göndermeme", async () => {
-    const category = await db.category.create({
-      data: { name: "Bildirim", slug: `alert-${tag}` },
-    });
-    const product = await db.product.create({
-      data: {
-        name: `Bildirim Ürünü ${tag}`,
-        slug: `bildirim-urunu-${tag}`,
-        status: "ACTIVE",
-        categoryId: category.id,
-        variants: {
-          create: { sku: `ALERT-${tag}`, price: "10.00", stockQuantity: 0 },
-        },
-      },
-      include: { variants: true },
-    });
-    const variantId = product.variants[0]!.id;
-
-    const sent: string[] = [];
-    const service = new StockAlertService({
-      alerts: new PrismaStockAlertRepository(() => db),
-      mailer: {
-        sendStockAvailable: async (email) => void sent.push(email),
-      },
-      secret: "s".repeat(32),
-      baseUrl: "https://site.test",
-    });
-    const email = `bildir-${tag}@example.com`;
-
-    await service.subscribe(variantId, email);
-    await service.subscribe(variantId, email); // idempotent
     expect(
-      await db.backInStockSubscription.count({ where: { variantId } }),
+      (
+        await db
+          .select({ n: count() })
+          .from(userTable)
+          .where(eq(userTable.email, input.email))
+      )[0]!.n,
     ).toBe(1);
-
-    expect(await service.notifyAvailable(variantId)).toBe(0);
-
-    await db.productVariant.update({
-      where: { id: variantId },
-      data: { stockQuantity: 5 },
-    });
-
-    expect(await service.notifyAvailable(variantId)).toBe(1);
-    expect(sent).toEqual([email]);
-    // İkinci tarama aynı aboneye tekrar göndermez.
-    expect(await service.notifyAvailable(variantId)).toBe(0);
   });
 });

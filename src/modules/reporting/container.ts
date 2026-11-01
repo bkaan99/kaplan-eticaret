@@ -1,9 +1,9 @@
 import { siteConfig } from "@/config/site.config";
 import { getDb } from "@/shared/db";
-import { PrismaReportingRepository } from "./reporting.repository";
+import { D1ReportingRepository } from "./reporting.repository";
 import { ReportingService } from "./reporting.service";
 
 export const reportingService = new ReportingService(
-  new PrismaReportingRepository(getDb),
+  new D1ReportingRepository(getDb),
   siteConfig.inventory.lowStockThreshold,
 );

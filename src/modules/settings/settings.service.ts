@@ -1,6 +1,7 @@
 import { siteConfig } from "@/config/site.config";
 import { ValidationError } from "@/shared/errors";
-import type { PrismaClient } from "@/shared/prisma-client";
+import { eq } from "drizzle-orm";
+import { setting, type Db } from "@/db";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import {
   contactSettingsSchema,
@@ -13,15 +14,17 @@ const DEFAULT_ADDRESS = "Çubuk, Ankara / Türkiye";
 
 export class SettingsService {
   constructor(
-    private readonly db: () => PrismaClient,
+    private readonly db: () => Db,
     private readonly audit?: AuditLogger,
   ) {}
 
   async getContactSettings(): Promise<ContactSettings> {
     try {
-      const record = await this.db().setting.findUnique({
-        where: { key: CONTACT_SETTINGS_KEY },
-      });
+      const [record] = await this.db()
+        .select()
+        .from(setting)
+        .where(eq(setting.key, CONTACT_SETTINGS_KEY))
+        .limit(1);
 
       if (record && record.value && typeof record.value === "object") {
         const val = record.value as Partial<ContactSettings>;
@@ -59,14 +62,13 @@ export class SettingsService {
     }
 
     const before = await this.getContactSettings();
-    await this.db().setting.upsert({
-      where: { key: CONTACT_SETTINGS_KEY },
-      update: { value: parsed.data as unknown as object },
-      create: {
-        key: CONTACT_SETTINGS_KEY,
-        value: parsed.data as unknown as object,
-      },
-    });
+    await this.db()
+      .insert(setting)
+      .values({ key: CONTACT_SETTINGS_KEY, value: parsed.data })
+      .onConflictDoUpdate({
+        target: setting.key,
+        set: { value: parsed.data, updatedAt: new Date() },
+      });
 
     await this.audit?.log({
       actorId: actor.userId,

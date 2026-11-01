@@ -1,11 +1,8 @@
 import { getAuditLogger } from "@/shared/audit";
 import { getDb } from "@/shared/db";
-import { PrismaContentRepository } from "./content.repository";
+import { D1ContentRepository } from "./content.repository";
 import { ContentService } from "./content.service";
 
 export function getContentService(): ContentService {
-  return new ContentService(
-    new PrismaContentRepository(getDb),
-    getAuditLogger(),
-  );
+  return new ContentService(new D1ContentRepository(getDb), getAuditLogger());
 }

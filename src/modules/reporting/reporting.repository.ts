@@ -1,11 +1,32 @@
 import Decimal from "decimal.js";
-import type { PrismaClient } from "@/shared/prisma-client";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  sql,
+} from "drizzle-orm";
+import {
+  chunk,
+  countWhere,
+  customer,
+  order,
+  orderItem,
+  product,
+  productVariant,
+  returnRequest,
+  user,
+  type Db,
+} from "@/db";
 import type {
   CustomerMetrics,
   LowStockItem,
   PeriodTotals,
   ReportingRepository,
-  StockDemandItem,
   TopProduct,
 } from "./reporting.service";
 
@@ -17,22 +38,28 @@ const REVENUE_STATUSES = [
   "DELIVERED",
 ] as const;
 
-export class PrismaReportingRepository implements ReportingRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+export class D1ReportingRepository implements ReportingRepository {
+  constructor(private readonly db: () => Db) {}
 
   async periodTotals(from: Date, to: Date): Promise<PeriodTotals> {
-    const result = await this.db().order.aggregate({
-      where: {
-        status: { in: [...REVENUE_STATUSES] },
-        createdAt: { gte: from, lt: to },
-      },
-      _sum: { grandTotal: true },
-      _count: { _all: true },
-    });
+    const rows = await this.db()
+      .select({ grandTotal: order.grandTotal })
+      .from(order)
+      .where(
+        and(
+          inArray(order.status, [...REVENUE_STATUSES]),
+          gte(order.createdAt, from),
+          lt(order.createdAt, to),
+        ),
+      );
 
+    // Toplama JS'te Decimal ile yapılır: SQL SUM kayan nokta hatası üretebilir.
     return {
-      revenue: new Decimal(result._sum.grandTotal?.toString() ?? 0),
-      orderCount: result._count._all,
+      revenue: rows.reduce(
+        (total, row) => total.plus(row.grandTotal),
+        new Decimal(0),
+      ),
+      orderCount: rows.length,
     };
   }
 
@@ -41,57 +68,74 @@ export class PrismaReportingRepository implements ReportingRepository {
     to: Date,
     limit: number,
   ): Promise<TopProduct[]> {
-    const grouped = await this.db().orderItem.groupBy({
-      by: ["productName"],
-      where: {
-        order: {
-          status: { in: [...REVENUE_STATUSES] },
-          createdAt: { gte: from, lt: to },
-        },
-      },
-      _sum: { quantity: true, lineTotal: true },
-      orderBy: { _sum: { quantity: "desc" } },
-      take: limit,
-    });
+    const quantity = sql<number>`sum(${orderItem.quantity})`;
+    const grouped = await this.db()
+      .select({
+        productName: orderItem.productName,
+        quantity,
+        revenue: sql<number>`sum(${orderItem.lineTotal})`,
+      })
+      .from(orderItem)
+      .innerJoin(order, eq(order.id, orderItem.orderId))
+      .where(
+        and(
+          inArray(order.status, [...REVENUE_STATUSES]),
+          gte(order.createdAt, from),
+          lt(order.createdAt, to),
+        ),
+      )
+      .groupBy(orderItem.productName)
+      .orderBy(desc(quantity))
+      .limit(limit);
 
     return grouped.map((row) => ({
       name: row.productName,
-      quantity: row._sum.quantity ?? 0,
-      revenue: new Decimal(row._sum.lineTotal?.toString() ?? 0).toFixed(2),
+      quantity: Number(row.quantity ?? 0),
+      revenue: new Decimal(row.revenue ?? 0).toFixed(2),
     }));
   }
 
   countOrdersToProcess(): Promise<number> {
-    return this.db().order.count({
-      where: { status: { in: ["PAID", "PROCESSING"] } },
-    });
+    return countWhere(
+      this.db(),
+      order,
+      inArray(order.status, ["PAID", "PROCESSING"]),
+    );
   }
 
   countOpenReturnRequests(): Promise<number> {
-    return this.db().returnRequest.count({ where: { status: "REQUESTED" } });
+    return countWhere(
+      this.db(),
+      returnRequest,
+      eq(returnRequest.status, "REQUESTED"),
+    );
   }
 
   countPendingDealers(): Promise<number> {
-    return this.db().customer.count({ where: { b2bStatus: "PENDING" } });
+    return countWhere(this.db(), customer, eq(customer.b2bStatus, "PENDING"));
   }
 
   async lowStock(threshold: number, limit: number): Promise<LowStockItem[]> {
-    const rows = await this.db().productVariant.findMany({
-      where: {
-        isActive: true,
-        product: { status: "ACTIVE", trackInventory: true },
-      },
-      select: {
-        sku: true,
-        stockQuantity: true,
-        reservedQuantity: true,
-        product: { select: { name: true } },
-      },
-    });
+    const rows = await this.db()
+      .select({
+        productName: product.name,
+        sku: productVariant.sku,
+        stockQuantity: productVariant.stockQuantity,
+        reservedQuantity: productVariant.reservedQuantity,
+      })
+      .from(productVariant)
+      .innerJoin(product, eq(product.id, productVariant.productId))
+      .where(
+        and(
+          eq(productVariant.isActive, true),
+          eq(product.status, "ACTIVE"),
+          eq(product.trackInventory, true),
+        ),
+      );
 
     return rows
       .map((row) => ({
-        productName: row.product.name,
+        productName: row.productName,
         sku: row.sku,
         available: Math.max(0, row.stockQuantity - row.reservedQuantity),
       }))
@@ -100,53 +144,30 @@ export class PrismaReportingRepository implements ReportingRepository {
       .slice(0, limit);
   }
 
-  async stockDemand(limit: number): Promise<StockDemandItem[]> {
-    const grouped = await this.db().backInStockSubscription.groupBy({
-      by: ["variantId"],
-      where: { notifiedAt: null },
-      _count: { _all: true },
-      orderBy: { _count: { variantId: "desc" } },
-      take: limit,
-    });
-    if (grouped.length === 0) return [];
-
-    const variants = await this.db().productVariant.findMany({
-      where: { id: { in: grouped.map((row) => row.variantId) } },
-      select: { id: true, sku: true, product: { select: { name: true } } },
-    });
-    const byId = new Map(variants.map((variant) => [variant.id, variant]));
-
-    return grouped.flatMap((row) => {
-      const variant = byId.get(row.variantId);
-      return variant
-        ? [
-            {
-              productName: variant.product.name,
-              sku: variant.sku,
-              waiting: row._count._all,
-            },
-          ]
-        : [];
-    });
-  }
-
   async customerMetrics(from: Date, to: Date): Promise<CustomerMetrics> {
+    const db = this.db();
     const [newCustomers, buyerRows] = await Promise.all([
-      this.db().user.count({
-        where: {
-          type: "CUSTOMER",
-          anonymizedAt: null,
-          createdAt: { gte: from, lt: to },
-        },
-      }),
-      this.db().order.groupBy({
-        by: ["userId"],
-        where: {
-          userId: { not: null },
-          status: { in: [...REVENUE_STATUSES] },
-          createdAt: { gte: from, lt: to },
-        },
-      }),
+      countWhere(
+        db,
+        user,
+        and(
+          eq(user.type, "CUSTOMER"),
+          isNull(user.anonymizedAt),
+          gte(user.createdAt, from),
+          lt(user.createdAt, to),
+        ),
+      ),
+      db
+        .selectDistinct({ userId: order.userId })
+        .from(order)
+        .where(
+          and(
+            isNotNull(order.userId),
+            inArray(order.status, [...REVENUE_STATUSES]),
+            gte(order.createdAt, from),
+            lt(order.createdAt, to),
+          ),
+        ),
     ]);
 
     const buyerIds = buyerRows
@@ -154,22 +175,25 @@ export class PrismaReportingRepository implements ReportingRepository {
       .filter((id): id is string => id !== null);
 
     // Dönemden önce de gelir sayılan siparişi olanlar "tekrar eden" alıcıdır.
-    const returning =
-      buyerIds.length === 0
-        ? []
-        : await this.db().order.groupBy({
-            by: ["userId"],
-            where: {
-              userId: { in: buyerIds },
-              status: { in: [...REVENUE_STATUSES] },
-              createdAt: { lt: from },
-            },
-          });
+    let returning = 0;
+    for (const ids of chunk(buyerIds)) {
+      const rows = await db
+        .selectDistinct({ userId: order.userId })
+        .from(order)
+        .where(
+          and(
+            inArray(order.userId, ids),
+            inArray(order.status, [...REVENUE_STATUSES]),
+            lt(order.createdAt, from),
+          ),
+        );
+      returning += rows.length;
+    }
 
     return {
       newCustomers,
       buyers: buyerIds.length,
-      returningBuyers: returning.length,
+      returningBuyers: returning,
     };
   }
 }

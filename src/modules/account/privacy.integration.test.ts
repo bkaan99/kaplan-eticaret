@@ -1,80 +1,104 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
-import { PrismaAddressRepository } from "./address.repository";
-import { PrismaPrivacyRepository } from "./privacy.repository";
+import { count, eq } from "drizzle-orm";
+import {
+  address,
+  cart,
+  order,
+  user as userTable,
+  wishlistItem,
+  type Db,
+} from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import {
+  d,
+  makeCategory,
+  makeOrder,
+  makeProduct,
+  makeUser,
+} from "../../../tests/support/factories";
+import { D1AddressRepository } from "./address.repository";
+import { D1PrivacyRepository } from "./privacy.repository";
 
 describe("KVKK: veri dışa aktarma ve anonimleştirme (veritabanı)", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
-  let privacy: PrismaPrivacyRepository;
+  let t: TestDb;
+  let db: Db;
+  let privacy: D1PrivacyRepository;
   let userId: string;
   let email: string;
   let productId: string;
   let variantId: string;
 
-  beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    privacy = new PrismaPrivacyRepository(() => db);
+  const rows = async (
+    table: typeof address | typeof wishlistItem | typeof cart | typeof order,
+    column: Parameters<typeof eq>[0],
+    value: string,
+  ) =>
+    (
+      await db
+        .select({ n: count() })
+        .from(table as typeof address)
+        .where(eq(column, value))
+    )[0]!.n;
 
-    const category = await db.category.create({
-      data: { name: "KVKK", slug: `kvkk-${tag}` },
+  beforeAll(async () => {
+    t = await createTestDb();
+    db = t.db;
+    privacy = new D1PrivacyRepository(() => db);
+
+    const category = await makeCategory(db, {
+      name: "KVKK",
+      slug: `kvkk-${tag}`,
     });
-    const product = await db.product.create({
-      data: {
+    const product = await makeProduct(
+      db,
+      {
         name: `KVKK Ürünü ${tag}`,
         slug: `kvkk-urunu-${tag}`,
         status: "ACTIVE",
         categoryId: category.id,
-        variants: {
-          create: { sku: `KVKK-${tag}`, price: "10.00", stockQuantity: 5 },
-        },
       },
-      include: { variants: true },
-    });
+      [{ sku: `KVKK-${tag}`, price: "10.00", stockQuantity: 5 }],
+    );
     productId = product.id;
     variantId = product.variants[0]!.id;
 
     email = `kvkk-${tag}@example.com`;
-    const user = await db.user.create({
-      data: {
+    const user = await makeUser(
+      db,
+      {
         email,
         passwordHash: "hash",
         firstName: "Ayşe",
         lastName: "Yılmaz",
         phone: "05550000000",
-        customer: {
-          create: {
-            b2bStatus: "APPROVED",
-            companyName: "Gizli Ltd.",
-            taxNumber: "1234567890",
-            taxOffice: "Kadıköy",
-            creditLimit: "1000.00",
-          },
-        },
       },
-    });
+      {
+        b2bStatus: "APPROVED",
+        companyName: "Gizli Ltd.",
+        taxNumber: "1234567890",
+        taxOffice: "Kadıköy",
+        creditLimit: d("1000.00"),
+      },
+    );
     userId = user.id;
 
-    await db.address.create({
-      data: {
-        userId,
-        title: "Ev",
-        firstName: "Ayşe",
-        lastName: "Yılmaz",
-        phone: "05550000000",
-        city: "İstanbul",
-        district: "Kadıköy",
-        addressLine: "Gizli Sokak No: 1",
-      },
+    await db.insert(address).values({
+      userId,
+      title: "Ev",
+      firstName: "Ayşe",
+      lastName: "Yılmaz",
+      phone: "05550000000",
+      city: "İstanbul",
+      district: "Kadıköy",
+      addressLine: "Gizli Sokak No: 1",
     });
-    await db.wishlistItem.create({ data: { userId, productId } });
-    await db.cart.create({ data: { userId } });
-    await db.backInStockSubscription.create({ data: { variantId, email } });
-    await db.order.create({
-      data: {
-        orderNumber: `K${randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`,
-        lookupToken: randomUUID(),
+    await db.insert(wishlistItem).values({ userId, productId });
+    await db.insert(cart).values({ userId });
+    await makeOrder(
+      db,
+      {
         userId,
         guestEmail: email,
         status: "DELIVERED",
@@ -83,23 +107,23 @@ describe("KVKK: veri dışa aktarma ve anonimleştirme (veritabanı)", () => {
         grandTotal: "10.00",
         shippingAddress: { firstName: "Ayşe" },
         billingAddress: { firstName: "Ayşe" },
-        items: {
-          create: {
-            variantId,
-            productName: "KVKK Ürünü",
-            sku: `KVKK-${tag}`,
-            unitPrice: "10.00",
-            taxRate: "20.00",
-            quantity: 1,
-            lineTotal: "10.00",
-          },
-        },
       },
-    });
+      [
+        {
+          variantId,
+          productName: "KVKK Ürünü",
+          sku: `KVKK-${tag}`,
+          unitPrice: "10.00",
+          taxRate: "20.00",
+          quantity: 1,
+          lineTotal: "10.00",
+        },
+      ],
+    );
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   it("tüm kişisel veriyi dışa aktarır", async () => {
@@ -114,7 +138,6 @@ describe("KVKK: veri dışa aktarma ve anonimleştirme (veritabanı)", () => {
     expect(data?.orders).toHaveLength(1);
     expect(data?.wishlist[0]?.slug).toBe(`kvkk-urunu-${tag}`);
     expect(data?.dealer).toMatchObject({ companyName: "Gizli Ltd." });
-    expect(data?.stockAlerts).toHaveLength(1);
   });
 
   it("teslim edilmiş ödenmiş siparişi açık sipariş saymaz", async () => {
@@ -124,10 +147,10 @@ describe("KVKK: veri dışa aktarma ve anonimleştirme (veritabanı)", () => {
   it("hesabı anonimleştirir: kişisel veriler silinir, sipariş kaydı korunur", async () => {
     await privacy.anonymize(userId);
 
-    const user = await db.user.findUniqueOrThrow({
-      where: { id: userId },
-      include: { customer: true },
-    });
+    const user = (await db.query.user.findFirst({
+      where: eq(userTable.id, userId),
+      with: { customer: true },
+    }))!;
     expect(user.email).toBe(`silinmis-${userId}@anonim.invalid`);
     expect(user).toMatchObject({
       firstName: "Silinmiş",
@@ -142,48 +165,41 @@ describe("KVKK: veri dışa aktarma ve anonimleştirme (veritabanı)", () => {
       b2bStatus: "NONE",
     });
 
-    expect(await db.address.count({ where: { userId } })).toBe(0);
-    expect(await db.wishlistItem.count({ where: { userId } })).toBe(0);
-    expect(await db.cart.count({ where: { userId } })).toBe(0);
-    expect(await db.backInStockSubscription.count({ where: { email } })).toBe(
-      0,
-    );
+    expect(await rows(address, address.userId, userId)).toBe(0);
+    expect(await rows(wishlistItem, wishlistItem.userId, userId)).toBe(0);
+    expect(await rows(cart, cart.userId, userId)).toBe(0);
 
     // Yasal saklama: sipariş kayıtları durur.
-    expect(await db.order.count({ where: { userId } })).toBe(1);
+    expect(await rows(order, order.userId, userId)).toBe(1);
   });
 
   it("açık siparişi olan kullanıcıyı tespit eder", async () => {
-    const other = await db.user.create({
-      data: { email: `acik-${tag}@example.com`, firstName: "A", lastName: "B" },
+    const other = await makeUser(db, {
+      email: `acik-${tag}@example.com`,
+      firstName: "A",
+      lastName: "B",
     });
-    await db.order.create({
-      data: {
-        orderNumber: `O${randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`,
-        lookupToken: randomUUID(),
-        userId: other.id,
-        guestEmail: other.email,
-        status: "SHIPPED",
-        paymentStatus: "PAID",
-        subtotal: "10.00",
-        grandTotal: "10.00",
-        shippingAddress: {},
-        billingAddress: {},
-      },
+    await makeOrder(db, {
+      userId: other.id,
+      guestEmail: other.email,
+      status: "SHIPPED",
+      paymentStatus: "PAID",
+      subtotal: "10.00",
+      grandTotal: "10.00",
+      shippingAddress: {},
+      billingAddress: {},
     });
 
     expect(await privacy.openOrderCount(other.id)).toBe(1);
   });
 
   it("adres defterinde varsayılan bayrağı tek adreste tutar", async () => {
-    const user = await db.user.create({
-      data: {
-        email: `adres-${tag}@example.com`,
-        firstName: "A",
-        lastName: "B",
-      },
+    const user = await makeUser(db, {
+      email: `adres-${tag}@example.com`,
+      firstName: "A",
+      lastName: "B",
     });
-    const addresses = new PrismaAddressRepository(() => db);
+    const addresses = new D1AddressRepository(() => db);
     const base = {
       title: "Ev",
       firstName: "A",

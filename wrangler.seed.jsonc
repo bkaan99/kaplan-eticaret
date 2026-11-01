@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kaplan-eticaret-seed",
+  "main": "workers/app-worker.ts",
+  "compatibility_date": "2026-10-31",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kaplan-eticaret",
+      "database_id": "e0697813-ccc2-4594-b6db-b45953a0d85f",
+      "remote": true
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { connection } from "next/server";
 import { getDb } from "@/shared/db";
 import { reportError } from "@/shared/error-reporter";
@@ -7,7 +8,7 @@ type CheckResult = "ok" | "fail";
 
 async function checkDatabase(): Promise<CheckResult> {
   try {
-    await getDb().$queryRaw`SELECT 1`;
+    await getDb().run(sql`SELECT 1`);
     return "ok";
   } catch (error) {
     reportError(error, { check: "database" });

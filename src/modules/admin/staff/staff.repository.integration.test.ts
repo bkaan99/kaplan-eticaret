@@ -1,25 +1,31 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PERMISSIONS } from "@/shared/permissions";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
-import { PrismaStaffRepository } from "./staff.repository";
+import { inArray } from "drizzle-orm";
+import { role as roleTable, user as userTable, type Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../../tests/support/test-db";
+import { D1StaffRepository } from "./staff.repository";
 
-describe("PrismaStaffRepository", () => {
+describe("D1StaffRepository", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
-  let repo: PrismaStaffRepository;
+  let t: TestDb;
+  let db: Db;
+  let repo: D1StaffRepository;
   const userIds: string[] = [];
   const roleIds: string[] = [];
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    repo = new PrismaStaffRepository(() => db);
+    t = await createTestDb();
+    db = t.db;
+    repo = new D1StaffRepository(() => db);
   });
 
   afterAll(async () => {
-    await db.user.deleteMany({ where: { id: { in: userIds } } });
-    await db.role.deleteMany({ where: { id: { in: roleIds } } });
-    await db.$disconnect();
+    if (userIds.length)
+      await db.delete(userTable).where(inArray(userTable.id, userIds));
+    if (roleIds.length)
+      await db.delete(roleTable).where(inArray(roleTable.id, roleIds));
+    await t.close();
   });
 
   it("rol oluşturur, günceller ve yetkileri değiştirir", async () => {

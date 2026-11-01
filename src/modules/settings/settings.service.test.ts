@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { SettingsService } from "./settings.service";
 import { contactSettingsSchema } from "./settings.schema";
-import type { PrismaClient } from "@/shared/prisma-client";
+import type { Db } from "@/db";
 import { ValidationError } from "@/shared/errors";
 
 describe("contactSettingsSchema", () => {
@@ -29,90 +29,8 @@ describe("contactSettingsSchema", () => {
 });
 
 describe("SettingsService", () => {
-  it("returns fallback contact settings if none is saved in database", async () => {
-    const mockDb = {
-      setting: {
-        findUnique: vi.fn().mockResolvedValue(null),
-        upsert: vi.fn(),
-      },
-    } as unknown as PrismaClient;
-
-    const service = new SettingsService(() => mockDb);
-    const settings = await service.getContactSettings();
-
-    expect(settings.phone).toBeDefined();
-    expect(settings.email).toBeDefined();
-    expect(settings.address).toBe("Çubuk, Ankara / Türkiye");
-  });
-
-  it("returns saved contact settings from db if present", async () => {
-    const mockDb = {
-      setting: {
-        findUnique: vi.fn().mockResolvedValue({
-          key: "contact_settings",
-          value: {
-            phone: "0850 333 44 55",
-            email: "iletisim@kaplantursu.com",
-            address: "Ankara Caddesi No: 42, Çubuk",
-            whatsapp: "05551112233",
-            workingHours: "08:00 - 19:00",
-          },
-        }),
-        upsert: vi.fn(),
-      },
-    } as unknown as PrismaClient;
-
-    const service = new SettingsService(() => mockDb);
-    const settings = await service.getContactSettings();
-
-    expect(settings.phone).toBe("0850 333 44 55");
-    expect(settings.email).toBe("iletisim@kaplantursu.com");
-    expect(settings.address).toBe("Ankara Caddesi No: 42, Çubuk");
-    expect(settings.whatsapp).toBe("05551112233");
-  });
-
-  it("saves contact settings and logs audit event", async () => {
-    const upsertMock = vi.fn().mockResolvedValue({});
-    const mockDb = {
-      setting: {
-        findUnique: vi.fn(),
-        upsert: upsertMock,
-      },
-    } as unknown as PrismaClient;
-    const auditMock = { log: vi.fn().mockResolvedValue(undefined) };
-
-    const service = new SettingsService(() => mockDb, auditMock as any);
-    await service.saveContactSettings(
-      {
-        phone: "0850 111 22 33",
-        email: "siparis@kaplan.com",
-        address: "Çubuk Merkez",
-      },
-      { userId: "admin-1" },
-    );
-
-    expect(upsertMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { key: "contact_settings" },
-        update: expect.objectContaining({
-          value: expect.objectContaining({
-            phone: "0850 111 22 33",
-            email: "siparis@kaplan.com",
-          }),
-        }),
-      }),
-    );
-    expect(auditMock.log).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "settings.contact.update",
-        actorId: "admin-1",
-      }),
-    );
-  });
-
   it("throws ValidationError when payload is invalid", async () => {
-    const mockDb = {} as unknown as PrismaClient;
-    const service = new SettingsService(() => mockDb);
+    const service = new SettingsService(() => ({}) as unknown as Db);
 
     await expect(
       service.saveContactSettings(

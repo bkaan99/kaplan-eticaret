@@ -1,4 +1,15 @@
-import type { PrismaClient } from "@/shared/prisma-client";
+import { and, count, desc, eq, inArray, or } from "drizzle-orm";
+import {
+  address,
+  cart,
+  customer,
+  order,
+  runBatch,
+  user as userTable,
+  userRole,
+  wishlistItem,
+  type Db,
+} from "@/db";
 
 export interface UserDataExport {
   exportedAt: string;
@@ -14,7 +25,6 @@ export interface UserDataExport {
   orders: Record<string, unknown>[];
   wishlist: { product: string; slug: string }[];
   dealer: Record<string, unknown> | null;
-  stockAlerts: { product: string; sku: string; createdAt: string }[];
 }
 
 export interface PrivacyRepository {
@@ -31,32 +41,25 @@ export interface PrivacyRepository {
   anonymize(userId: string): Promise<void>;
 }
 
-export class PrismaPrivacyRepository implements PrivacyRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+export class D1PrivacyRepository implements PrivacyRepository {
+  constructor(private readonly db: () => Db) {}
 
   async collectExport(userId: string): Promise<UserDataExport | null> {
-    const user = await this.db().user.findUnique({
-      where: { id: userId },
-      include: {
+    const user = await this.db().query.user.findFirst({
+      where: eq(userTable.id, userId),
+      with: {
         addresses: true,
-        customer: { include: { group: { select: { name: true } } } },
+        customer: { with: { group: { columns: { name: true } } } },
         wishlist: {
-          include: { product: { select: { name: true, slug: true } } },
+          with: { product: { columns: { name: true, slug: true } } },
         },
         orders: {
-          orderBy: { createdAt: "desc" },
-          include: { items: true, payments: true },
+          orderBy: desc(order.createdAt),
+          with: { items: true, payments: true },
         },
       },
     });
     if (!user) return null;
-
-    const alerts = await this.db().backInStockSubscription.findMany({
-      where: { email: user.email },
-      include: {
-        variant: { select: { sku: true, product: { select: { name: true } } } },
-      },
-    });
 
     return {
       exportedAt: new Date().toISOString(),
@@ -124,35 +127,38 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
             group: user.customer.group?.name ?? null,
           }
         : null,
-      stockAlerts: alerts.map((alert) => ({
-        product: alert.variant.product.name,
-        sku: alert.variant.sku,
-        createdAt: alert.createdAt.toISOString(),
-      })),
     };
   }
 
-  openOrderCount(userId: string): Promise<number> {
-    return this.db().order.count({
-      where: {
-        userId,
-        OR: [
-          {
-            status: {
-              in: ["PENDING_PAYMENT", "PAID", "PROCESSING", "SHIPPED"],
-            },
-          },
-          // Teslim edilmiş ama vadeli ödemesi tahsil edilmemiş sipariş
-          { status: "DELIVERED", paymentStatus: "PENDING" },
-        ],
-      },
-    });
+  async openOrderCount(userId: string): Promise<number> {
+    const [row] = await this.db()
+      .select({ n: count() })
+      .from(order)
+      .where(
+        and(
+          eq(order.userId, userId),
+          or(
+            inArray(order.status, [
+              "PENDING_PAYMENT",
+              "PAID",
+              "PROCESSING",
+              "SHIPPED",
+            ]),
+            // Teslim edilmiş ama vadeli ödemesi tahsil edilmemiş sipariş
+            and(
+              eq(order.status, "DELIVERED"),
+              eq(order.paymentStatus, "PENDING"),
+            ),
+          ),
+        ),
+      );
+    return row!.n;
   }
 
   async findIdentity(userId: string) {
-    const user = await this.db().user.findUnique({
-      where: { id: userId },
-      select: {
+    const user = await this.db().query.user.findFirst({
+      where: eq(userTable.id, userId),
+      columns: {
         email: true,
         type: true,
         passwordHash: true,
@@ -170,23 +176,16 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
   }
 
   async anonymize(userId: string): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      const user = await tx.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { email: true },
-      });
-
-      await tx.address.deleteMany({ where: { userId } });
-      await tx.wishlistItem.deleteMany({ where: { userId } });
-      await tx.cart.deleteMany({ where: { userId } });
-      await tx.backInStockSubscription.deleteMany({
-        where: { email: user.email },
-      });
-      await tx.userRole.deleteMany({ where: { userId } });
-
-      await tx.customer.updateMany({
-        where: { userId },
-        data: {
+    const db = this.db();
+    // Tüm işlemler tek batch'te: ya hepsi uygulanır ya hiçbiri.
+    await runBatch(db, [
+      db.delete(address).where(eq(address.userId, userId)),
+      db.delete(wishlistItem).where(eq(wishlistItem.userId, userId)),
+      db.delete(cart).where(eq(cart.userId, userId)),
+      db.delete(userRole).where(eq(userRole.userId, userId)),
+      db
+        .update(customer)
+        .set({
           b2bStatus: "NONE",
           groupId: null,
           companyName: null,
@@ -195,12 +194,11 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
           creditLimit: null,
           minOrderAmount: null,
           b2bNote: null,
-        },
-      });
-
-      await tx.user.update({
-        where: { id: userId },
-        data: {
+        })
+        .where(eq(customer.userId, userId)),
+      db
+        .update(userTable)
+        .set({
           // Sipariş kayıtları yasal saklama gereği korunur; kimlik bağlantısı kopar.
           email: `silinmis-${userId}@anonim.invalid`,
           firstName: "Silinmiş",
@@ -210,8 +208,8 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
           isActive: false,
           emailVerifiedAt: null,
           anonymizedAt: new Date(),
-        },
-      });
-    });
+        })
+        .where(eq(userTable.id, userId)),
+    ]);
   }
 }

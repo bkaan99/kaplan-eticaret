@@ -1,5 +1,5 @@
-import type { Prisma } from "../../../../generated/prisma/client";
-import type { PrismaClient } from "@/shared/prisma-client";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { containsText, countWhere, order, shipment, type Db } from "@/db";
 import type { OrderStatus } from "../../orders/order.types";
 
 export interface AdminOrderListQuery {
@@ -101,31 +101,30 @@ function toAddress(json: unknown): Record<string, string | null> {
   return (json ?? {}) as Record<string, string | null>;
 }
 
-export class PrismaAdminOrderRepository implements AdminOrderRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+export class D1AdminOrderRepository implements AdminOrderRepository {
+  constructor(private readonly db: () => Db) {}
 
   async list(query: AdminOrderListQuery): Promise<AdminOrderList> {
+    const db = this.db();
     const search = query.search?.trim();
-    const where: Prisma.OrderWhereInput = {
-      ...(query.status ? { status: query.status } : {}),
-      ...(search
-        ? {
-            OR: [
-              { orderNumber: { contains: search, mode: "insensitive" } },
-              { guestEmail: { contains: search, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    };
+    const where = and(
+      query.status ? eq(order.status, query.status) : undefined,
+      search
+        ? or(
+            containsText(order.orderNumber, search),
+            containsText(order.guestEmail, search),
+          )
+        : undefined,
+    );
 
     const [total, rows] = await Promise.all([
-      this.db().order.count({ where }),
-      this.db().order.findMany({
+      countWhere(db, order, where),
+      db.query.order.findMany({
         where,
-        orderBy: { createdAt: "desc" },
-        skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize,
-        include: { items: { select: { quantity: true } } },
+        orderBy: desc(order.createdAt),
+        offset: (query.page - 1) * query.pageSize,
+        limit: query.pageSize,
+        with: { items: { columns: { quantity: true } } },
       }),
     ]);
 
@@ -153,13 +152,13 @@ export class PrismaAdminOrderRepository implements AdminOrderRepository {
   }
 
   async findDetail(orderNumber: string): Promise<AdminOrderDetail | null> {
-    const row = await this.db().order.findUnique({
-      where: { orderNumber },
-      include: {
+    const row = await this.db().query.order.findFirst({
+      where: eq(order.orderNumber, orderNumber),
+      with: {
         items: true,
-        payments: { orderBy: { createdAt: "desc" } },
-        shipments: { orderBy: { createdAt: "desc" } },
-        returns: { orderBy: { createdAt: "desc" } },
+        payments: { orderBy: (payment, { desc }) => desc(payment.createdAt) },
+        shipments: { orderBy: desc(shipment.createdAt) },
+        returns: { orderBy: (request, { desc }) => desc(request.createdAt) },
       },
     });
     if (!row) return null;
@@ -222,32 +221,33 @@ export class PrismaAdminOrderRepository implements AdminOrderRepository {
     from: readonly OrderStatus[],
     to: OrderStatus,
   ): Promise<boolean> {
-    const result = await this.db().order.updateMany({
-      where: { id: orderId, status: { in: [...from] } },
-      data: { status: to },
-    });
-    return result.count > 0;
+    const result = await this.db()
+      .update(order)
+      .set({ status: to })
+      .where(and(eq(order.id, orderId), inArray(order.status, [...from])))
+      .run();
+    return result.meta.changes > 0;
   }
 
   async createShipment(
     orderId: string,
     data: { carrier: string; trackingNumber: string | null },
   ): Promise<void> {
-    await this.db().shipment.create({
-      data: {
-        orderId,
-        carrier: data.carrier,
-        trackingNumber: data.trackingNumber,
-        status: "SHIPPED",
-        shippedAt: new Date(),
-      },
+    await this.db().insert(shipment).values({
+      orderId,
+      carrier: data.carrier,
+      trackingNumber: data.trackingNumber,
+      status: "SHIPPED",
+      shippedAt: new Date(),
     });
   }
 
   async markShipmentsDelivered(orderId: string): Promise<void> {
-    await this.db().shipment.updateMany({
-      where: { orderId, status: "SHIPPED" },
-      data: { status: "DELIVERED", deliveredAt: new Date() },
-    });
+    await this.db()
+      .update(shipment)
+      .set({ status: "DELIVERED", deliveredAt: new Date() })
+      .where(
+        and(eq(shipment.orderId, orderId), eq(shipment.status, "SHIPPED")),
+      );
   }
 }

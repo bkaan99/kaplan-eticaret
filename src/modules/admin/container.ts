@@ -2,29 +2,29 @@ import { getAuditLogger } from "@/shared/audit";
 import { getDb } from "@/shared/db";
 import { getEventBus } from "@/shared/events";
 import { getOrderService, orderRepository } from "../orders/container";
-import { PrismaProductAdminRepository } from "./catalog/product-admin.repository";
+import { D1ProductAdminRepository } from "./catalog/product-admin.repository";
 import { ProductAdminService } from "./catalog/product-admin.service";
-import { PrismaTaxonomyRepository } from "./taxonomy/taxonomy.repository";
+import { D1TaxonomyRepository } from "./taxonomy/taxonomy.repository";
 import { TaxonomyService } from "./taxonomy/taxonomy.service";
-import { PrismaPromotionRepository } from "./promotions/promotion.repository";
+import { D1PromotionRepository } from "./promotions/promotion.repository";
 import { PromotionService } from "./promotions/promotion.service";
 import { AuditQueryService } from "./audit/audit-query";
 import { CustomerQueryService } from "./customers/customer-query";
-import { PrismaPriceListRepository } from "./pricing/price-list.repository";
+import { D1PriceListRepository } from "./pricing/price-list.repository";
 import { PriceListService } from "./pricing/price-list.service";
-import { PrismaAdminOrderRepository } from "./orders/admin-order.repository";
+import { D1AdminOrderRepository } from "./orders/admin-order.repository";
 import { AdminOrderService } from "./orders/admin-order.service";
-import { PrismaBulkUpdateRepository } from "./import/bulk-update.repository";
+import { D1BulkUpdateRepository } from "./import/bulk-update.repository";
 import { BulkUpdateService } from "./import/bulk-update.service";
-import { PrismaImportRepository } from "./import/import.repository";
+import { D1ImportRepository } from "./import/import.repository";
 import { ProductImportService } from "./import/product-import.service";
 import { getAccountService } from "../account/container";
-import { PrismaStaffRepository } from "./staff/staff.repository";
+import { D1StaffRepository } from "./staff/staff.repository";
 import { StaffService } from "./staff/staff.service";
 
 export function getAdminOrderService(): AdminOrderService {
   return new AdminOrderService(
-    new PrismaAdminOrderRepository(getDb),
+    new D1AdminOrderRepository(getDb),
     getOrderService(),
     getEventBus(),
     getAuditLogger(),
@@ -34,22 +34,19 @@ export function getAdminOrderService(): AdminOrderService {
 
 export function getProductAdminService(): ProductAdminService {
   return new ProductAdminService(
-    new PrismaProductAdminRepository(getDb),
+    new D1ProductAdminRepository(getDb),
     getEventBus(),
     getAuditLogger(),
   );
 }
 
 export function getTaxonomyService(): TaxonomyService {
-  return new TaxonomyService(
-    new PrismaTaxonomyRepository(getDb),
-    getAuditLogger(),
-  );
+  return new TaxonomyService(new D1TaxonomyRepository(getDb), getAuditLogger());
 }
 
 export function getPromotionService(): PromotionService {
   return new PromotionService(
-    new PrismaPromotionRepository(getDb),
+    new D1PromotionRepository(getDb),
     getAuditLogger(),
   );
 }
@@ -64,14 +61,14 @@ export function getCustomerQueryService(): CustomerQueryService {
 
 export function getPriceListService(): PriceListService {
   return new PriceListService(
-    new PrismaPriceListRepository(getDb),
+    new D1PriceListRepository(getDb),
     getAuditLogger(),
   );
 }
 
 export function getBulkUpdateService(): BulkUpdateService {
   return new BulkUpdateService(
-    new PrismaBulkUpdateRepository(getDb),
+    new D1BulkUpdateRepository(getDb),
     getEventBus(),
     getAuditLogger(),
   );
@@ -80,13 +77,13 @@ export function getBulkUpdateService(): BulkUpdateService {
 export function getProductImportService(): ProductImportService {
   return new ProductImportService(
     getProductAdminService(),
-    new PrismaImportRepository(getDb),
+    new D1ImportRepository(getDb),
   );
 }
 
 export function getStaffService(): StaffService {
   return new StaffService(
-    new PrismaStaffRepository(getDb),
+    new D1StaffRepository(getDb),
     {
       // Parola belirleme bağlantısı, parola sıfırlama akışıyla gönderilir.
       sendPasswordSetup: (email) =>

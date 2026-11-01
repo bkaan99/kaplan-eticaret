@@ -1,21 +1,24 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
-import { PrismaContentRepository } from "./content.repository";
+import type { Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import { D1ContentRepository } from "./content.repository";
 import { bannerInputSchema } from "./content.schema";
 
-describe("PrismaContentRepository", () => {
+describe("D1ContentRepository", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
-  let repo: PrismaContentRepository;
+  let t: TestDb;
+  let db: Db;
+  let repo: D1ContentRepository;
 
-  beforeAll(() => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    repo = new PrismaContentRepository(() => db);
+  beforeAll(async () => {
+    t = await createTestDb();
+    db = t.db;
+    repo = new D1ContentRepository(() => db);
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   it("yalnızca aktif ve tarih aralığı uygun bannerları döndürür", async () => {

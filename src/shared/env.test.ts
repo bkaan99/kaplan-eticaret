@@ -37,10 +37,23 @@ describe("parseEnv", () => {
     expect(env.PAYTR_MERCHANT_ID).toBeUndefined();
   });
 
-  it("production'da PayTR anahtarlarını zorunlu kılar", () => {
+  it("production'da PayTR tamamen boşsa staging için kabul eder", () => {
     expect(() =>
       parseEnv({ ...validSource, NODE_ENV: "production" }, captchaOff),
-    ).toThrow(/PAYTR_MERCHANT_ID/);
+    ).not.toThrow();
+  });
+
+  it("production'da kısmi PayTR anahtarlarını reddeder", () => {
+    expect(() =>
+      parseEnv(
+        {
+          ...validSource,
+          NODE_ENV: "production",
+          PAYTR_MERCHANT_ID: "1",
+        },
+        captchaOff,
+      ),
+    ).toThrow(/PAYTR_MERCHANT_KEY/);
   });
 
   it("production'da PayTR anahtarları varsa kabul eder", () => {

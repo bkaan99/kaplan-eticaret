@@ -62,7 +62,10 @@ export class BulkUpdateService {
   constructor(
     private readonly repository: BulkUpdateRepository,
     private readonly events?: EventBus,
-    private readonly audit: AuditLogger = { log: async () => {}, purgeOlderThan: async () => 0 },
+    private readonly audit: AuditLogger = {
+      log: async () => {},
+      purgeOlderThan: async () => 0,
+    },
   ) {}
 
   async run(

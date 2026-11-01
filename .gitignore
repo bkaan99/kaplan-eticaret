@@ -1,5 +1,9 @@
 node_modules/
 .next/
+.open-next/
+.dev.vars
+dev.db
+dev.db-journal
 out/
 build/
 generated/
@@ -14,3 +18,4 @@ next-env.d.ts
 .DS_Store
 npm-debug.log*
 admin-giris.local.txt
+.wrangler/

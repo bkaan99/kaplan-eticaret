@@ -6,9 +6,9 @@ import { getEventBus } from "@/shared/events";
 import { cartService } from "../cart/container";
 import { priceResolver } from "../catalog/container";
 import { customPickleService } from "../custom-pickle/container";
-import { PrismaDealerRepository } from "../b2b/dealer.repository";
+import { D1DealerRepository } from "../b2b/dealer.repository";
 import { orderRepository } from "../orders/container";
-import { PrismaCheckoutRepository } from "./checkout.repository";
+import { D1CheckoutRepository } from "./checkout.repository";
 import { CheckoutService } from "./checkout.service";
 import { ConfiguredShippingRateCalculator } from "./shipping";
 
@@ -16,7 +16,7 @@ export function getCheckoutService(): CheckoutService {
   return new CheckoutService({
     carts: cartService,
     priceResolver,
-    checkout: new PrismaCheckoutRepository(getDb),
+    checkout: new D1CheckoutRepository(getDb),
     orders: orderRepository,
     shipping: new ConfiguredShippingRateCalculator(),
     settings: {
@@ -29,7 +29,7 @@ export function getCheckoutService(): CheckoutService {
       bankTransferHoldHours: siteConfig.b2b.bankTransferHoldHours,
       deferredPaymentDays: siteConfig.b2b.deferredPaymentDays,
     },
-    dealers: features.b2b ? new PrismaDealerRepository(getDb) : undefined,
+    dealers: features.b2b ? new D1DealerRepository(getDb) : undefined,
     events: getEventBus(),
     customizations: customPickleService,
   });

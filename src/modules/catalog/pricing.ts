@@ -79,7 +79,7 @@ export function computeUnitPrice(input: PriceInputs): Decimal {
   return base;
 }
 
-/** Fiyat verisini okuyan sözleşme (Prisma uygulaması repository'dedir). */
+/** Fiyat verisini okuyan sözleşme (uygulaması repository'dedir). */
 export interface PricingRepository {
   groupPrices(
     groupId: string,

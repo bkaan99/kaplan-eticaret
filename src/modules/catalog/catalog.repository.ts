@@ -1,6 +1,31 @@
 import type Decimal from "decimal.js";
-import type { PrismaClient } from "@/shared/prisma-client";
-import type { Prisma } from "../../../generated/prisma/client";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  inArray,
+  notInArray,
+  or,
+  isNotNull,
+  ne,
+  type SQL,
+} from "drizzle-orm";
+import {
+  attribute,
+  attributeValue,
+  brand,
+  category,
+  containsText,
+  product,
+  productAttributeValue,
+  productVariant,
+  redirect,
+  relatedProduct,
+  type Db,
+} from "@/db";
 import type { CategoryNode } from "./catalog.types";
 
 export interface ProductFilter {
@@ -104,62 +129,106 @@ export interface CatalogRepository {
   listActiveProductSlugs(): Promise<{ slug: string; updatedAt: Date }[]>;
 }
 
-const insensitive = "insensitive" as const;
+/** Listeleme koşulu; `product` tablosuna bağlı ilişkili alt sorgular (exists) kullanır. */
+function buildWhere(db: Db, filter: Partial<ProductFilter>): SQL {
+  const conditions: (SQL | undefined)[] = [
+    eq(product.status, "ACTIVE"),
+    exists(
+      db
+        .select({ one: productVariant.id })
+        .from(productVariant)
+        .where(
+          and(
+            eq(productVariant.productId, product.id),
+            eq(productVariant.isActive, true),
+          ),
+        ),
+    ),
+    filter.categoryIds
+      ? inArray(product.categoryId, filter.categoryIds)
+      : undefined,
+  ];
 
-function buildWhere(filter: Partial<ProductFilter>): Prisma.ProductWhereInput {
-  const and: Prisma.ProductWhereInput[] = [];
+  if (filter.brandSlugs?.length) {
+    conditions.push(
+      exists(
+        db
+          .select({ one: brand.id })
+          .from(brand)
+          .where(
+            and(
+              eq(brand.id, product.brandId),
+              inArray(brand.slug, filter.brandSlugs),
+            ),
+          ),
+      ),
+    );
+  }
 
   if (filter.search) {
     const term = filter.search;
-    and.push({
-      OR: [
-        { name: { contains: term, mode: insensitive } },
-        { description: { contains: term, mode: insensitive } },
-        { brand: { name: { contains: term, mode: insensitive } } },
-        { variants: { some: { sku: { contains: term, mode: insensitive } } } },
-      ],
-    });
+    conditions.push(
+      or(
+        containsText(product.name, term),
+        containsText(product.description, term),
+        exists(
+          db
+            .select({ one: brand.id })
+            .from(brand)
+            .where(
+              and(
+                eq(brand.id, product.brandId),
+                containsText(brand.name, term),
+              ),
+            ),
+        ),
+        exists(
+          db
+            .select({ one: productVariant.id })
+            .from(productVariant)
+            .where(
+              and(
+                eq(productVariant.productId, product.id),
+                containsText(productVariant.sku, term),
+              ),
+            ),
+        ),
+      ),
+    );
   }
 
   for (const [attributeSlug, valueSlugs] of Object.entries(
     filter.attributeFilters ?? {},
   )) {
-    and.push({
-      attributes: {
-        some: {
-          attributeValue: {
-            slug: { in: valueSlugs },
-            attribute: { slug: attributeSlug },
-          },
-        },
-      },
-    });
+    conditions.push(
+      exists(
+        db
+          .select({ one: productAttributeValue.productId })
+          .from(productAttributeValue)
+          .innerJoin(
+            attributeValue,
+            eq(attributeValue.id, productAttributeValue.attributeValueId),
+          )
+          .innerJoin(attribute, eq(attribute.id, attributeValue.attributeId))
+          .where(
+            and(
+              eq(productAttributeValue.productId, product.id),
+              inArray(attributeValue.slug, valueSlugs),
+              eq(attribute.slug, attributeSlug),
+            ),
+          ),
+      ),
+    );
   }
 
-  return {
-    status: "ACTIVE",
-    variants: { some: { isActive: true } },
-    ...(filter.categoryIds ? { categoryId: { in: filter.categoryIds } } : {}),
-    ...(filter.brandSlugs?.length
-      ? { brand: { slug: { in: filter.brandSlugs } } }
-      : {}),
-    ...(and.length > 0 ? { AND: and } : {}),
-  };
+  return and(...conditions)!;
 }
 
-const variantSelect = {
-  where: { isActive: true },
-  orderBy: { price: "asc" },
-  select: {
-    id: true,
-    sku: true,
-    price: true,
-    compareAtPrice: true,
-    currency: true,
-    stockQuantity: true,
-    reservedQuantity: true,
-    optionValues: { select: { optionValueId: true } },
-  },
+/** Aktif varyantlar fiyata göre artan sırada, seçenek değer kimlikleriyle. */
+const activeVariants = {
+  where: eq(productVariant.isActive, true),
+  orderBy: asc(productVariant.price),
+  with: { optionValues: { columns: { optionValueId: true } } },
 } as const;
 
 type VariantRow = {
@@ -186,15 +255,16 @@ function toVariantRecord(row: VariantRow): VariantRecord {
   };
 }
 
-export class PrismaCatalogRepository implements CatalogRepository {
+export class D1CatalogRepository implements CatalogRepository {
   /** İstemci tembel verilir; env doğrulaması yalnızca ilk sorguda çalışır. */
-  constructor(private readonly db: () => PrismaClient) {}
+  constructor(private readonly db: () => Db) {}
 
   async listCategories(): Promise<CategoryNode[]> {
-    const rows = await this.db().category.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    });
+    const rows = await this.db()
+      .select()
+      .from(category)
+      .where(eq(category.isActive, true))
+      .orderBy(asc(category.sortOrder), asc(category.name));
 
     return rows.map((row) => ({
       id: row.id,
@@ -210,13 +280,15 @@ export class PrismaCatalogRepository implements CatalogRepository {
   }
 
   async searchListing(filter: ProductFilter): Promise<ListingRow[]> {
-    const rows = await this.db().product.findMany({
-      where: buildWhere(filter),
-      select: {
-        id: true,
-        name: true,
-        createdAt: true,
-        variants: { where: { isActive: true }, select: { price: true } },
+    const db = this.db();
+    const rows = await db.query.product.findMany({
+      where: buildWhere(db, filter),
+      columns: { id: true, name: true, createdAt: true },
+      with: {
+        variants: {
+          where: eq(productVariant.isActive, true),
+          columns: { price: true },
+        },
       },
     });
 
@@ -234,20 +306,17 @@ export class PrismaCatalogRepository implements CatalogRepository {
   async findCards(ids: string[]): Promise<ProductCardRecord[]> {
     if (ids.length === 0) return [];
 
-    const rows = await this.db().product.findMany({
-      where: { id: { in: ids }, status: "ACTIVE" },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        trackInventory: true,
-        brand: { select: { name: true } },
+    const rows = await this.db().query.product.findMany({
+      where: and(inArray(product.id, ids), eq(product.status, "ACTIVE")),
+      columns: { id: true, slug: true, name: true, trackInventory: true },
+      with: {
+        brand: { columns: { name: true } },
         images: {
-          orderBy: { position: "asc" },
-          take: 1,
-          select: { url: true, alt: true },
+          orderBy: (image, { asc }) => asc(image.position),
+          limit: 1,
+          columns: { url: true, alt: true },
         },
-        variants: variantSelect,
+        variants: activeVariants,
       },
     });
 
@@ -266,81 +335,66 @@ export class PrismaCatalogRepository implements CatalogRepository {
   async countAttributeFacets(
     filter: Omit<ProductFilter, "attributeFilters">,
   ): Promise<AttributeFacetRecord[]> {
-    const where = buildWhere({ ...filter, attributeFilters: {} });
+    const db = this.db();
+    const rows = await db
+      .select({
+        attributeSlug: attribute.slug,
+        attributeName: attribute.name,
+        attributePosition: attribute.position,
+        valueSlug: attributeValue.slug,
+        value: attributeValue.value,
+        valuePosition: attributeValue.position,
+        count: count(),
+      })
+      .from(productAttributeValue)
+      .innerJoin(product, eq(product.id, productAttributeValue.productId))
+      .innerJoin(
+        attributeValue,
+        eq(attributeValue.id, productAttributeValue.attributeValueId),
+      )
+      .innerJoin(attribute, eq(attribute.id, attributeValue.attributeId))
+      .where(
+        and(
+          buildWhere(db, { ...filter, attributeFilters: {} }),
+          eq(attribute.isFilterable, true),
+        ),
+      )
+      .groupBy(attributeValue.id);
 
-    const grouped = await this.db().productAttributeValue.groupBy({
-      by: ["attributeValueId"],
-      where: {
-        product: where,
-        attributeValue: { attribute: { isFilterable: true } },
-      },
-      _count: { _all: true },
-    });
-    if (grouped.length === 0) return [];
-
-    const values = await this.db().attributeValue.findMany({
-      where: { id: { in: grouped.map((row) => row.attributeValueId) } },
-      include: { attribute: true },
-    });
-    const counts = new Map(
-      grouped.map((row) => [row.attributeValueId, row._count._all]),
-    );
-
-    return values.map((value) => ({
-      attributeSlug: value.attribute.slug,
-      attributeName: value.attribute.name,
-      attributePosition: value.attribute.position,
-      valueSlug: value.slug,
-      value: value.value,
-      valuePosition: value.position,
-      count: counts.get(value.id) ?? 0,
-    }));
+    return rows;
   }
 
   async countBrands(
     filter: Omit<ProductFilter, "attributeFilters" | "brandSlugs">,
   ): Promise<BrandCountRecord[]> {
-    const where = buildWhere({
-      ...filter,
-      brandSlugs: [],
-      attributeFilters: {},
-    });
-
-    const grouped = await this.db().product.groupBy({
-      by: ["brandId"],
-      where: { ...where, brandId: { not: null } },
-      _count: { _all: true },
-    });
-    if (grouped.length === 0) return [];
-
-    const brands = await this.db().brand.findMany({
-      where: { id: { in: grouped.map((row) => row.brandId!) } },
-    });
-    const counts = new Map(
-      grouped.map((row) => [row.brandId, row._count._all]),
-    );
-
-    return brands.map((brand) => ({
-      slug: brand.slug,
-      name: brand.name,
-      count: counts.get(brand.id) ?? 0,
-    }));
+    const db = this.db();
+    return db
+      .select({ slug: brand.slug, name: brand.name, count: count() })
+      .from(product)
+      .innerJoin(brand, eq(brand.id, product.brandId))
+      .where(
+        and(
+          buildWhere(db, { ...filter, brandSlugs: [], attributeFilters: {} }),
+          isNotNull(product.brandId),
+        ),
+      )
+      .groupBy(brand.id);
   }
 
   async findDetailBySlug(slug: string): Promise<ProductDetailRecord | null> {
-    const row = await this.db().product.findFirst({
-      where: { slug, status: "ACTIVE" },
-      include: {
+    const row = await this.db().query.product.findFirst({
+      where: and(eq(product.slug, slug), eq(product.status, "ACTIVE")),
+      with: {
         brand: true,
-        images: { orderBy: { position: "asc" } },
+        images: { orderBy: (image, { asc }) => asc(image.position) },
         options: {
-          orderBy: { position: "asc" },
-          include: { values: { orderBy: { position: "asc" } } },
+          orderBy: (option, { asc }) => asc(option.position),
+          with: {
+            values: { orderBy: (value, { asc }) => asc(value.position) },
+          },
         },
-        variants: variantSelect,
-        attributes: {
-          include: { attributeValue: { include: { attribute: true } } },
-        },
+        variants: activeVariants,
+        attributes: { with: { attributeValue: { with: { attribute: true } } } },
       },
     });
     if (!row) return null;
@@ -381,13 +435,19 @@ export class PrismaCatalogRepository implements CatalogRepository {
     productId: string,
     limit: number,
   ): Promise<string[]> {
-    const rows = await this.db().relatedProduct.findMany({
-      where: { productId, relatedProduct: { status: "ACTIVE" } },
-      orderBy: { position: "asc" },
-      take: limit,
-      select: { relatedProductId: true },
-    });
-    return rows.map((row) => row.relatedProductId);
+    const rows = await this.db()
+      .select({ id: relatedProduct.relatedProductId })
+      .from(relatedProduct)
+      .innerJoin(product, eq(product.id, relatedProduct.relatedProductId))
+      .where(
+        and(
+          eq(relatedProduct.productId, productId),
+          eq(product.status, "ACTIVE"),
+        ),
+      )
+      .orderBy(asc(relatedProduct.position))
+      .limit(limit);
+    return rows.map((row) => row.id);
   }
 
   async findSimilarIds(
@@ -395,54 +455,79 @@ export class PrismaCatalogRepository implements CatalogRepository {
     categoryId: string,
     limit: number,
   ): Promise<string[]> {
-    const rows = await this.db().product.findMany({
-      where: {
-        id: { not: productId },
-        categoryId,
-        status: "ACTIVE",
-        variants: { some: { isActive: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      select: { id: true },
-    });
+    const db = this.db();
+    const rows = await db
+      .select({ id: product.id })
+      .from(product)
+      .where(
+        and(
+          ne(product.id, productId),
+          eq(product.categoryId, categoryId),
+          eq(product.status, "ACTIVE"),
+          hasActiveVariant(db),
+        ),
+      )
+      .orderBy(desc(product.createdAt))
+      .limit(limit);
     return rows.map((row) => row.id);
   }
 
   async findRedirect(path: string): Promise<{ toPath: string } | null> {
-    const row = await this.db().redirect.findUnique({
-      where: { fromPath: path },
-      select: { toPath: true },
-    });
-    return row;
+    const [row] = await this.db()
+      .select({ toPath: redirect.toPath })
+      .from(redirect)
+      .where(eq(redirect.fromPath, path))
+      .limit(1);
+    return row ?? null;
   }
 
   async findFeaturedIds(limit: number): Promise<string[]> {
-    const base = {
-      status: "ACTIVE" as const,
-      variants: { some: { isActive: true } },
-    };
-    const featured = await this.db().product.findMany({
-      where: { ...base, isFeatured: true },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      select: { id: true },
-    });
+    const db = this.db();
+    const base = and(eq(product.status, "ACTIVE"), hasActiveVariant(db));
+    const featured = await db
+      .select({ id: product.id })
+      .from(product)
+      .where(and(base, eq(product.isFeatured, true)))
+      .orderBy(desc(product.createdAt))
+      .limit(limit);
     if (featured.length >= limit) return featured.map((row) => row.id);
 
-    const filler = await this.db().product.findMany({
-      where: { ...base, id: { notIn: featured.map((row) => row.id) } },
-      orderBy: { createdAt: "desc" },
-      take: limit - featured.length,
-      select: { id: true },
-    });
+    const filler = await db
+      .select({ id: product.id })
+      .from(product)
+      .where(
+        and(
+          base,
+          notInArray(
+            product.id,
+            featured.map((row) => row.id),
+          ),
+        ),
+      )
+      .orderBy(desc(product.createdAt))
+      .limit(limit - featured.length);
     return [...featured, ...filler].map((row) => row.id);
   }
 
   listActiveProductSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
-    return this.db().product.findMany({
-      where: { status: "ACTIVE", variants: { some: { isActive: true } } },
-      select: { slug: true, updatedAt: true },
-    });
+    const db = this.db();
+    return db
+      .select({ slug: product.slug, updatedAt: product.updatedAt })
+      .from(product)
+      .where(and(eq(product.status, "ACTIVE"), hasActiveVariant(db)));
   }
+}
+
+function hasActiveVariant(db: Db): SQL {
+  return exists(
+    db
+      .select({ one: productVariant.id })
+      .from(productVariant)
+      .where(
+        and(
+          eq(productVariant.productId, product.id),
+          eq(productVariant.isActive, true),
+        ),
+      ),
+  );
 }

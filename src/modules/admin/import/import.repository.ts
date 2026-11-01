@@ -1,34 +1,49 @@
-import type { PrismaClient } from "@/shared/prisma-client";
+import { inArray, sql } from "drizzle-orm";
+import { brand, category, chunk, product, productVariant, type Db } from "@/db";
 import type { ImportRepository } from "./product-import.service";
 
-export class PrismaImportRepository implements ImportRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+export class D1ImportRepository implements ImportRepository {
+  constructor(private readonly db: () => Db) {}
 
   async taxonomy() {
+    const db = this.db();
     const [categories, brands] = await Promise.all([
-      this.db().category.findMany({
-        select: { id: true, name: true, slug: true },
-      }),
-      this.db().brand.findMany({ select: { id: true, name: true } }),
+      db
+        .select({ id: category.id, name: category.name, slug: category.slug })
+        .from(category),
+      db.select({ id: brand.id, name: brand.name }).from(brand),
     ]);
     return { categories, brands };
   }
 
   async existingSkus(skus: string[]): Promise<string[]> {
-    if (skus.length === 0) return [];
-    const rows = await this.db().productVariant.findMany({
-      where: { sku: { in: skus, mode: "insensitive" } },
-      select: { sku: true },
-    });
-    return rows.map((row) => row.sku);
+    const found: string[] = [];
+    // Uzun listeler D1 parametre sınırı için parçalanır.
+    for (const part of chunk(skus)) {
+      const rows = await this.db()
+        .select({ sku: productVariant.sku })
+        .from(productVariant)
+        // SKU eşleşmesi büyük/küçük harfe duyarsızdır.
+        .where(
+          inArray(
+            sql`upper(${productVariant.sku})`,
+            part.map((sku) => sku.toUpperCase()),
+          ),
+        );
+      found.push(...rows.map((row) => row.sku));
+    }
+    return found;
   }
 
   async existingSlugs(slugs: string[]): Promise<string[]> {
-    if (slugs.length === 0) return [];
-    const rows = await this.db().product.findMany({
-      where: { slug: { in: slugs } },
-      select: { slug: true },
-    });
-    return rows.map((row) => row.slug);
+    const found: string[] = [];
+    for (const part of chunk(slugs)) {
+      const rows = await this.db()
+        .select({ slug: product.slug })
+        .from(product)
+        .where(inArray(product.slug, part));
+      found.push(...rows.map((row) => row.slug));
+    }
+    return found;
   }
 }

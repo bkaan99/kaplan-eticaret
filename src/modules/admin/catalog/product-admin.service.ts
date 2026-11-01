@@ -37,7 +37,10 @@ export class ProductAdminService {
   constructor(
     private readonly products: ProductAdminRepository,
     private readonly events?: EventBus,
-    private readonly audit: AuditLogger = { log: async () => {}, purgeOlderThan: async () => 0 },
+    private readonly audit: AuditLogger = {
+      log: async () => {},
+      purgeOlderThan: async () => 0,
+    },
   ) {}
 
   list(query: ProductListQuery): Promise<ProductListResult> {

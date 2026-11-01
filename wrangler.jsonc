@@ -1,0 +1,81 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kaplan-eticaret",
+  "main": "workers/app-worker.ts",
+  "compatibility_date": "2026-10-31",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    }
+  },
+  "workers_dev": true,
+  "preview_urls": false,
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "kaplan-eticaret"
+    }
+  ],
+  "vars": {
+    "NODE_ENV": "production",
+    // Staging adresi; kendi alan adı bağlanınca (routes) burası ve Auth/e-posta bağlantıları güncellenmeli.
+    "APP_URL": "https://kaplan-eticaret.bilgekagangurgen.workers.dev",
+    // env.ts şeması zorunlu tuttuğu için yer tutucu; veritabanı D1 binding'inden okunur.
+    "DATABASE_URL": "file:./unused",
+    // Yer tutucu: e-posta sağlayıcısı seçilene kadar gerçek gönderim yok (queue tüketici TODO).
+    "SMTP_HOST": "localhost",
+    "SMTP_PORT": "1025",
+    "MAIL_FROM": "Kaplan Turşu <no-reply@kaplantursu.com>",
+    "PAYTR_TEST_MODE": "true",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFvl5QAAi-Eo6q6D"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kaplan-eticaret",
+      "database_id": "e0697813-ccc2-4594-b6db-b45953a0d85f",
+      "migrations_dir": "db/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "kaplan-eticaret-uploads"
+    },
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "kaplan-eticaret-next-cache"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "JOB_QUEUE",
+        "queue": "kaplan-eticaret-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "kaplan-eticaret-jobs",
+        "max_batch_size": 10,
+        "max_retries": 5
+      }
+    ]
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *", "0 * * * *", "30 3 * * *"]
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "kaplan-eticaret"
+    }
+  ]
+}

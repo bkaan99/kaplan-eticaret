@@ -1,27 +1,46 @@
 import "server-only";
-import { getEnv } from "../env";
+import { getCloudflareEnv } from "../cloudflare";
 import type { JobQueue } from "./job-queue";
-import { PgBossJobQueue } from "./pg-boss-job-queue";
+import { CloudflareJobQueue } from "./cloudflare-job-queue";
+import { InlineJobQueue } from "./inline-job-queue";
 
 export type { JobQueue, JobHandler, EnqueueOptions } from "./job-queue";
 
 const globalForQueue = globalThis as unknown as {
   jobQueue?: JobQueue;
   workerQueue?: JobQueue;
+  sharedInline?: InlineJobQueue;
 };
 
-/** Web sürecinin kuyruğu: yalnızca iş ekler. */
+function getInlineQueue(): InlineJobQueue {
+  globalForQueue.sharedInline ??= new InlineJobQueue();
+  return globalForQueue.sharedInline;
+}
+
+/** Web sürecinin kuyruğu: yalnızca iş ekler (CF'de Queue, yerelde inline). */
 export function getJobQueue(): JobQueue {
-  globalForQueue.jobQueue ??= new PgBossJobQueue(getEnv().DATABASE_URL, {
-    background: false,
-  });
+  if (globalForQueue.jobQueue) return globalForQueue.jobQueue;
+
+  const cf = getCloudflareEnv();
+  if (cf?.JOB_QUEUE) {
+    globalForQueue.jobQueue = new CloudflareJobQueue(cf.JOB_QUEUE);
+    return globalForQueue.jobQueue;
+  }
+
+  globalForQueue.jobQueue = getInlineQueue();
   return globalForQueue.jobQueue;
 }
 
-/** Worker sürecinin kuyruğu: işleri çalıştırır, zamanlar ve bakım yapar. */
+/** Worker sürecinin kuyruğu: işleyicileri kaydeder. */
 export function getWorkerQueue(): JobQueue {
-  globalForQueue.workerQueue ??= new PgBossJobQueue(getEnv().DATABASE_URL, {
-    background: true,
-  });
+  if (globalForQueue.workerQueue) return globalForQueue.workerQueue;
+
+  const cf = getCloudflareEnv();
+  if (cf?.JOB_QUEUE) {
+    globalForQueue.workerQueue = new CloudflareJobQueue(cf.JOB_QUEUE);
+    return globalForQueue.workerQueue;
+  }
+
+  globalForQueue.workerQueue = getInlineQueue();
   return globalForQueue.workerQueue;
 }

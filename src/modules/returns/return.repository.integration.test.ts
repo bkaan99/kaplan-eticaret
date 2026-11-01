@@ -1,46 +1,62 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
-import { PrismaReturnRepository } from "./return.repository";
+import { count, eq } from "drizzle-orm";
+import {
+  order as orderTable,
+  orderItem,
+  payment,
+  refund,
+  returnRequest,
+  type Db,
+} from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import {
+  makeCategory,
+  makeOrder,
+  makeProduct,
+  variantById,
+} from "../../../tests/support/factories";
+import { D1ReturnRepository } from "./return.repository";
 
-describe("PrismaReturnRepository", () => {
+describe("D1ReturnRepository", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
-  let repo: PrismaReturnRepository;
+  let t: TestDb;
+  let db: Db;
+  let repo: D1ReturnRepository;
   let variantId: string;
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    repo = new PrismaReturnRepository(() => db);
+    t = await createTestDb();
+    db = t.db;
+    repo = new D1ReturnRepository(() => db);
 
-    const category = await db.category.create({
-      data: { name: "İade", slug: `return-${tag}` },
+    const category = await makeCategory(db, {
+      name: "İade",
+      slug: `return-${tag}`,
     });
-    const product = await db.product.create({
-      data: {
+    const product = await makeProduct(
+      db,
+      {
         name: `İade Ürünü ${tag}`,
         slug: `iade-urunu-${tag}`,
         status: "ACTIVE",
         categoryId: category.id,
-        variants: {
-          create: { sku: `RET-${tag}`, price: "100.00", stockQuantity: 5 },
-        },
       },
-      include: { variants: true },
-    });
+      [{ sku: `RET-${tag}`, price: "100.00", stockQuantity: 5 }],
+    );
     variantId = product.variants[0]!.id;
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   async function createDeliveredOrder() {
     const orderNumber = `R${randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
-    const order = await db.order.create({
-      data: {
+    const id = await makeOrder(
+      db,
+      {
         orderNumber,
-        lookupToken: randomUUID(),
         guestEmail: `iade-${tag}@example.com`,
         status: "DELIVERED",
         paymentStatus: "PAID",
@@ -48,29 +64,32 @@ describe("PrismaReturnRepository", () => {
         grandTotal: "300.00",
         shippingAddress: {},
         billingAddress: {},
-        items: {
-          create: {
-            variantId,
-            productName: "İade Ürünü",
-            sku: `RET-${tag}`,
-            unitPrice: "100.00",
-            taxRate: "20.00",
-            quantity: 3,
-            lineTotal: "300.00",
-          },
-        },
-        payments: {
-          create: {
-            provider: "dev",
-            amount: "300.00",
-            merchantOid: orderNumber,
-            status: "PAID",
-          },
-        },
       },
-      include: { items: true },
-    });
-    return order;
+      [
+        {
+          variantId,
+          productName: "İade Ürünü",
+          sku: `RET-${tag}`,
+          unitPrice: "100.00",
+          taxRate: "20.00",
+          quantity: 3,
+          lineTotal: "300.00",
+        },
+      ],
+      [
+        {
+          provider: "dev",
+          amount: "300.00",
+          merchantOid: orderNumber,
+          status: "PAID",
+        },
+      ],
+    );
+    const items = await db
+      .select()
+      .from(orderItem)
+      .where(eq(orderItem.orderId, id));
+    return { id, items };
   }
 
   it("talep oluşturur ve istenen adetleri toplar (reddedilenler hariç)", async () => {
@@ -97,9 +116,7 @@ describe("PrismaReturnRepository", () => {
   it("kısmi iadeyi tamamlar: ödeme PARTIALLY_REFUNDED olur, stok geri yüklenir", async () => {
     const order = await createDeliveredOrder();
     const itemId = order.items[0]!.id;
-    const before = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const before = await variantById(db, variantId);
 
     const requestId = await repo.createRequest(order.id, {
       reason: "Beden",
@@ -113,20 +130,22 @@ describe("PrismaReturnRepository", () => {
       restock: true,
     });
 
-    const after = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const after = await variantById(db, variantId);
     expect(after.stockQuantity).toBe(before.stockQuantity + 1);
 
-    const updated = await db.order.findUniqueOrThrow({
-      where: { id: order.id },
-    });
+    const [updated] = (await db
+      .select()
+      .from(orderTable)
+      .where(eq(orderTable.id, order.id))) as [typeof orderTable.$inferSelect];
     expect(updated.paymentStatus).toBe("PARTIALLY_REFUNDED");
     expect(updated.status).toBe("DELIVERED");
 
-    const request = await db.returnRequest.findUniqueOrThrow({
-      where: { id: requestId },
-    });
+    const [request] = (await db
+      .select()
+      .from(returnRequest)
+      .where(eq(returnRequest.id, requestId))) as [
+      typeof returnRequest.$inferSelect,
+    ];
     expect(request.status).toBe("COMPLETED");
   });
 
@@ -151,13 +170,17 @@ describe("PrismaReturnRepository", () => {
       restock: false,
     });
 
-    const updated = await db.order.findUniqueOrThrow({
-      where: { id: order.id },
-    });
+    const [updated] = (await db
+      .select()
+      .from(orderTable)
+      .where(eq(orderTable.id, order.id))) as [typeof orderTable.$inferSelect];
     expect(updated.status).toBe("REFUNDED");
     expect(updated.paymentStatus).toBe("REFUNDED");
-    expect(
-      await db.refund.count({ where: { payment: { orderId: order.id } } }),
-    ).toBe(1);
+    const [refunds] = await db
+      .select({ n: count() })
+      .from(refund)
+      .innerJoin(payment, eq(payment.id, refund.paymentId))
+      .where(eq(payment.orderId, order.id));
+    expect(refunds!.n).toBe(1);
   });
 });

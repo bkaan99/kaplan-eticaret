@@ -319,29 +319,6 @@ async function DashboardContent({
         </Card>
       </div>
 
-      {/* Stok Talebi Bekleyenler */}
-      {data.stockDemand.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Stok Talebi (Gelince Haber Ver Bekleyen Müşteriler)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="flex flex-col divide-y divide-slate-100 text-sm">
-              {data.stockDemand.map((item) => (
-                <li key={item.sku} className="flex items-center justify-between py-3">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-slate-800">{item.productName}</span>
-                    <span className="text-xs text-slate-400 font-mono">SKU: {item.sku}</span>
-                  </div>
-                  <span className="rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-bold text-purple-700">
-                    {item.waiting} müşteri bekliyor
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }

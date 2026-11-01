@@ -66,7 +66,8 @@ export class ReorderService {
       }
 
       try {
-        const snap = item.customization as CustomizationSnapshotLike | undefined;
+        const snap = item.customization as
+          CustomizationSnapshotLike | undefined;
         let result: CartMutationResult;
 
         if (

@@ -1,13 +1,19 @@
 import type Decimal from "decimal.js";
 import type { CartIdentity, CartMutationResult } from "../cart/cart.types";
 import type { PriceResolver } from "../catalog/pricing";
-import type { CustomizationPricer, CustomizationQuote } from "../custom-pickle/custom-pickle.types";
+import type {
+  CustomizationPricer,
+  CustomizationQuote,
+} from "../custom-pickle/custom-pickle.types";
 import type { EventBus } from "@/shared/events/event-bus";
 import type {
   CouponUsageRepository,
   OrderCreationRepository,
 } from "../orders/order.repository";
-import type { CheckoutLineRecord, CheckoutRepository } from "./checkout.repository";
+import type {
+  CheckoutLineRecord,
+  CheckoutRepository,
+} from "./checkout.repository";
 import type { ShippingRateCalculator } from "./shipping";
 import type { OrderTotals } from "./totals";
 import type { AppliedDiscount } from "./discounts";

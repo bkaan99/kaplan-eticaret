@@ -1,6 +1,18 @@
-import type Decimal from "decimal.js";
+import Decimal from "decimal.js";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import {
+  newId,
+  order as orders,
+  orderItem as orderItems,
+  payment as payments,
+  productVariant as variants,
+  refund as refunds,
+  returnRequest as returnRequests,
+  returnRequestItem as returnRequestItems,
+  runBatch,
+  type Db,
+} from "@/db";
 import { NotFoundError } from "@/shared/errors";
-import type { PrismaClient } from "@/shared/prisma-client";
 import type { ReturnStatus } from "./return.types";
 
 export interface ReturnOrderRecord {
@@ -73,15 +85,34 @@ export interface ReturnRepository {
   ): Promise<void>;
 }
 
-export class PrismaReturnRepository implements ReturnRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+/** İade talebi görünümü için ilişkili kayıtlar. */
+const requestWith = {
+  order: {
+    with: { payments: { orderBy: desc(payments.createdAt), limit: 1 } },
+  },
+  items: {
+    with: {
+      orderItem: {
+        with: {
+          variant: { with: { product: { columns: { trackInventory: true } } } },
+        },
+      },
+    },
+  },
+} as const;
+
+export class D1ReturnRepository implements ReturnRepository {
+  constructor(private readonly db: () => Db) {}
 
   async findOrder(orderNumber: string): Promise<ReturnOrderRecord | null> {
-    const row = await this.db().order.findUnique({
-      where: { orderNumber },
-      include: {
+    const row = await this.db().query.order.findFirst({
+      where: eq(orders.orderNumber, orderNumber),
+      with: {
         items: true,
-        shipments: { orderBy: { createdAt: "desc" }, take: 1 },
+        shipments: {
+          orderBy: (shipment, { desc }) => desc(shipment.createdAt),
+          limit: 1,
+        },
       },
     });
     if (!row) return null;
@@ -109,12 +140,22 @@ export class PrismaReturnRepository implements ReturnRepository {
   }
 
   async requestedQuantities(orderId: string): Promise<Map<string, number>> {
-    const rows = await this.db().returnRequestItem.findMany({
-      where: {
-        returnRequest: { orderId, status: { not: "REJECTED" } },
-      },
-      select: { orderItemId: true, quantity: true },
-    });
+    const rows = await this.db()
+      .select({
+        orderItemId: returnRequestItems.orderItemId,
+        quantity: returnRequestItems.quantity,
+      })
+      .from(returnRequestItems)
+      .innerJoin(
+        returnRequests,
+        eq(returnRequests.id, returnRequestItems.returnRequestId),
+      )
+      .where(
+        and(
+          eq(returnRequests.orderId, orderId),
+          ne(returnRequests.status, "REJECTED"),
+        ),
+      );
 
     const totals = new Map<string, number>();
     for (const row of rows) {
@@ -134,37 +175,24 @@ export class PrismaReturnRepository implements ReturnRepository {
       items: { orderItemId: string; quantity: number }[];
     },
   ): Promise<string> {
-    const created = await this.db().returnRequest.create({
-      data: {
-        orderId,
-        reason: data.reason,
-        note: data.note,
-        items: { create: data.items },
-      },
-      select: { id: true },
-    });
-    return created.id;
+    const db = this.db();
+    const id = newId();
+    // Talep ve kalemleri tek batch'te (atomik).
+    await runBatch(db, [
+      db
+        .insert(returnRequests)
+        .values({ id, orderId, reason: data.reason, note: data.note }),
+      ...data.items.map((item) =>
+        db.insert(returnRequestItems).values({ returnRequestId: id, ...item }),
+      ),
+    ]);
+    return id;
   }
 
   private async toRecord(id: string): Promise<ReturnRequestRecord | null> {
-    const row = await this.db().returnRequest.findUnique({
-      where: { id },
-      include: {
-        order: {
-          include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } },
-        },
-        items: {
-          include: {
-            orderItem: {
-              include: {
-                variant: {
-                  select: { product: { select: { trackInventory: true } } },
-                },
-              },
-            },
-          },
-        },
-      },
+    const row = await this.db().query.returnRequest.findFirst({
+      where: eq(returnRequests.id, id),
+      with: requestWith,
     });
     if (!row) return null;
     return this.map(row);
@@ -227,26 +255,11 @@ export class PrismaReturnRepository implements ReturnRepository {
   }
 
   async list(status?: ReturnStatus): Promise<ReturnRequestRecord[]> {
-    const rows = await this.db().returnRequest.findMany({
-      where: status ? { status } : {},
-      orderBy: { createdAt: "desc" },
-      take: 200,
-      include: {
-        order: {
-          include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } },
-        },
-        items: {
-          include: {
-            orderItem: {
-              include: {
-                variant: {
-                  select: { product: { select: { trackInventory: true } } },
-                },
-              },
-            },
-          },
-        },
-      },
+    const rows = await this.db().query.returnRequest.findMany({
+      where: status ? eq(returnRequests.status, status) : undefined,
+      orderBy: desc(returnRequests.createdAt),
+      limit: 200,
+      with: requestWith,
     });
     return rows.map((row) => this.map(row));
   }
@@ -256,85 +269,135 @@ export class PrismaReturnRepository implements ReturnRepository {
   }
 
   async reject(requestId: string, adminNote: string | null): Promise<boolean> {
-    const result = await this.db().returnRequest.updateMany({
-      where: { id: requestId, status: "REQUESTED" },
-      data: { status: "REJECTED", adminNote, resolvedAt: new Date() },
-    });
-    return result.count > 0;
+    const result = await this.db()
+      .update(returnRequests)
+      .set({ status: "REJECTED", adminNote, resolvedAt: new Date() })
+      .where(
+        and(
+          eq(returnRequests.id, requestId),
+          eq(returnRequests.status, "REQUESTED"),
+        ),
+      )
+      .run();
+    return result.meta.changes > 0;
   }
 
   async complete(
     requestId: string,
     data: { amount: string; providerRef: string | null; restock: boolean },
   ): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      const request = await tx.returnRequest.findUnique({
-        where: { id: requestId },
-        include: {
-          items: { include: { orderItem: true } },
-          order: {
-            include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } },
-          },
+    const db = this.db();
+    const request = await db.query.returnRequest.findFirst({
+      where: eq(returnRequests.id, requestId),
+      with: {
+        items: { with: { orderItem: true } },
+        order: {
+          with: { payments: { orderBy: desc(payments.createdAt), limit: 1 } },
         },
-      });
-      if (!request) throw new NotFoundError("İade talebi");
+      },
+    });
+    if (!request) throw new NotFoundError("İade talebi");
 
-      const claimed = await tx.returnRequest.updateMany({
-        where: { id: requestId, status: "REQUESTED" },
-        data: { status: "COMPLETED", resolvedAt: new Date() },
-      });
-      if (claimed.count === 0) return;
+    // İdempotency kapısı: yalnızca REQUESTED talep tamamlanır.
+    const claimed = await db
+      .update(returnRequests)
+      .set({ status: "COMPLETED", resolvedAt: new Date() })
+      .where(
+        and(
+          eq(returnRequests.id, requestId),
+          eq(returnRequests.status, "REQUESTED"),
+        ),
+      )
+      .run();
+    if (claimed.meta.changes === 0) return;
+
+    try {
+      // Tüm işlemler önceden bilinir: tek batch (atomik).
+      const ops: Parameters<typeof runBatch>[1] = [];
 
       const payment = request.order.payments[0];
       if (payment) {
-        await tx.refund.create({
-          data: {
+        const previous = await db
+          .select({ amount: refunds.amount })
+          .from(refunds)
+          .where(
+            and(
+              eq(refunds.paymentId, payment.id),
+              eq(refunds.status, "COMPLETED"),
+            ),
+          );
+        // Toplama JS'te Decimal ile yapılır: SQL SUM kayan nokta hatası üretebilir.
+        const total = previous
+          .reduce((sum, row) => sum.plus(row.amount), new Decimal(0))
+          .plus(data.amount);
+        const full = total.gte(payment.amount);
+
+        ops.push(
+          db.insert(refunds).values({
             paymentId: payment.id,
-            amount: data.amount,
+            amount: new Decimal(data.amount),
             reason: `İade talebi: ${request.reason}`,
             providerRef: data.providerRef,
             status: "COMPLETED",
             completedAt: new Date(),
-          },
-        });
-
-        const refunded = await tx.refund.aggregate({
-          where: { paymentId: payment.id, status: "COMPLETED" },
-          _sum: { amount: true },
-        });
-        const total = refunded._sum.amount ?? payment.amount.mul(0);
-        const full = total.gte(payment.amount);
-
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: { status: full ? "REFUNDED" : "PARTIALLY_REFUNDED" },
-        });
-        await tx.order.update({
-          where: { id: request.orderId },
-          data: {
-            paymentStatus: full ? "REFUNDED" : "PARTIALLY_REFUNDED",
-            ...(full ? { status: "REFUNDED" as const } : {}),
-          },
-        });
+          }),
+          db
+            .update(payments)
+            .set({ status: full ? "REFUNDED" : "PARTIALLY_REFUNDED" })
+            .where(eq(payments.id, payment.id)),
+          db
+            .update(orders)
+            .set({
+              paymentStatus: full ? "REFUNDED" : "PARTIALLY_REFUNDED",
+              ...(full ? { status: "REFUNDED" as const } : {}),
+            })
+            .where(eq(orders.id, request.orderId)),
+        );
       }
 
       if (data.restock) {
+        const variantIds = request.items
+          .map((item) => item.orderItem.variantId)
+          .filter((id): id is string => id !== null);
+        const known =
+          variantIds.length > 0
+            ? await db.query.productVariant.findMany({
+                where: inArray(variants.id, variantIds),
+                columns: { id: true },
+                with: { product: { columns: { trackInventory: true } } },
+              })
+            : [];
+        const tracked = new Set(
+          known.filter((v) => v.product.trackInventory).map((v) => v.id),
+        );
         for (const item of request.items) {
           const variantId = item.orderItem.variantId;
-          if (!variantId) continue;
-
-          const variant = await tx.productVariant.findUnique({
-            where: { id: variantId },
-            select: { product: { select: { trackInventory: true } } },
-          });
-          if (variant?.product.trackInventory) {
-            await tx.productVariant.update({
-              where: { id: variantId },
-              data: { stockQuantity: { increment: item.quantity } },
-            });
-          }
+          if (!variantId || !tracked.has(variantId)) continue;
+          ops.push(
+            db
+              .update(variants)
+              .set({
+                stockQuantity: sql`${variants.stockQuantity} + ${item.quantity}`,
+              })
+              .where(eq(variants.id, variantId)),
+          );
         }
       }
-    });
+
+      await runBatch(db, ops);
+    } catch (error) {
+      // Telafi: iade yazılamadıysa talebi tekrar işlenebilir hale getir.
+      await db
+        .update(returnRequests)
+        .set({ status: "REQUESTED", resolvedAt: null })
+        .where(
+          and(
+            eq(returnRequests.id, requestId),
+            eq(returnRequests.status, "COMPLETED"),
+          ),
+        )
+        .catch(() => undefined);
+      throw error;
+    }
   }
 }

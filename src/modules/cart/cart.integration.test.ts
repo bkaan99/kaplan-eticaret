@@ -1,54 +1,63 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client";
-import { PrismaCartRepository } from "./cart.repository";
+import { count, eq } from "drizzle-orm";
+import { cart, productVariant, type Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import {
+  makeCategory,
+  makeProduct,
+  makeUser,
+} from "../../../tests/support/factories";
+import { D1CartRepository } from "./cart.repository";
 import { CartService } from "./cart.service";
 
 describe("Cart (veritabanı)", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
+  let t: TestDb;
+  let db: Db;
   let service: CartService;
   let variantId: string;
   let otherVariantId: string;
   let userId: string;
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    service = new CartService(new PrismaCartRepository(() => db));
+    t = await createTestDb();
+    db = t.db;
+    service = new CartService(new D1CartRepository(() => db));
 
-    const category = await db.category.create({
-      data: { name: "Test", slug: `cart-test-${tag}` },
+    const category = await makeCategory(db, {
+      name: "Test",
+      slug: `cart-test-${tag}`,
     });
-    const product = await db.product.create({
-      data: {
+    const product = await makeProduct(
+      db,
+      {
         name: `Sepet Ürünü ${tag}`,
         slug: `sepet-urunu-${tag}`,
         status: "ACTIVE",
         categoryId: category.id,
-        variants: {
-          create: [
-            { sku: `CART-A-${tag}`, price: "100.00", stockQuantity: 5 },
-            { sku: `CART-B-${tag}`, price: "40.00", stockQuantity: 10 },
-          ],
-        },
       },
-      include: { variants: { orderBy: { sku: "asc" } } },
-    });
-    variantId = product.variants[0]!.id;
-    otherVariantId = product.variants[1]!.id;
+      [
+        { sku: `CART-A-${tag}`, price: "100.00", stockQuantity: 5 },
+        { sku: `CART-B-${tag}`, price: "40.00", stockQuantity: 10 },
+      ],
+    );
+    const variants = [...product.variants].sort((a, b) =>
+      a.sku.localeCompare(b.sku),
+    );
+    variantId = variants[0]!.id;
+    otherVariantId = variants[1]!.id;
 
-    const user = await db.user.create({
-      data: {
-        email: `cart-${tag}@example.com`,
-        firstName: "Sepet",
-        lastName: "Test",
-      },
+    const user = await makeUser(db, {
+      email: `cart-${tag}@example.com`,
+      firstName: "Sepet",
+      lastName: "Test",
     });
     userId = user.id;
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   it("misafir sepeti oluşturur ve toplamı hesaplar", async () => {
@@ -69,19 +78,19 @@ describe("Cart (veritabanı)", () => {
   });
 
   it("rezervasyon stoğu satılabilirden düşer", async () => {
-    await db.productVariant.update({
-      where: { id: otherVariantId },
-      data: { reservedQuantity: 10 },
-    });
+    await db
+      .update(productVariant)
+      .set({ reservedQuantity: 10 })
+      .where(eq(productVariant.id, otherVariantId));
 
     await expect(
       service.addItem({ userId: null, sessionToken: null }, otherVariantId, 1),
     ).rejects.toThrow("stokta yok");
 
-    await db.productVariant.update({
-      where: { id: otherVariantId },
-      data: { reservedQuantity: 0 },
-    });
+    await db
+      .update(productVariant)
+      .set({ reservedQuantity: 0 })
+      .where(eq(productVariant.id, otherVariantId));
   });
 
   it("girişte misafir sepetini üye sepetiyle toplar ve misafir sepetini siler", async () => {
@@ -112,8 +121,10 @@ describe("Cart (veritabanı)", () => {
       merged.cart.lines.map((line) => [line.variantId, line.quantity]),
     );
     expect(quantities).toEqual({ [variantId]: 3, [otherVariantId]: 3 });
-    expect(
-      await db.cart.count({ where: { sessionToken: guest.sessionToken! } }),
-    ).toBe(0);
+    const [remaining] = await db
+      .select({ n: count() })
+      .from(cart)
+      .where(eq(cart.sessionToken, guest.sessionToken!));
+    expect(remaining!.n).toBe(0);
   });
 });

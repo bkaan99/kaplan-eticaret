@@ -19,6 +19,12 @@ describe("buildSecurityHeaders", () => {
     );
   });
 
+  it("Turnstile script ve connect kaynağına izin verir", () => {
+    const csp = headerValue(true, "Content-Security-Policy")!;
+    expect(csp).toContain("https://challenges.cloudflare.com");
+    expect(csp).toContain("connect-src");
+  });
+
   it("HSTS yalnızca production'da eklenir", () => {
     expect(headerValue(true, "Strict-Transport-Security")).toBeDefined();
     expect(headerValue(false, "Strict-Transport-Security")).toBeUndefined();

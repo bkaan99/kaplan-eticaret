@@ -1,0 +1,16 @@
+{
+  // Betikler (seed, create-admin, e2e) için yalnızca yerel D1 binding'i; uygulamanın wrangler.jsonc'si ile
+  // aynı database_id'yi kullandığından `wrangler d1 migrations apply --local` ile aynı yerel veritabanını paylaşır.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kaplan-eticaret-scripts",
+  "compatibility_date": "2026-10-31",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kaplan-eticaret",
+      "database_id": "e0697813-ccc2-4594-b6db-b45953a0d85f",
+      "migrations_dir": "db/migrations"
+    }
+  ]
+}
