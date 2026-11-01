@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { createPrismaClient } from "../src/shared/prisma-client";
+import { createPrismaClient } from "../src/shared/prisma-client-node";
 import { createAdminUser } from "./lib/create-admin-user";
 
 /**

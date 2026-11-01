@@ -21,6 +21,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:d1-migrate-local": "wrangler d1 migrations apply kaplan-eticaret --local",
+    "db:seed-remote": "tsx scripts/seed-remote-d1.ts",
     "worker": "tsx --conditions react-server src/worker/index.ts",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -35,7 +36,6 @@
   },
   "dependencies": {
     "@noble/hashes": "^2.4.0",
-    "@node-rs/argon2": "2.2.2",
     "@opennextjs/cloudflare": "^1.20.15",
     "@prisma/adapter-better-sqlite3": "^7.10.1",
     "@prisma/adapter-d1": "^7.10.1",

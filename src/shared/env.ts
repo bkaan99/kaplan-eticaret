@@ -38,19 +38,31 @@ const envSchema = z
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;
 
-    const requiredInProduction = [
-      "PAYTR_MERCHANT_ID",
-      "PAYTR_MERCHANT_KEY",
-      "PAYTR_MERCHANT_SALT",
-    ] as const;
+    const paytr = [
+      env.PAYTR_MERCHANT_ID,
+      env.PAYTR_MERCHANT_KEY,
+      env.PAYTR_MERCHANT_SALT,
+    ];
+    const anyPaytr = paytr.some(Boolean);
+    const allPaytr = paytr.every(Boolean);
 
-    for (const key of requiredInProduction) {
-      if (!env[key]) {
-        ctx.addIssue({
-          code: "custom",
-          path: [key],
-          message: "production ortamında zorunludur",
-        });
+    // Staging: üçü de boşsa DevPaymentProvider kullanılır.
+    // Kısmi tanımlı PayTR production'da reddedilir.
+    if (anyPaytr && !allPaytr) {
+      for (const [index, key] of (
+        [
+          "PAYTR_MERCHANT_ID",
+          "PAYTR_MERCHANT_KEY",
+          "PAYTR_MERCHANT_SALT",
+        ] as const
+      ).entries()) {
+        if (!paytr[index]) {
+          ctx.addIssue({
+            code: "custom",
+            path: [key],
+            message: "production ortamında PayTR anahtarları eksiksiz olmalı",
+          });
+        }
       }
     }
   });

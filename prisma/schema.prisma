@@ -4,6 +4,13 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  runtime  = "cloudflare"
+}
+
+// CLI seed / create-admin (Node). Workers uygulaması yukarıdaki cloudflare client'ı kullanır.
+generator client_node {
+  provider = "prisma-client"
+  output   = "../generated/prisma-node"
 }
 
 datasource db {

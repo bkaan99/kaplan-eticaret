@@ -1,5 +1,5 @@
 import { Argon2PasswordHasher } from "../../src/modules/auth/password-hasher";
-import type { PrismaClient } from "../../src/shared/prisma-client";
+import type { PrismaClient } from "../../src/shared/prisma-client-node";
 
 export const MIN_ADMIN_PASSWORD_LENGTH = 10;
 

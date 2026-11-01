@@ -13,6 +13,15 @@
   },
   "workers_dev": true,
   "preview_urls": false,
+  "vars": {
+    "NODE_ENV": "production",
+    "APP_URL": "https://kaplan-eticaret.bilgekagangurgen.workers.dev",
+    "DATABASE_URL": "file:./unused",
+    "SMTP_HOST": "localhost",
+    "SMTP_PORT": "1025",
+    "MAIL_FROM": "Kaplan Turşu <no-reply@kaplantursu.com>",
+    "PAYTR_TEST_MODE": "true"
+  },
   "d1_databases": [
     {
       "binding": "DB",

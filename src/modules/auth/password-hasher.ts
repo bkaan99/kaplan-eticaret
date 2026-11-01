@@ -47,9 +47,8 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 /**
- * Workers uyumlu argon2id (noble).
- * Eski `@node-rs/argon2` PHC hash'leri Node'da doğrulanır; başarılı girişte
- * yeni formata yükseltilmesi auth katmanında yapılabilir.
+ * Workers uyumlu argon2id (@noble/hashes).
+ * Eski `@node-rs/argon2` PHC hash'leri desteklenmez; staging/seed yeni format üretir.
  */
 export class Argon2PasswordHasher implements PasswordHasher {
   async hash(plain: string): Promise<string> {
@@ -60,16 +59,8 @@ export class Argon2PasswordHasher implements PasswordHasher {
 
   async verify(hashed: string, plain: string): Promise<boolean> {
     const parsed = parse(hashed);
-    if (parsed) {
-      const derived = await derive(plain, parsed.salt);
-      return timingSafeEqual(derived, parsed.hash);
-    }
-
-    try {
-      const { verify } = await import("@node-rs/argon2");
-      return await verify(hashed, plain);
-    } catch {
-      return false;
-    }
+    if (!parsed) return false;
+    const derived = await derive(plain, parsed.salt);
+    return timingSafeEqual(derived, parsed.hash);
   }
 }

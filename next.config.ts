@@ -15,13 +15,7 @@ try {
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
-  serverExternalPackages: [
-    "pino",
-    "pg",
-    "pg-boss",
-    "@node-rs/argon2",
-    "better-sqlite3",
-  ],
+  serverExternalPackages: ["pino", "pg", "pg-boss", "better-sqlite3"],
   experimental: {
     agentUpgrade: "security",
   },

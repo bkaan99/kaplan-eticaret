@@ -30,9 +30,9 @@ Tarih: 2026-11-01 · Dal: `cloudflare-adaptation`
 
 | Madde | Öncelik | Not |
 |-------|---------|-----|
-| `npm run deploy` | Yüksek | Kullanıcı onayı; secrets gerekir |
-| Worker secrets | Yüksek | `AUTH_SECRET`, `CRON_SECRET`, `APP_URL`, SMTP/mail, PayTR test |
-| D1 seed (katalog + admin) | Yüksek | Remote D1’e seed script / bir kerelik |
+| `npm run deploy` | — | **Tamam:** https://kaplan-eticaret.bilgekagangurgen.workers.dev |
+| Worker secrets | Orta | AUTH/CRON set; APP_URL vars ile çakışma uyarısı kontrol |
+| D1 seed (katalog + admin) | — | **Tamam:** `npm run db:seed-remote -- --admin …` |
 | E-posta adapter (Queue consumer) | Yüksek | Workers’ta SMTP kısıtlı; Resend / Email Sending |
 | Integration testler SQLite | Orta | Hâlâ eski Postgres URL varsayımı |
 | Para şema Int harden | Düşük | Helper var; kolonlar Decimal emülasyonu |

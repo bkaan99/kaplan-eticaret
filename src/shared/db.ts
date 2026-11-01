@@ -1,19 +1,13 @@
 import "server-only";
 import { getCloudflareEnv } from "./cloudflare";
 import { getEnv } from "./env";
-import {
-  createPrismaClient,
-  createPrismaClientFromD1,
-  type PrismaClient,
-} from "./prisma-client";
+import { createPrismaClientFromD1, type PrismaClient } from "./prisma-client";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 /**
- * Uygulama genelinde tek PrismaClient. Yalnızca repository katmanı kullanır;
- * servisler ve UI doğrudan erişmez.
- *
- * Workers'ta D1 binding (`env.DB`); Node/dev'de `DATABASE_URL`.
+ * Uygulama genelinde tek PrismaClient.
+ * Workers'ta D1 (`env.DB`); yerelde Node SQLite client (`generated/prisma-node`).
  */
 export function getDb(): PrismaClient {
   if (globalForPrisma.prisma) return globalForPrisma.prisma;
@@ -24,6 +18,11 @@ export function getDb(): PrismaClient {
     return globalForPrisma.prisma;
   }
 
-  globalForPrisma.prisma = createPrismaClient(getEnv().DATABASE_URL);
+  // Yerel Next/dev: cloudflare WASM runtime yerine Node client.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const node = require("./prisma-client-node") as typeof import("./prisma-client-node");
+  globalForPrisma.prisma = node.createPrismaClient(
+    getEnv().DATABASE_URL,
+  ) as unknown as PrismaClient;
   return globalForPrisma.prisma;
 }

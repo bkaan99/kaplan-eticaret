@@ -5,7 +5,15 @@ import { LEGAL_PAGE_TEMPLATES } from "./legal-pages";
 import {
   createPrismaClient,
   type PrismaClient,
-} from "../src/shared/prisma-client";
+} from "../src/shared/prisma-client-node";
+
+export async function runSeed(db: PrismaClient): Promise<void> {
+  await seedRoles(db);
+  await seedCustomerGroups(db);
+  await seedDemoCatalog(db);
+  await seedCustomPickle(db);
+  await seedLegalPages(db);
+}
 
 async function seedRoles(db: PrismaClient): Promise<void> {
   for (const role of SYSTEM_ROLES) {
@@ -507,18 +515,20 @@ async function main(): Promise<void> {
 
   const db = createPrismaClient(connectionString);
   try {
-    await seedRoles(db);
-    await seedCustomerGroups(db);
-    await seedDemoCatalog(db);
-    await seedCustomPickle(db);
-    await seedLegalPages(db);
+    await runSeed(db);
     console.log("Seed tamamlandı.");
   } finally {
     await db.$disconnect();
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
-  process.exit(1);
-});
+const isDirectRun =
+  typeof process.argv[1] === "string" &&
+  /seed\.(ts|js)$/.test(process.argv[1].replace(/\\/g, "/"));
+
+if (isDirectRun) {
+  main().catch((error: unknown) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
