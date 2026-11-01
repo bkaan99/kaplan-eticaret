@@ -4,12 +4,12 @@ import { getDb } from "@/shared/db";
 import { getPaymentProvider } from "@/integrations/payment/container";
 import { getNotificationService } from "../notifications/container";
 import { getOrderService } from "../orders/container";
-import { PrismaReturnRepository } from "./return.repository";
+import { D1ReturnRepository } from "./return.repository";
 import { ReturnService } from "./return.service";
 
 export function getReturnService(): ReturnService {
   return new ReturnService({
-    returns: new PrismaReturnRepository(getDb),
+    returns: new D1ReturnRepository(getDb),
     orderAccess: getOrderService(),
     refunder: getPaymentProvider(),
     audit: getAuditLogger(),
