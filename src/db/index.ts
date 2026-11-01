@@ -1,5 +1,6 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import { sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import { count, sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
@@ -63,4 +64,14 @@ export function containsText(column: SQLWrapper, value: string): SQL {
     return sql`${column} LIKE ${`%${escaped}%`} ESCAPE '\\'`;
   };
   return sql`(${sql.join(variants.map(like), sql` OR `)})`;
+}
+
+/** `COUNT(*)` kısayolu: tablodaki (isteğe bağlı koşula uyan) satır sayısı. */
+export async function countWhere(
+  db: Db,
+  table: SQLiteTable,
+  where?: SQL,
+): Promise<number> {
+  const [row] = await db.select({ n: count() }).from(table).where(where);
+  return row!.n;
 }

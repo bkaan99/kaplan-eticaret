@@ -4,7 +4,7 @@ import { getEventBus } from "@/shared/events";
 import { getOrderService, orderRepository } from "../orders/container";
 import { D1ProductAdminRepository } from "./catalog/product-admin.repository";
 import { ProductAdminService } from "./catalog/product-admin.service";
-import { PrismaTaxonomyRepository } from "./taxonomy/taxonomy.repository";
+import { D1TaxonomyRepository } from "./taxonomy/taxonomy.repository";
 import { TaxonomyService } from "./taxonomy/taxonomy.service";
 import { PrismaPromotionRepository } from "./promotions/promotion.repository";
 import { PromotionService } from "./promotions/promotion.service";
@@ -19,7 +19,7 @@ import { BulkUpdateService } from "./import/bulk-update.service";
 import { PrismaImportRepository } from "./import/import.repository";
 import { ProductImportService } from "./import/product-import.service";
 import { getAccountService } from "../account/container";
-import { PrismaStaffRepository } from "./staff/staff.repository";
+import { D1StaffRepository } from "./staff/staff.repository";
 import { StaffService } from "./staff/staff.service";
 
 export function getAdminOrderService(): AdminOrderService {
@@ -42,7 +42,7 @@ export function getProductAdminService(): ProductAdminService {
 
 export function getTaxonomyService(): TaxonomyService {
   return new TaxonomyService(
-    new PrismaTaxonomyRepository(getDb),
+    new D1TaxonomyRepository(getDb),
     getAuditLogger(),
   );
 }
@@ -86,7 +86,7 @@ export function getProductImportService(): ProductImportService {
 
 export function getStaffService(): StaffService {
   return new StaffService(
-    new PrismaStaffRepository(getDb),
+    new D1StaffRepository(getDb),
     {
       // Parola belirleme bağlantısı, parola sıfırlama akışıyla gönderilir.
       sendPasswordSetup: (email) =>
