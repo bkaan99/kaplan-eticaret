@@ -11,7 +11,7 @@ export class PrismaBulkUpdateRepository implements BulkUpdateRepository {
   async findVariantsBySku(skus: string[]): Promise<VariantSnapshot[]> {
     if (skus.length === 0) return [];
     const rows = await this.db().productVariant.findMany({
-      where: { sku: { in: skus, mode: "insensitive" } },
+      where: { sku: { in: skus } },
       select: {
         id: true,
         sku: true,

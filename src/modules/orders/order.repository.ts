@@ -57,8 +57,11 @@ export interface OrderQueryRepository extends OrderLookupRepository {
 export interface OrderCreationRepository {
   createPendingOrder(order: NewOrder): Promise<CreatedOrder>;
   /**
-   * Vadeli ödemeli siparişi oluşturur: kredi limiti kontrolü ve stok düşümü
-   * tek transaction'da yapılır (aynı bayinin eşzamanlı siparişleri sıraya girer).
+   * Vadeli ödemeli siparişi oluşturur: kredi limiti okunur, stok koşullu
+   * UPDATE ile düşülür, sipariş aynı akışta yazılır.
+   * Stok fazla satışı WHERE available >= qty ile engellenir.
+   * Kredi limiti için satır kilidi yok; gerçek serileştirme için
+   * uygulama katmanında çakışma/retry gerekir.
    */
   createDeferredOrder(
     order: NewOrder,
@@ -297,9 +300,9 @@ export class PrismaOrderRepository implements OrderRepository {
         throw new ConflictError("Vadeli ödeme yalnızca üye bayiler içindir");
       }
 
-      // Aynı bayinin eşzamanlı siparişlerini sıraya sokar (limit aşımı yarışı).
-      await tx.$queryRaw`SELECT "id" FROM "Customer" WHERE "userId" = ${order.userId} FOR UPDATE`;
-
+      // Kredi: outstanding okunur sonra insert edilir (satır kilidi yok).
+      // Eşzamanlı limit aşımı için uygulama katmanında retry gerekir.
+      // Stok fazla satışı aşağıdaki koşullu UPDATE ile engellenir.
       const outstanding = await tx.order.aggregate({
         where: {
           userId: order.userId,
@@ -315,7 +318,7 @@ export class PrismaOrderRepository implements OrderRepository {
         terms.creditLimit,
       );
 
-      // Vadeli siparişte stok rezerve edilmez, doğrudan düşülür.
+      // Vadeli siparişte stok rezerve edilmez; koşullu UPDATE fazla satışı önler.
       for (const item of order.items) {
         if (!item.trackInventory) continue;
 

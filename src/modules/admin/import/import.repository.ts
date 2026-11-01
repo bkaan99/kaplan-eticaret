@@ -17,7 +17,7 @@ export class PrismaImportRepository implements ImportRepository {
   async existingSkus(skus: string[]): Promise<string[]> {
     if (skus.length === 0) return [];
     const rows = await this.db().productVariant.findMany({
-      where: { sku: { in: skus, mode: "insensitive" } },
+      where: { sku: { in: skus } },
       select: { sku: true },
     });
     return rows.map((row) => row.sku);

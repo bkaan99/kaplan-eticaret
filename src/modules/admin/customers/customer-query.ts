@@ -50,9 +50,9 @@ export class CustomerQueryService {
       ...(term
         ? {
             OR: [
-              { email: { contains: term, mode: "insensitive" } },
-              { firstName: { contains: term, mode: "insensitive" } },
-              { lastName: { contains: term, mode: "insensitive" } },
+              { email: { contains: term } },
+              { firstName: { contains: term } },
+              { lastName: { contains: term } },
             ],
           }
         : {}),

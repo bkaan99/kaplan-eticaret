@@ -111,8 +111,8 @@ export class PrismaAdminOrderRepository implements AdminOrderRepository {
       ...(search
         ? {
             OR: [
-              { orderNumber: { contains: search, mode: "insensitive" } },
-              { guestEmail: { contains: search, mode: "insensitive" } },
+              { orderNumber: { contains: search } },
+              { guestEmail: { contains: search } },
             ],
           }
         : {}),

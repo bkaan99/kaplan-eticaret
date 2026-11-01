@@ -30,6 +30,8 @@ const envSchema = z
       .transform((value) => value === "true"),
     /** Yüklenen dosyaların dizini; varsayılan ./uploads */
     UPLOAD_DIR: optionalString,
+    /** Cloudflare Cron → /api/cron/* Bearer secret */
+    CRON_SECRET: optionalString,
     TURNSTILE_SITE_KEY: optionalString,
     TURNSTILE_SECRET_KEY: optionalString,
   })

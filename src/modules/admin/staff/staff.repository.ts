@@ -130,7 +130,7 @@ export class PrismaStaffRepository implements StaffRepository {
   async roleNameTaken(name: string, excludeId?: string): Promise<boolean> {
     const found = await this.db().role.findFirst({
       where: {
-        name: { equals: name, mode: "insensitive" },
+        name: { equals: name },
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },
       select: { id: true },

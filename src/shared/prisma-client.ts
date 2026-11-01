@@ -1,9 +1,20 @@
-import { PrismaPg } from "@prisma/adapter-pg";
+import type { D1Database } from "@cloudflare/workers-types";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaD1 } from "@prisma/adapter-d1";
 import { PrismaClient } from "../../generated/prisma/client";
 
-/** Bağlantı adresinden PrismaClient üretir. Seed gibi Next dışı betikler de kullanır. */
+/** Yerel SQLite (`file:./dev.db` veya `:memory:`) PrismaClient. */
 export function createPrismaClient(connectionString: string): PrismaClient {
-  const adapter = new PrismaPg({ connectionString });
+  const url = connectionString.startsWith("file:")
+    ? connectionString.slice("file:".length)
+    : connectionString;
+  const adapter = new PrismaBetterSqlite3({ url });
+  return new PrismaClient({ adapter });
+}
+
+/** Cloudflare D1 binding'inden PrismaClient. */
+export function createPrismaClientFromD1(db: D1Database): PrismaClient {
+  const adapter = new PrismaD1(db);
   return new PrismaClient({ adapter });
 }
 

@@ -104,8 +104,6 @@ export interface CatalogRepository {
   listActiveProductSlugs(): Promise<{ slug: string; updatedAt: Date }[]>;
 }
 
-const insensitive = "insensitive" as const;
-
 function buildWhere(filter: Partial<ProductFilter>): Prisma.ProductWhereInput {
   const and: Prisma.ProductWhereInput[] = [];
 
@@ -113,10 +111,10 @@ function buildWhere(filter: Partial<ProductFilter>): Prisma.ProductWhereInput {
     const term = filter.search;
     and.push({
       OR: [
-        { name: { contains: term, mode: insensitive } },
-        { description: { contains: term, mode: insensitive } },
-        { brand: { name: { contains: term, mode: insensitive } } },
-        { variants: { some: { sku: { contains: term, mode: insensitive } } } },
+        { name: { contains: term } },
+        { description: { contains: term } },
+        { brand: { name: { contains: term } } },
+        { variants: { some: { sku: { contains: term } } } },
       ],
     });
   }

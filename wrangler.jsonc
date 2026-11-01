@@ -1,0 +1,52 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kaplan-eticaret",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-31",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "workers_dev": true,
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kaplan-eticaret",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "prisma/d1-migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "kaplan-eticaret-uploads"
+    },
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "kaplan-eticaret-next-cache"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "JOB_QUEUE",
+        "queue": "kaplan-eticaret-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "kaplan-eticaret-jobs",
+        "max_batch_size": 10,
+        "max_retries": 5
+      }
+    ]
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *", "0 * * * *", "30 3 * * *"]
+  }
+}

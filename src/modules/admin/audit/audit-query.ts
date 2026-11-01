@@ -37,7 +37,7 @@ export class AuditQueryService {
   async search(query: AuditQuery): Promise<AuditPage> {
     const where: Prisma.AuditLogWhereInput = {
       ...(query.action
-        ? { action: { contains: query.action, mode: "insensitive" } }
+        ? { action: { contains: query.action } }
         : {}),
       ...(query.entityType ? { entityType: query.entityType } : {}),
       ...(query.actorId ? { actorId: query.actorId } : {}),

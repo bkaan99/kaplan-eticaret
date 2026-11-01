@@ -1,9 +1,13 @@
 import { siteConfig } from "@/config/site.config";
+import { SmtpMailer } from "@/integrations/notification/smtp-mailer";
+import { getCloudflareEnv } from "@/shared/cloudflare";
 import { getDb } from "@/shared/db";
+import { getEnv } from "@/shared/env";
 import { getEventBus } from "@/shared/events";
 import { getJobQueue } from "@/shared/queue";
 import { getSiteUrl } from "@/shared/site-url";
 import { PrismaOrderRepository } from "../orders/order.repository";
+import { DirectNotificationDispatcher } from "./direct-notification-dispatcher";
 import {
   QueueNotificationDispatcher,
   type NotificationDispatcher,
@@ -16,7 +20,22 @@ let notifications: NotificationService | undefined;
 /** Genel bildirim dağıtıcısı tekil örneği. */
 export function getNotificationDispatcher(): NotificationDispatcher {
   if (dispatcher) return dispatcher;
-  dispatcher = new QueueNotificationDispatcher(getJobQueue());
+
+  if (getCloudflareEnv()?.JOB_QUEUE) {
+    dispatcher = new QueueNotificationDispatcher(getJobQueue());
+  } else {
+    const env = getEnv();
+    dispatcher = new DirectNotificationDispatcher(
+      new SmtpMailer({
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        from: env.MAIL_FROM,
+        user: env.SMTP_USER,
+        password: env.SMTP_PASSWORD,
+      }),
+    );
+  }
+
   return dispatcher;
 }
 

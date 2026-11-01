@@ -80,15 +80,15 @@ DNS, SSL ve domain Cloudflare üzerinden yönetilir.
 
 ## 4. Fazlar
 
-### Faz 0 — Spike (1–3 gün)
+### Faz 0 — Spike / ORM kararı ✅
 
-**Amaç:** ORM ve Workers fizibilitesi kilitlensin.
+**Karar: Prisma 7 + `@prisma/adapter-d1` (Workers) / `@prisma/adapter-better-sqlite3` (yerel).**
 
-- Boş Worker + D1 + conditional `UPDATE … WHERE stock >= ?`
-- Prisma D1 vs Drizzle denemesi (tek tablo + transaction)
-- Karar notu bu belgeye işlenir
-
-**Çıkış:** “Prisma” veya “Drizzle” kararı yazılı.
+- Şema diyalekti: `provider = "sqlite"` (D1 ile aynı)
+- Yerel: `DATABASE_URL=file:./dev.db`
+- Workers: `env.DB` D1 binding
+- Drizzle’a geçilmedi; Prisma Decimal alanları SQLite’ta string emülasyonu ile korunuyor (kuruş Int helper’ları `money.ts`’te hazır, şema Int dönüşümü sonraki harden)
+- OpenNext (`@opennextjs/cloudflare`) + `wrangler.jsonc` iskeleti eklendi
 
 ---
 
@@ -103,101 +103,52 @@ DNS, SSL ve domain Cloudflare üzerinden yönetilir.
 
 ---
 
-### Faz 2 — Para modeli (kuruş)
+### Faz 2 — Para modeli (kuruş) 🟡
 
-**Amaç:** D1’de güvenilir tutarlar.
-
-- `toMinor` / `fromMinor` / yuvarlama kuralları (`shared/money`)
-- Yüzde alanları için tek ölçek (ör. baz 100 veya 10_000)
-- `desi` vb. ondalıklar için sabit çarpan (`desiMilli`)
-- Checkout, kargo, kupon, B2B kredi, reporting birim testleri güncellenir
-
-**Dokunulan şema alanları (örnek):**  
-`price`, `compareAtPrice`, sipariş toplamları, `taxRate`, `discountPercent`, `creditLimit`, kupon `value`, ödeme/iade `amount`, …
-
-**Çıkış:** Para birim testleri yeşil; henüz D1 zorunlu değil (önce Postgres’te minor’a geçmek de mümkün — tercih: şema değişikliği D1 baseline ile birlikte).
+**Durum:** `toMinor` / `fromMinor` / yüzde / desi helper’ları ve birim testleri eklendi.  
+Şema hâlâ Prisma `Decimal` (SQLite emülasyonu); kolonları `Int` minor’a çevirmek ayrı harden PR.
 
 ---
 
-### Faz 3 — D1 şema + seed
+### Faz 3 — D1 şema + seed 🟡
 
-**Amaç:** Uygulama verisi D1’de ayağa kalksın.
-
-- Yeni baseline migration (eski Postgres SQL zinciri arşiv / bırakılır)
-- Enum / Json alanlarının D1 karşılıkları
-- Seed (katalog, roller, admin) D1’e
-- Health ready: D1 ping
-
-**Çıkış:** Local D1’de migrate + seed + admin giriş (runtime hâlâ Node olabilir; binding veya local sqlite file ile).
+**Durum:** Postgres migration’lar `prisma/migrations-archive/`; yeni SQLite baseline `20261101150000_sqlite_baseline` + `prisma/d1-migrations/0001_sqlite_baseline.sql`.  
+Yerel `file:./dev.db` migrate deploy edildi. Seed’in D1 remote’a basılması ve gerçek `database_id` hâlâ manuel.
 
 ---
 
-### Faz 4 — Concurrency (stok, vadeli kredi)
+### Faz 4 — Concurrency 🟡
 
-**Amaç:** `FOR UPDATE` ve Postgres-only raw SQL’siz güvenli satış.
-
-- Stok: conditional `UPDATE` + `changes === 0` → stok yetersiz (tüm rezervasyon/düşüm yolları)
-- B2B kredi limiti: satır kilidi yerine transaction içi aggregate + conditional update veya version alanı
-- “Son 1 stok, 2 eşzamanlı checkout” integration testi
-
-**Çıkış:** Yarış testi geçer.
+**Durum:** `FOR UPDATE` kaldırıldı; stok koşullu `UPDATE` ile korunuyor. Rate limit Prisma upsert’e alındı.
 
 ---
 
-### Faz 5 — Repository / veri erişim katmanı
+### Faz 5 — Repository / D1 transaction 🔴 (kritik kalan)
 
-**Amaç:** Servis katmanı aynı kalsın; repository D1 konuşsun.
-
-- `PrismaPg` / `DATABASE_URL` → D1 binding
-- Rate limit, health, order raw SQL D1 diyalektine
-- Integration test altyapısı local D1’e
-
-**Çıkış:** Kritik repository integration testleri D1’de yeşil.
+**Durum:** `getDb()` D1 veya SQLite seçiyor.  
+**Eksik:** ~10 dosyadaki interaktif `$transaction(async tx => …)` D1’de çalışmaz. Bunlar batch / koşullu update / telafi ile yeniden yazılmadan **production D1 checkout güvenli değil**.
 
 ---
 
-### Faz 6 — Queues + Cron
+### Faz 6 — Queues + Cron 🟡
 
-**Amaç:** `pg-boss` ve ayrı Node worker process kalksın.
-
-| İş | Mekanizma |
-|----|-----------|
-| `email.send` | Queue producer (app) + consumer Worker |
-| `orders.release-expired` | Cron → handler (veya Cron enqueue) |
-| `maintenance.purge-*` | Cron |
-| Stok uyarısı / ERP | **Yok** |
-
-- `CloudflareJobQueue` (`JobQueue` impl)
-- `wrangler` queue + consumer wiring
-- Retry / DLQ politikası e-posta için
-
-**Çıkış:** Staging’de sipariş maili Queue’dan gider; dolu ödeme süresi cron ile temizlenir.
+**Durum:** `CloudflareJobQueue` + yerelde `InlineJobQueue` / doğrudan SMTP.  
+Cron HTTP uçları: `/api/cron/release-expired`, `purge-rate-limits`, `purge-audit-log` (`CRON_SECRET`).  
+**Eksik:** OpenNext worker’a Queue consumer bağlama; wrangler cron’un bu URL’leri çağırması.
 
 ---
 
-### Faz 7 — R2 depolama
+### Faz 7 — R2 🟡
 
-**Amaç:** Upload’lar diskte kalmasın.
-
-- `R2FileStorage` (`FileStorage`)
-- Public URL: R2 custom domain veya Worker `/media/*`
-- Admin görsel yükleme E2E smoke
-- Local: R2 simülasyonu / `wrangler` local
-
-**Çıkış:** Yüklenen görsel vitrinde R2 URL ile görünür.
+**Durum:** `R2FileStorage` + `getFileStorage()` CF’de R2 seçer. Yerelde disk.  
+**Eksik:** Gerçek bucket oluşturma / staging smoke.
 
 ---
 
-### Faz 8 — Workers üzerinde uygulama (vinext)
+### Faz 8 — Workers (OpenNext) 🟡
 
-**Amaç:** Asıl HTTP yüzeyi Cloudflare’de.
-
-- vinext uyumluluk / migrasyon
-- Argon2 yerine Workers-uyumlu parola hash
-- `wrangler.toml`: `d1_databases`, `r2_buckets`, `queues`, secrets
-- Auth.js oturum, PayTR callback, server actions smoke
-
-**Çıkış:** `wrangler deploy` staging URL; login + vitrin + checkout (test ödeme).
+**Durum:** `open-next.config.ts`, `wrangler.jsonc`, `preview`/`deploy` script’leri, noble argon2id hasher.  
+**Eksik:** Gerçek CF hesabında D1/R2/Queue id’leri, `npm run deploy` (kullanıcı onayı), transaction rewrite sonrası smoke.
 
 ---
 

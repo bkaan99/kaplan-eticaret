@@ -383,24 +383,57 @@ describe("PrismaOrderRepository: vadeli sipariş", () => {
     expect(after.stockQuantity).toBe(before.stockQuantity);
   });
 
-  it("eşzamanlı siparişlerde limit aşılmaz (satır kilidi)", async () => {
+  it("eşzamanlı siparişlerde koşullu stok UPDATE fazla satışı önler", async () => {
+    const scarce = await db.product.create({
+      data: {
+        name: `Kıt Stok ${tag}`,
+        slug: `kit-stok-${tag}`,
+        status: "ACTIVE",
+        category: { create: { name: "Kıt", slug: `kit-${tag}` } },
+        variants: {
+          create: { sku: `KIT-${tag}`, price: "100.00", stockQuantity: 3 },
+        },
+      },
+      include: { variants: true },
+    });
+    const scarceVariantId = scarce.variants[0]!.id;
     const racer = await db.user.create({
       data: {
         email: `yaris-${tag}@example.com`,
         firstName: "Yarış",
         lastName: "Bayi",
-        customer: { create: { b2bStatus: "APPROVED", creditLimit: "500.00" } },
+        customer: { create: { b2bStatus: "APPROVED", creditLimit: "5000.00" } },
       },
     });
-    const make = (): NewOrder => ({ ...deferredOrder(300), userId: racer.id });
+    const make = (): NewOrder => ({
+      ...deferredOrder(300),
+      userId: racer.id,
+      items: [
+        {
+          variantId: scarceVariantId,
+          productName: `Kıt Stok ${tag}`,
+          variantName: null,
+          sku: `KIT-${tag}`,
+          unitPrice: "100.00",
+          taxRate: "20.00",
+          quantity: 3,
+          lineTotal: "300.00",
+          trackInventory: true,
+        },
+      ],
+    });
 
     const results = await Promise.allSettled([
-      repo.createDeferredOrder(make(), { ...terms, creditLimit: "500.00" }),
-      repo.createDeferredOrder(make(), { ...terms, creditLimit: "500.00" }),
-      repo.createDeferredOrder(make(), { ...terms, creditLimit: "500.00" }),
+      repo.createDeferredOrder(make(), { ...terms, creditLimit: "5000.00" }),
+      repo.createDeferredOrder(make(), { ...terms, creditLimit: "5000.00" }),
+      repo.createDeferredOrder(make(), { ...terms, creditLimit: "5000.00" }),
     ]);
 
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const after = await db.productVariant.findUniqueOrThrow({
+      where: { id: scarceVariantId },
+    });
+    expect(after.stockQuantity).toBe(0);
   });
 
   it("tahsil edilince PAID olur; ikinci işaretleme etkisizdir", async () => {

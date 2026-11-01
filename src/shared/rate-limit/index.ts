@@ -2,7 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { getDb } from "../db";
 import { RateLimitError } from "../errors";
-import { PostgresRateLimiter } from "./postgres-rate-limiter";
+import { PrismaRateLimiter } from "./prisma-rate-limiter";
 import type { RateLimitPolicy, RateLimiter } from "./rate-limiter";
 
 export * from "./rate-limiter";
@@ -10,7 +10,7 @@ export * from "./rate-limiter";
 let limiter: RateLimiter | undefined;
 
 export function getRateLimiter(): RateLimiter {
-  limiter ??= new PostgresRateLimiter(getDb());
+  limiter ??= new PrismaRateLimiter(getDb());
   return limiter;
 }
 

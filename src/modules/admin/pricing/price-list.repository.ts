@@ -136,8 +136,8 @@ export class PrismaPriceListRepository implements PriceListRepository {
         ...(term
           ? {
               OR: [
-                { sku: { contains: term, mode: "insensitive" } },
-                { product: { name: { contains: term, mode: "insensitive" } } },
+                { sku: { contains: term } },
+                { product: { name: { contains: term } } },
               ],
             }
           : {}),

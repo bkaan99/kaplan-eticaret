@@ -97,9 +97,9 @@ export class PrismaDealerRepository implements DealerRepository {
         ...(search
           ? {
               OR: [
-                { companyName: { contains: search, mode: "insensitive" } },
+                { companyName: { contains: search } },
                 { taxNumber: { contains: search } },
-                { user: { email: { contains: search, mode: "insensitive" } } },
+                { user: { email: { contains: search } } },
               ],
             }
           : {}),

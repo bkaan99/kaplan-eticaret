@@ -1,5 +1,9 @@
 node_modules/
 .next/
+.open-next/
+.dev.vars
+dev.db
+dev.db-journal
 out/
 build/
 generated/

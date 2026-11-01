@@ -25,46 +25,15 @@ D1 yalnızca toplu (batch) çalıştırmayı destekler; Prisma `$transaction(asy
 
 ## Adımlar
 
-### 0. Spike (1–2 gün) — karar notu yaz
-- Boş bir Worker + D1 ile: (a) Prisma + `@prisma/adapter-d1`, (b) Drizzle + D1 dene.
-- Şunları ölç: `batch` ile iki tablo yazma, koşullu `UPDATE` ile stok düşme, `Json` alanı, ilişkili `include` sorgusu, cold start süresi.
-- Çıktı: `docs/cloudflare-adaptation.md` içine "ORM kararı" bölümü. Prisma'nın `Decimal`/`Json`/`enum` desteği D1 adapter'da yetersizse Drizzle.
-
+### 0. Spike ✅ — Prisma + D1 / better-sqlite3
 ### 1. Ayıklama ✅
-- `src/modules/stock-alerts`, `src/modules/erp`, ilgili worker job kayıtları, vitrindeki "stok gelince haber ver" arayüzü, ilgili testler silindi.
-- `BackInStockSubscription` şemadan çıkarıldı (`20261101140000_drop_back_in_stock`).
-
-### 2. Para modeli (kuruş)
-- `src/shared/money.ts`: `toMinor`, `fromMinor`, yüzde ölçeği (baz 10_000), `desiMilli`.
-- Şemada `Decimal` alanları `Int` (minor) olur; checkout, kargo, kupon, B2B kredi, raporlama ve gösterim buradan geçer. Birim testleri önce yazılır.
-
-### 3. D1 şeması ve seed
-- Yeni baseline migration (`wrangler d1 migrations`), eski Postgres zinciri `prisma/migrations-archive/` altına.
-- `enum` → `TEXT` + CHECK, `Json` → `TEXT` (okurken parse). Seed (turşu kataloğu, roller, admin, özel turşu malzemeleri) D1'e yüklenir.
-- Admin parolası `admin-giris.local.txt` içinde; çıktıya veya commit'e yazma.
-
-### 4. Eşzamanlılık
-- `order.repository.ts` içindeki 3 ham SQL: stok düşme ve kredi limiti koşullu `UPDATE` olarak yeniden yazılır; `FOR UPDATE` kalkar.
-- Test: "son 1 stok, 2 eşzamanlı checkout" → biri başarılı, biri stok hatası.
-
-### 5. Repository katmanı
-- 10 `$transaction` kullanımı yukarıdaki üç yoldan biriyle yeniden yazılır (en riskli: order, cart, return).
-- `postgres-rate-limiter.ts` → D1 (veya Workers Rate Limiting binding). Health: `SELECT 1` D1 üzerinden.
-- Integration testleri yerel D1'e (`wrangler d1 --local` ya da miniflare) taşınır.
-
-### 6. Queue ve Cron
-- `pg-boss` kalkar. `JobQueue` arayüzü korunur, `CloudflareJobQueue` yazılır.
-- `email.send` → Queue (producer: uygulama, consumer: Worker). Süresi dolan sipariş temizliği ve bakım (rate-limit/audit purge) → Cron Trigger.
-- `npm run worker` ve `src/worker` silinir.
-
-### 7. R2
-- `FileStorage` için `R2FileStorage`; `app/uploads/[...path]` ve `admin/yukle` R2'den okur/yazar. Görsel URL'leri `/uploads/...` yolunu korur (mevcut kayıtlar bozulmasın).
-
-### 8. Uygulamayı Workers'a al
-- **OpenNext** (`@opennextjs/cloudflare`) kullan: dormen-wear ve masamqr'da çalışan düzen bu (R2 incremental cache, `defineCloudflareConfig`, `wrangler.jsonc`, `nodejs_compat`). vinext yalnızca OpenNext tıkanırsa.
-- `@node-rs/argon2` → Workers uyumlu hash. Mevcut kullanıcı hash'leri bozulmasın: giriş sırasında eski hash doğrulanır, yeni hash'e yükseltilir.
-- E-posta: SMTP Workers'ta kısıtlı. Queue consumer içinden Cloudflare Email Sending ya da bir transactional API kullan; sağlayıcıyı go-live öncesi netleştir.
-- Auth.js oturumu, PayTR callback (test modu), server action'lar smoke test.
+### 2. Para helper’ları ✅ (şema Int harden sonra)
+### 3. SQLite baseline ✅ (`migrations-archive` + D1 SQL)
+### 4. FOR UPDATE / rate-limit ✅
+### 5. Repository `$transaction` → D1 batch 🔴 **sıradaki kritik iş**
+### 6. Queue/Cron iskeleti 🟡 (consumer + cron wiring eksik)
+### 7. R2 adaptörü 🟡
+### 8. OpenNext iskeleti 🟡 (deploy kullanıcı onayı + resource id)
 
 ### 9. Staging, CI, canlı
 - CI: D1 migrate → unit → integration → e2e. `docker-compose.yml` Postgres bağımlılığı kalkar.

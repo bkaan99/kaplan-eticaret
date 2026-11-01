@@ -96,10 +96,10 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
       ...(search
         ? {
             OR: [
-              { name: { contains: search, mode: "insensitive" } },
+              { name: { contains: search } },
               {
                 variants: {
-                  some: { sku: { contains: search, mode: "insensitive" } },
+                  some: { sku: { contains: search } },
                 },
               },
             ],
