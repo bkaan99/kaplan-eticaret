@@ -1,21 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "../prisma-client-node";
-import { PrismaRateLimiter } from "./prisma-rate-limiter";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import { D1RateLimiter } from "./d1-rate-limiter";
 
-describe("PrismaRateLimiter", () => {
-  let db: PrismaClient;
+describe("D1RateLimiter", () => {
+  let t: TestDb;
+  let db: TestDb["db"];
 
-  beforeAll(() => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
+  beforeAll(async () => {
+    t = await createTestDb();
+    db = t.db;
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   it("limiti aşan istekleri reddeder", async () => {
-    const limiter = new PrismaRateLimiter(db);
+    const limiter = new D1RateLimiter(db);
     const key = `test:${randomUUID()}`;
     const policy = { limit: 3, windowSeconds: 60 };
 
@@ -28,7 +30,7 @@ describe("PrismaRateLimiter", () => {
   });
 
   it("farklı anahtarları ayrı sayar", async () => {
-    const limiter = new PrismaRateLimiter(db);
+    const limiter = new D1RateLimiter(db);
     const policy = { limit: 1, windowSeconds: 60 };
 
     const a = await limiter.consume(`test:${randomUUID()}`, policy);
@@ -40,7 +42,7 @@ describe("PrismaRateLimiter", () => {
 
   it("yeni pencerede sayaç yeniden başlar", async () => {
     let current = new Date("2026-01-01T00:00:00Z");
-    const limiter = new PrismaRateLimiter(db, () => current);
+    const limiter = new D1RateLimiter(db, () => current);
     const key = `test:${randomUUID()}`;
     const policy = { limit: 1, windowSeconds: 60 };
 
@@ -52,7 +54,7 @@ describe("PrismaRateLimiter", () => {
   });
 
   it("eşzamanlı isteklerde sayaç artar", async () => {
-    const limiter = new PrismaRateLimiter(db);
+    const limiter = new D1RateLimiter(db);
     const key = `test:${randomUUID()}`;
     const policy = { limit: 5, windowSeconds: 60 };
 
@@ -60,15 +62,12 @@ describe("PrismaRateLimiter", () => {
       Array.from({ length: 10 }, () => limiter.consume(key, policy)),
     );
 
-    // find+create/update hafif yarışlı olabilir; en az limit kadar izin
-    // beklenir, fazla izin de rate-limit için kabul edilebilir.
-    const allowed = results.filter((r) => r.allowed).length;
-    expect(allowed).toBeGreaterThanOrEqual(5);
-    expect(allowed).toBeLessThanOrEqual(10);
+    // Atomik upsert: tam olarak limit kadar istek geçer.
+    expect(results.filter((r) => r.allowed)).toHaveLength(5);
   });
 
   it("süresi geçen pencereleri siler", async () => {
-    const limiter = new PrismaRateLimiter(
+    const limiter = new D1RateLimiter(
       db,
       () => new Date("2020-01-01T00:00:00Z"),
     );
