@@ -13,8 +13,8 @@ try {
 }
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
+  // `cacheComponents` / `partialPrefetching` (PPR) bilinçli olarak kapalı: OpenNext Cloudflare üretim Worker'ında
+  // sayfalar "Worker code had hung" hatasıyla 500 dönüyor. Açmadan önce Worker'da tüm sayfaları doğrulayın.
   serverExternalPackages: ["pino"],
   experimental: {
     agentUpgrade: "security",
