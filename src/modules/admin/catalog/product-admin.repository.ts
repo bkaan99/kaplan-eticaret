@@ -1,5 +1,32 @@
-import type { Prisma } from "../../../../generated/prisma/client";
-import type { PrismaClient } from "@/shared/prisma-client";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  ne,
+  notInArray,
+  or,
+} from "drizzle-orm";
+import {
+  attribute,
+  brand,
+  category,
+  containsText,
+  dec,
+  newId,
+  product,
+  productAttributeValue,
+  productImage,
+  productOption,
+  productOptionValue,
+  productVariant,
+  redirect,
+  runBatch,
+  variantOptionValue,
+  type Db,
+} from "@/db";
 import type { ProductInput } from "./product.schema";
 
 export interface ProductListQuery {
@@ -85,46 +112,54 @@ export interface ProductAdminRepository {
   addRedirect(fromPath: string, toPath: string): Promise<void>;
 }
 
-export class PrismaProductAdminRepository implements ProductAdminRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+type BatchOps = Parameters<typeof runBatch>[1];
+
+export class D1ProductAdminRepository implements ProductAdminRepository {
+  constructor(private readonly db: () => Db) {}
 
   async list(query: ProductListQuery): Promise<ProductListResult> {
+    const db = this.db();
     const search = query.search?.trim();
-    const where: Prisma.ProductWhereInput = {
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search } },
-              {
-                variants: {
-                  some: { sku: { contains: search } },
-                },
-              },
-            ],
-          }
-        : {}),
-    };
+    const where = and(
+      query.status ? eq(product.status, query.status) : undefined,
+      query.categoryId ? eq(product.categoryId, query.categoryId) : undefined,
+      search
+        ? or(
+            containsText(product.name, search),
+            exists(
+              db
+                .select({ one: productVariant.id })
+                .from(productVariant)
+                .where(
+                  and(
+                    eq(productVariant.productId, product.id),
+                    containsText(productVariant.sku, search),
+                  ),
+                ),
+            ),
+          )
+        : undefined,
+    );
 
-    const [total, rows] = await Promise.all([
-      this.db().product.count({ where }),
-      this.db().product.findMany({
+    const [[totalRow], rows] = await Promise.all([
+      db.select({ n: count() }).from(product).where(where),
+      db.query.product.findMany({
         where,
-        orderBy: { updatedAt: "desc" },
-        skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize,
-        include: {
-          category: { select: { name: true } },
-          variants: { select: { price: true, stockQuantity: true } },
+        orderBy: desc(product.updatedAt),
+        offset: (query.page - 1) * query.pageSize,
+        limit: query.pageSize,
+        with: {
+          category: { columns: { name: true } },
+          variants: { columns: { price: true, stockQuantity: true } },
           images: {
-            orderBy: { position: "asc" },
-            take: 1,
-            select: { url: true },
+            orderBy: (image, { asc }) => asc(image.position),
+            limit: 1,
+            columns: { url: true },
           },
         },
       }),
     ]);
+    const total = totalRow!.n;
 
     return {
       total,
@@ -153,26 +188,26 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
   }
 
   async findForEdit(id: string): Promise<EditableProduct | null> {
-    const row = await this.db().product.findUnique({
-      where: { id },
-      include: {
+    const row = await this.db().query.product.findFirst({
+      where: eq(product.id, id),
+      with: {
         options: {
-          orderBy: { position: "asc" },
-          include: { values: { orderBy: { position: "asc" } } },
+          orderBy: (option, { asc }) => asc(option.position),
+          with: {
+            values: { orderBy: (value, { asc }) => asc(value.position) },
+          },
         },
         variants: {
-          orderBy: { createdAt: "asc" },
-          include: {
-            optionValues: {
-              include: { optionValue: { include: { option: true } } },
-            },
+          orderBy: (variant, { asc }) => asc(variant.createdAt),
+          with: {
+            optionValues: { with: { optionValue: { with: { option: true } } } },
           },
         },
         images: {
-          orderBy: { position: "asc" },
-          include: { optionValue: { include: { option: true } } },
+          orderBy: (image, { asc }) => asc(image.position),
+          with: { optionValue: { with: { option: true } } },
         },
-        attributes: { select: { attributeValueId: true } },
+        attributes: { columns: { attributeValueId: true } },
       },
     });
     if (!row) return null;
@@ -227,14 +262,16 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
   }
 
   async references(): Promise<FormReferences> {
+    const db = this.db();
     const [categories, brands, attributes] = await Promise.all([
-      this.db().category.findMany({
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      }),
-      this.db().brand.findMany({ orderBy: { name: "asc" } }),
-      this.db().attribute.findMany({
-        orderBy: { position: "asc" },
-        include: { values: { orderBy: { position: "asc" } } },
+      db
+        .select()
+        .from(category)
+        .orderBy(asc(category.sortOrder), asc(category.name)),
+      db.select().from(brand).orderBy(asc(brand.name)),
+      db.query.attribute.findMany({
+        orderBy: asc(attribute.position),
+        with: { values: { orderBy: (value, { asc }) => asc(value.position) } },
       }),
     ]);
 
@@ -265,71 +302,57 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
   }
 
   async slugTaken(slug: string, excludeId?: string): Promise<boolean> {
-    const found = await this.db().product.findFirst({
-      where: { slug, ...(excludeId ? { id: { not: excludeId } } : {}) },
-      select: { id: true },
-    });
-    return found !== null;
+    const [found] = await this.db()
+      .select({ id: product.id })
+      .from(product)
+      .where(
+        and(
+          eq(product.slug, slug),
+          excludeId ? ne(product.id, excludeId) : undefined,
+        ),
+      )
+      .limit(1);
+    return found !== undefined;
   }
 
   async create(input: ProductInput, slug: string): Promise<string> {
     const db = this.db();
-    const product = await db.product.create({
-      data: {
-        ...this.productFields(input, slug),
-        attributes: {
-          create: input.attributeValueIds.map((attributeValueId) => ({
-            attributeValueId,
-          })),
-        },
-      },
-      select: { id: true },
-    });
-
-    try {
-      await this.syncOptionsVariantsImages(db, product.id, input);
-    } catch (error) {
-      // Telafi: yarım kalan ürünü kaldır (interaktif transaction yok).
-      await db.product
-        .delete({ where: { id: product.id } })
-        .catch(() => undefined);
-      throw error;
-    }
-    return product.id;
+    const id = newId();
+    // Ürün, öznitelikler, seçenekler, varyantlar ve görseller tek batch'te (atomik): yarım ürün kalmaz.
+    await runBatch(db, [
+      db.insert(product).values({ id, ...this.productFields(input, slug) }),
+      ...this.attributeOps(db, id, input),
+      ...this.syncOps(db, id, input, []),
+    ]);
+    return id;
   }
 
   async update(id: string, input: ProductInput, slug: string): Promise<void> {
     const db = this.db();
-    await db.product.update({
-      where: { id },
-      data: this.productFields(input, slug),
+    const existingOptions = await db.query.productOption.findMany({
+      where: eq(productOption.productId, id),
+      with: { values: true },
     });
 
-    // Öznitelik değerleri: işlemler önceden bilinir (dizi formu).
-    await db.$transaction([
-      db.productAttributeValue.deleteMany({ where: { productId: id } }),
-      ...(input.attributeValueIds.length > 0
-        ? [
-            db.productAttributeValue.createMany({
-              data: input.attributeValueIds.map((attributeValueId) => ({
-                productId: id,
-                attributeValueId,
-              })),
-            }),
-          ]
-        : []),
+    await runBatch(db, [
+      db
+        .update(product)
+        .set(this.productFields(input, slug))
+        .where(eq(product.id, id)),
+      db
+        .delete(productAttributeValue)
+        .where(eq(productAttributeValue.productId, id)),
+      ...this.attributeOps(db, id, input),
+      ...this.syncOps(db, id, input, existingOptions),
     ]);
-
-    await this.syncOptionsVariantsImages(db, id, input);
   }
 
   async addRedirect(fromPath: string, toPath: string): Promise<void> {
     if (fromPath === toPath) return;
-    await this.db().redirect.upsert({
-      where: { fromPath },
-      update: { toPath },
-      create: { fromPath, toPath },
-    });
+    await this.db()
+      .insert(redirect)
+      .values({ fromPath, toPath })
+      .onConflictDoUpdate({ target: redirect.fromPath, set: { toPath } });
   }
 
   private productFields(input: ProductInput, slug: string) {
@@ -340,10 +363,10 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
       status: input.status,
       categoryId: input.categoryId,
       brandId: input.brandId,
-      taxRate: input.taxRate,
+      taxRate: dec(input.taxRate),
       trackInventory: input.trackInventory,
       isFeatured: input.isFeatured,
-      desi: input.desi,
+      desi: dec(input.desi),
       weightGram:
         input.weightGram === null ? null : Math.round(input.weightGram),
       seoTitle: input.seoTitle,
@@ -351,111 +374,129 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
     };
   }
 
+  /** Öznitelik değerleri: satır başına ekleme (D1 sorgu başına 100 parametre sınırı). */
+  private attributeOps(
+    db: Db,
+    productId: string,
+    input: ProductInput,
+  ): BatchOps {
+    return input.attributeValueIds.map((attributeValueId) =>
+      db.insert(productAttributeValue).values({ productId, attributeValueId }),
+    );
+  }
+
   /**
    * Seçenekleri ekler (silmez), varyantları günceller/oluşturur, listede
    * olmayan varyantları pasifleştirir (sipariş geçmişi korunur) ve görselleri
-   * baştan yazar.
+   * baştan yazar. Kimlikler uygulamada üretildiği için tüm yazma işlemleri tek batch'tedir.
    */
-  private async syncOptionsVariantsImages(
-    db: PrismaClient,
+  private syncOps(
+    db: Db,
     productId: string,
     input: ProductInput,
-  ): Promise<void> {
-    // Seçenek ve değerler: mevcut olanı koru, eksik olanı ekle.
-    const optionIds = new Map<string, string>();
+    existingOptions: {
+      id: string;
+      name: string;
+      values: { id: string; value: string }[];
+    }[],
+  ): BatchOps {
+    const ops: BatchOps = [];
     const valueIds = new Map<string, string>(); // "Seçenek\u0000Değer" → id
 
-    const existingOptions = await db.productOption.findMany({
-      where: { productId },
-      include: { values: true },
-    });
-
+    // Seçenek ve değerler: mevcut olanı koru, eksik olanı ekle.
     for (const [position, option] of input.options.entries()) {
       const existing = existingOptions.find((o) => o.name === option.name);
-      const optionId =
-        existing?.id ??
-        (
-          await db.productOption.create({
-            data: { productId, name: option.name, position },
-            select: { id: true },
-          })
-        ).id;
-      optionIds.set(option.name, optionId);
+      const optionId = existing?.id ?? newId();
+      if (!existing) {
+        ops.push(
+          db
+            .insert(productOption)
+            .values({ id: optionId, productId, name: option.name, position }),
+        );
+      }
 
       const known = new Map(
         (existing?.values ?? []).map((v) => [v.value, v.id]),
       );
       for (const [valuePosition, value] of option.values.entries()) {
-        const valueId =
-          known.get(value) ??
-          (
-            await db.productOptionValue.create({
-              data: { optionId, value, position: valuePosition },
-              select: { id: true },
-            })
-          ).id;
+        let valueId = known.get(value);
+        if (!valueId) {
+          valueId = newId();
+          ops.push(
+            db.insert(productOptionValue).values({
+              id: valueId,
+              optionId,
+              value,
+              position: valuePosition,
+            }),
+          );
+        }
         valueIds.set(`${option.name}\u0000${value}`, valueId);
       }
     }
 
-    const keep = new Set<string>();
+    const keep: string[] = [];
     for (const variant of input.variants) {
       const data = {
         sku: variant.sku,
         barcode: variant.barcode,
-        price: variant.price,
-        compareAtPrice: variant.compareAtPrice,
+        price: dec(variant.price),
+        compareAtPrice: dec(variant.compareAtPrice),
         stockQuantity: variant.stockQuantity,
         isActive: variant.isActive,
       };
 
       if (variant.id) {
-        await db.productVariant.update({ where: { id: variant.id }, data });
-        keep.add(variant.id);
+        ops.push(
+          db
+            .update(productVariant)
+            .set(data)
+            .where(eq(productVariant.id, variant.id)),
+        );
+        keep.push(variant.id);
         continue;
       }
 
-      const created = await db.productVariant.create({
-        data: {
-          ...data,
-          productId,
-          optionValues: {
-            create: input.options.map((option) => ({
-              optionValueId: valueIds.get(
-                `${option.name}\u0000${variant.optionValues[option.name]}`,
-              )!,
-            })),
-          },
-        },
-        select: { id: true },
-      });
-      keep.add(created.id);
+      const variantId = newId();
+      ops.push(
+        db.insert(productVariant).values({ ...data, id: variantId, productId }),
+        ...input.options.map((option) =>
+          db.insert(variantOptionValue).values({
+            variantId,
+            optionValueId: valueIds.get(
+              `${option.name}\u0000${variant.optionValues[option.name]}`,
+            )!,
+          }),
+        ),
+      );
+      keep.push(variantId);
     }
 
-    await db.productVariant.updateMany({
-      where: { productId, id: { notIn: [...keep] } },
-      data: { isActive: false },
-    });
-
-    await db.$transaction([
-      db.productImage.deleteMany({ where: { productId } }),
-      ...(input.images.length > 0
-        ? [
-            db.productImage.createMany({
-              data: input.images.map((image, position) => ({
-                productId,
-                url: image.url,
-                alt: image.alt,
-                position,
-                optionValueId: image.forOption
-                  ? (valueIds.get(
-                      `${image.forOption.option}\u0000${image.forOption.value}`,
-                    ) ?? null)
-                  : null,
-              })),
-            }),
-          ]
-        : []),
-    ]);
+    ops.push(
+      db
+        .update(productVariant)
+        .set({ isActive: false })
+        .where(
+          and(
+            eq(productVariant.productId, productId),
+            keep.length ? notInArray(productVariant.id, keep) : undefined,
+          ),
+        ),
+      db.delete(productImage).where(eq(productImage.productId, productId)),
+      ...input.images.map((image, position) =>
+        db.insert(productImage).values({
+          productId,
+          url: image.url,
+          alt: image.alt,
+          position,
+          optionValueId: image.forOption
+            ? (valueIds.get(
+                `${image.forOption.option}\u0000${image.forOption.value}`,
+              ) ?? null)
+            : null,
+        }),
+      ),
+    );
+    return ops;
   }
 }

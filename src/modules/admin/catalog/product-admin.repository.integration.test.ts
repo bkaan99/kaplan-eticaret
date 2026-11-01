@@ -1,26 +1,31 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
-import { PrismaProductAdminRepository } from "./product-admin.repository";
+import type { Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../../tests/support/test-db";
+import { makeCategory } from "../../../../tests/support/factories";
+import { D1ProductAdminRepository } from "./product-admin.repository";
 import { productInputSchema, type ProductInput } from "./product.schema";
 
-describe("PrismaProductAdminRepository", () => {
+describe("D1ProductAdminRepository", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
-  let repo: PrismaProductAdminRepository;
+  let t: TestDb;
+  let db: Db;
+  let repo: D1ProductAdminRepository;
   let categoryId: string;
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    repo = new PrismaProductAdminRepository(() => db);
-    const category = await db.category.create({
-      data: { name: "Admin Test", slug: `admin-test-${tag}` },
+    t = await createTestDb();
+    db = t.db;
+    repo = new D1ProductAdminRepository(() => db);
+    const category = await makeCategory(db, {
+      name: "Admin Test",
+      slug: `admin-test-${tag}`,
     });
     categoryId = category.id;
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   let counter = 0;

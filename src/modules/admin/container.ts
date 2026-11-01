@@ -2,7 +2,7 @@ import { getAuditLogger } from "@/shared/audit";
 import { getDb } from "@/shared/db";
 import { getEventBus } from "@/shared/events";
 import { getOrderService, orderRepository } from "../orders/container";
-import { PrismaProductAdminRepository } from "./catalog/product-admin.repository";
+import { D1ProductAdminRepository } from "./catalog/product-admin.repository";
 import { ProductAdminService } from "./catalog/product-admin.service";
 import { PrismaTaxonomyRepository } from "./taxonomy/taxonomy.repository";
 import { TaxonomyService } from "./taxonomy/taxonomy.service";
@@ -34,7 +34,7 @@ export function getAdminOrderService(): AdminOrderService {
 
 export function getProductAdminService(): ProductAdminService {
   return new ProductAdminService(
-    new PrismaProductAdminRepository(getDb),
+    new D1ProductAdminRepository(getDb),
     getEventBus(),
     getAuditLogger(),
   );
