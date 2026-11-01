@@ -6,7 +6,8 @@ import type {
 
 // OpenNext build çıktısındaki fetch handler'ı yeniden kullanır;
 // Queue consumer + Cron Trigger ekler.
-// @ts-expect-error `.open-next/worker.js` build sırasında üretilir
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — `.open-next/worker.js` build sırasında üretilir; build öncesi tip denetimi de geçsin
 import { default as handler } from "../.open-next/worker.js";
 
 type JobBody = {
@@ -22,17 +23,27 @@ async function callCron(env: CloudflareEnv, path: string): Promise<void> {
     return;
   }
 
+  const base = env.APP_URL ?? "https://kaplan-eticaret.workers.dev";
   const headers: Record<string, string> = {
     authorization: `Bearer ${secret}`,
   };
-  // Cloudflare Access açıksa cron self-fetch Service Token ile geçer.
-  if (env.CF_ACCESS_CLIENT_ID && env.CF_ACCESS_CLIENT_SECRET) {
-    headers["CF-Access-Client-Id"] = env.CF_ACCESS_CLIENT_ID;
-    headers["CF-Access-Client-Secret"] = env.CF_ACCESS_CLIENT_SECRET;
+
+  // Kendine servis bağlaması: istek internete/Access'e çıkmaz, aynı hesaptaki Worker
+  // çağrısı hatasına (1042) takılmaz ve Service Token gerektirmez.
+  let res: Response;
+  if (env.WORKER_SELF_REFERENCE) {
+    res = await env.WORKER_SELF_REFERENCE.fetch(
+      new Request(`${base}${path}`, { headers }),
+    );
+  } else {
+    // Bağlama yoksa (ör. yerel deneme) herkese açık adrese gidilir; Access açıksa Service Token ile geçer.
+    if (env.CF_ACCESS_CLIENT_ID && env.CF_ACCESS_CLIENT_SECRET) {
+      headers["CF-Access-Client-Id"] = env.CF_ACCESS_CLIENT_ID;
+      headers["CF-Access-Client-Secret"] = env.CF_ACCESS_CLIENT_SECRET;
+    }
+    res = await fetch(`${base}${path}`, { headers });
   }
 
-  const base = env.APP_URL ?? "https://kaplan-eticaret.workers.dev";
-  const res = await fetch(`${base}${path}`, { headers });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Cron ${path} başarısız: ${res.status} ${text}`);
@@ -88,5 +99,6 @@ const worker: ExportedHandler<CloudflareEnv> = {
 export default worker;
 
 // OpenNext cache DO'ları (kullanılıyorsa)
-// @ts-expect-error build çıktısı
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — build çıktısı
 export { DOQueueHandler, DOShardedTagCache } from "../.open-next/worker.js";

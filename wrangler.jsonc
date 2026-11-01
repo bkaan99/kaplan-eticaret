@@ -17,10 +17,19 @@
   },
   "workers_dev": true,
   "preview_urls": false,
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "kaplan-eticaret"
+    }
+  ],
   "vars": {
     "NODE_ENV": "production",
+    // Staging adresi; kendi alan adı bağlanınca (routes) burası ve Auth/e-posta bağlantıları güncellenmeli.
     "APP_URL": "https://kaplan-eticaret.bilgekagangurgen.workers.dev",
+    // env.ts şeması zorunlu tuttuğu için yer tutucu; veritabanı D1 binding'inden okunur.
     "DATABASE_URL": "file:./unused",
+    // Yer tutucu: e-posta sağlayıcısı seçilene kadar gerçek gönderim yok (queue tüketici TODO).
     "SMTP_HOST": "localhost",
     "SMTP_PORT": "1025",
     "MAIL_FROM": "Kaplan Turşu <no-reply@kaplantursu.com>",

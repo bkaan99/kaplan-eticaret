@@ -13,6 +13,8 @@ declare global {
     NEXT_INC_CACHE_R2_BUCKET?: R2Bucket;
     JOB_QUEUE: Queue;
     ASSETS?: Fetcher;
+    /** Kendine servis bağlaması: cron ve OpenNext self-call'ları bunun üzerinden gider. */
+    WORKER_SELF_REFERENCE?: Fetcher;
     /** Cron HTTP Bearer; wrangler secret */
     CRON_SECRET?: string;
     /** Self-fetch tabanı; örn. https://kaplan-eticaret.<subdomain>.workers.dev */
