@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  createPrismaClient,
-  type PrismaClient,
-} from "@/shared/prisma-client-node";
+import { count, eq } from "drizzle-orm";
+import { user as userTable, type Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
 import { Argon2PasswordHasher } from "../auth/password-hasher";
 import { AuthService } from "../auth/auth.service";
 import type {
