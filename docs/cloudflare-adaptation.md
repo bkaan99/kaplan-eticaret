@@ -112,8 +112,9 @@ DNS, SSL ve domain Cloudflare üzerinden yönetilir.
 
 ### Faz 3 — D1 şema + seed 🟡
 
-**Durum:** Postgres migration’lar `prisma/migrations-archive/`; yeni SQLite baseline `20261101150000_sqlite_baseline` + `prisma/d1-migrations/0001_sqlite_baseline.sql`.  
-Yerel `file:./dev.db` migrate deploy edildi. Seed’in D1 remote’a basılması ve gerçek `database_id` hâlâ manuel.
+**Durum:** Postgres migration’lar `prisma/migrations-archive/`; yeni SQLite baseline + D1 SQL.  
+Cloudflare D1 `kaplan-eticaret` oluşturuldu (`e0697813-…`); baseline **43+ tablo** remote’a import edildi.  
+**Eksik:** remote seed + admin.
 
 ---
 
@@ -132,23 +133,23 @@ Yerel `file:./dev.db` migrate deploy edildi. Seed’in D1 remote’a basılması
 
 ### Faz 6 — Queues + Cron 🟡
 
-**Durum:** `CloudflareJobQueue` + yerelde `InlineJobQueue` / doğrudan SMTP.  
-Cron HTTP uçları: `/api/cron/release-expired`, `purge-rate-limits`, `purge-audit-log` (`CRON_SECRET`).  
-**Eksik:** OpenNext worker’a Queue consumer bağlama; wrangler cron’un bu URL’leri çağırması.
+**Durum:** Queue `kaplan-eticaret-jobs` oluşturuldu; `workers/app-worker.ts` queue + scheduled handler.  
+Cron HTTP uçları hazır.  
+**Eksik:** Deploy sonrası e-posta gönderim adapter’ı; secrets.
 
 ---
 
-### Faz 7 — R2 🟡
+### Faz 7 — R2 ✅ (kaynak)
 
-**Durum:** `R2FileStorage` + `getFileStorage()` CF’de R2 seçer. Yerelde disk.  
-**Eksik:** Gerçek bucket oluşturma / staging smoke.
+**Durum:** Bucket’lar oluşturuldu (`kaplan-eticaret-uploads`, `kaplan-eticaret-next-cache`). Kod adaptörü hazır.  
+**Eksik:** Deploy sonrası upload smoke.
 
 ---
 
 ### Faz 8 — Workers (OpenNext) 🟡
 
-**Durum:** `open-next.config.ts`, `wrangler.jsonc`, `preview`/`deploy` script’leri, noble argon2id hasher.  
-**Eksik:** Gerçek CF hesabında D1/R2/Queue id’leri, `npm run deploy` (kullanıcı onayı), transaction rewrite sonrası smoke.
+**Durum:** OpenNext + custom worker + gerçek binding ID’leri.  
+**Eksik:** `npm run deploy` (onay), secrets, seed, staging URL.
 
 ---
 

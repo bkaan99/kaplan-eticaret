@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "kaplan-eticaret",
-  "main": ".open-next/worker.js",
+  "main": "workers/app-worker.ts",
   "compatibility_date": "2026-10-31",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
@@ -17,7 +17,7 @@
     {
       "binding": "DB",
       "database_name": "kaplan-eticaret",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "e0697813-ccc2-4594-b6db-b45953a0d85f",
       "migrations_dir": "prisma/d1-migrations"
     }
   ],
