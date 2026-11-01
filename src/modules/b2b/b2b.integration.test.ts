@@ -1,19 +1,32 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import {
-  createPrismaClient,
-  type PrismaClient,
-} from "@/shared/prisma-client-node";
+  customerGroup,
+  product as productTable,
+  tierPrice,
+  variantGroupPrice,
+  type Db,
+} from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import {
+  d,
+  insertRow,
+  makeCategory,
+  makeProduct,
+  makeUser,
+} from "../../../tests/support/factories";
 import { D1CatalogRepository } from "../catalog/catalog.repository";
 import { CatalogService } from "../catalog/catalog.service";
 import { GroupPriceResolver } from "../catalog/pricing";
 import { D1PricingRepository } from "../catalog/pricing.repository";
-import { PrismaPriceListRepository } from "../admin/pricing/price-list.repository";
-import { PrismaDealerRepository } from "./dealer.repository";
+import { D1PriceListRepository } from "../admin/pricing/price-list.repository";
+import { D1DealerRepository } from "./dealer.repository";
 
 describe("B2B fiyatlandırma ve bayi (veritabanı)", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
+  let t: TestDb;
+  let db: Db;
   let resolver: GroupPriceResolver;
   let catalog: CatalogService;
   let groupId: string;
@@ -22,60 +35,58 @@ describe("B2B fiyatlandırma ve bayi (veritabanı)", () => {
   let productSlug: string;
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
+    t = await createTestDb();
+    db = t.db;
     resolver = new GroupPriceResolver(new D1PricingRepository(() => db));
-    catalog = new CatalogService(
-      new D1CatalogRepository(() => db),
-      resolver,
-    );
+    catalog = new CatalogService(new D1CatalogRepository(() => db), resolver);
 
-    const category = await db.category.create({
-      data: { name: "B2B", slug: `b2b-${tag}` },
+    const category = await makeCategory(db, {
+      name: "B2B",
+      slug: `b2b-${tag}`,
     });
     productSlug = `b2b-urun-${tag}`;
-    const product = await db.product.create({
-      data: {
+    const product = await makeProduct(
+      db,
+      {
         name: `B2B Ürün ${tag}`,
         slug: productSlug,
         status: "ACTIVE",
         categoryId: category.id,
-        variants: {
-          create: [
-            { sku: `B2B-A-${tag}`, price: "100.00", stockQuantity: 50 },
-            { sku: `B2B-B-${tag}`, price: "200.00", stockQuantity: 50 },
-          ],
-        },
       },
-      include: { variants: { orderBy: { sku: "asc" } } },
-    });
-    variantA = product.variants[0]!.id;
-    variantB = product.variants[1]!.id;
+      [
+        { sku: `B2B-A-${tag}`, price: "100.00", stockQuantity: 50 },
+        { sku: `B2B-B-${tag}`, price: "200.00", stockQuantity: 50 },
+      ],
+    );
+    const variants = [...product.variants].sort((a, b) =>
+      a.sku.localeCompare(b.sku),
+    );
+    variantA = variants[0]!.id;
+    variantB = variants[1]!.id;
 
-    const group = await db.customerGroup.create({
-      data: {
-        name: `Bayi ${tag}`,
-        slug: `bayi-${tag}`,
-        discountPercent: "20.00",
-      },
+    const group = await insertRow(db, customerGroup, {
+      name: `Bayi ${tag}`,
+      slug: `bayi-${tag}`,
+      discountPercent: d("20.00"),
     });
     groupId = group.id;
 
-    await db.variantGroupPrice.create({
-      data: { variantId: variantA, groupId, price: "70.00" },
-    });
+    await db
+      .insert(variantGroupPrice)
+      .values({ variantId: variantA, groupId, price: d("70.00") });
     // Genel (herkese) kademe: 10 adetten itibaren 150
-    await db.tierPrice.create({
-      data: {
+    await db
+      .insert(tierPrice)
+      .values({
         variantId: variantB,
         groupId: null,
         minQuantity: 10,
-        price: "150.00",
-      },
-    });
+        price: d("150.00"),
+      });
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   const request = (variantId: string, listPrice: string, quantity = 1) => ({
@@ -129,9 +140,9 @@ describe("B2B fiyatlandırma ve bayi (veritabanı)", () => {
   });
 
   it("katalog kartında bayi fiyatını gösterir ve fiyatı gizleyebilir", async () => {
-    const product = await db.product.findUniqueOrThrow({
-      where: { slug: productSlug },
-    });
+    const product = (await db.query.product.findFirst({
+      where: eq(productTable.slug, productSlug),
+    }))!;
 
     const [dealerCard] = await catalog.getCardsInOrder([product.id], {
       customerGroupId: groupId,
@@ -160,15 +171,12 @@ describe("B2B fiyatlandırma ve bayi (veritabanı)", () => {
   });
 
   it("bayi başvurusu → onay → profil akışı", async () => {
-    const dealers = new PrismaDealerRepository(() => db);
-    const user = await db.user.create({
-      data: {
-        email: `bayi-${tag}@example.com`,
-        firstName: "Bayi",
-        lastName: "Aday",
-        customer: { create: {} },
-      },
-    });
+    const dealers = new D1DealerRepository(() => db);
+    const user = await makeUser(
+      db,
+      { email: `bayi-${tag}@example.com`, firstName: "Bayi", lastName: "Aday" },
+      true,
+    );
 
     await dealers.apply(user.id, {
       companyName: "Test Ltd.",
@@ -200,7 +208,7 @@ describe("B2B fiyatlandırma ve bayi (veritabanı)", () => {
   });
 
   it("fiyat listesi: grup fiyatı ve kademeleri yazar, arama sonucunda gösterir", async () => {
-    const lists = new PrismaPriceListRepository(() => db);
+    const lists = new D1PriceListRepository(() => db);
 
     await lists.setGroupPrice(groupId, variantB, 175);
     await lists.replaceTiers(variantB, groupId, [
