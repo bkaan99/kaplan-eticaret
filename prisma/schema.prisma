@@ -335,7 +335,6 @@ model ProductVariant {
   cartItems    CartItem[]
   orderItems   OrderItem[]
   reservations StockReservation[]
-  stockAlerts  BackInStockSubscription[]
 
   @@index([productId])
 }
@@ -496,18 +495,6 @@ model StockReservation {
 
   @@index([status, expiresAt])
   @@index([variantId])
-}
-
-model BackInStockSubscription {
-  id         String    @id @default(cuid())
-  variantId  String
-  email      String
-  notifiedAt DateTime?
-  createdAt  DateTime  @default(now())
-
-  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-
-  @@unique([variantId, email])
 }
 
 model WishlistItem {

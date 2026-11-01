@@ -69,7 +69,7 @@ Yalnızca yapılandırma dosyalarını üretmek için: `npm run init-project -- 
 ```
 src/
   app/            Yönlendirme ve sayfalar (admin: app/(admin))
-  modules/        İş mantığı: auth, account, b2b, catalog, cart, checkout, orders, returns, content, erp, reporting, notifications, stock-alerts, wishlist, admin
+  modules/        İş mantığı: auth, account, b2b, catalog, cart, checkout, orders, returns, content, reporting, notifications, wishlist, admin
   components/     Vitrin bileşenleri (storefront, product, wishlist)
   integrations/   Dış servis adapter'ları (PayTR, kargo, ...)
   shared/         Ortak altyapı: env, db, hata, para, logger, kuyruk, rate limit, audit, i18n
@@ -175,10 +175,6 @@ Akış:
 ## Görsel yükleme ve dosya depolama
 
 Ürün formundaki "Dosyadan yükle" JPEG/PNG/WebP/GIF kabul eder (en fazla 5 MB). Dosyalar `UPLOAD_DIR` (varsayılan `./uploads`) altında saklanır ve `/uploads/...` adresinden sunulur. **Production'da bu dizin kalıcı bir volume olmalıdır.** Farklı bir depolama (S3, R2) için `src/shared/storage/storage.ts` içindeki `FileStorage` arayüzünü uygulayıp `src/shared/storage/index.ts` içinde değiştirin.
-
-## ERP entegrasyonu
-
-`features.erp` açıldığında worker 15 dakikada bir `ErpConnector` üzerinden stok/fiyat çeker. Hazır `HttpJsonErpConnector`, `ERP_STOCK_URL` adresinden `[{ "sku": "...", "stock": 5, "price": 99.9 }]` bekler (`ERP_API_KEY` varsa `Authorization: Bearer`). Farklı bir ERP için `src/modules/erp/container.ts` içinde kendi bağlayıcınızı bağlayın.
 
 ## Güvenlik notları
 

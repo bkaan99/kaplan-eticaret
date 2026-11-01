@@ -6,7 +6,6 @@ import { WishlistButton } from "@/components/wishlist/wishlist-button";
 import { BagIcon } from "@/components/storefront/icons";
 import { EASE_OUT } from "@/components/motion/motion";
 import type { ProductDetail } from "@/modules/catalog/catalog.types";
-import { StockAlertForm } from "./stock-alert-form";
 import type { ProductViewState } from "./use-product-view";
 
 export function ProductPurchaseActions({
@@ -158,10 +157,6 @@ export function ProductPurchaseActions({
           </p>
         ) : null}
       </div>
-
-      {variant && !variant.inStock ? (
-        <StockAlertForm key={variant.id} variantId={variant.id} />
-      ) : null}
 
       {highlights}
     </>

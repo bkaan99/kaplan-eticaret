@@ -24,6 +24,5 @@ export const tr = {
   },
   product: {
     outOfStock: "Tükendi",
-    notifyWhenAvailable: "Stoğa girince haber ver",
   },
 } as const;

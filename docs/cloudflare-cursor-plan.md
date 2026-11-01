@@ -30,9 +30,9 @@ D1 yalnızca toplu (batch) çalıştırmayı destekler; Prisma `$transaction(asy
 - Şunları ölç: `batch` ile iki tablo yazma, koşullu `UPDATE` ile stok düşme, `Json` alanı, ilişkili `include` sorgusu, cold start süresi.
 - Çıktı: `docs/cloudflare-adaptation.md` içine "ORM kararı" bölümü. Prisma'nın `Decimal`/`Json`/`enum` desteği D1 adapter'da yetersizse Drizzle.
 
-### 1. Ayıklama
-- `src/modules/stock-alerts`, `src/modules/erp`, ilgili worker job kayıtları, vitrindeki "stok gelince haber ver" arayüzü, ilgili testler silinir.
-- Şemadan ilgili modeller çıkarılır.
+### 1. Ayıklama ✅
+- `src/modules/stock-alerts`, `src/modules/erp`, ilgili worker job kayıtları, vitrindeki "stok gelince haber ver" arayüzü, ilgili testler silindi.
+- `BackInStockSubscription` şemadan çıkarıldı (`20261101140000_drop_back_in_stock`).
 
 ### 2. Para modeli (kuruş)
 - `src/shared/money.ts`: `toMinor`, `fromMinor`, yüzde ölçeği (baz 10_000), `desiMilli`.

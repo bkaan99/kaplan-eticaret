@@ -14,7 +14,6 @@ export interface UserDataExport {
   orders: Record<string, unknown>[];
   wishlist: { product: string; slug: string }[];
   dealer: Record<string, unknown> | null;
-  stockAlerts: { product: string; sku: string; createdAt: string }[];
 }
 
 export interface PrivacyRepository {
@@ -50,13 +49,6 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
       },
     });
     if (!user) return null;
-
-    const alerts = await this.db().backInStockSubscription.findMany({
-      where: { email: user.email },
-      include: {
-        variant: { select: { sku: true, product: { select: { name: true } } } },
-      },
-    });
 
     return {
       exportedAt: new Date().toISOString(),
@@ -124,11 +116,6 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
             group: user.customer.group?.name ?? null,
           }
         : null,
-      stockAlerts: alerts.map((alert) => ({
-        product: alert.variant.product.name,
-        sku: alert.variant.sku,
-        createdAt: alert.createdAt.toISOString(),
-      })),
     };
   }
 
@@ -171,17 +158,9 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
 
   async anonymize(userId: string): Promise<void> {
     await this.db().$transaction(async (tx) => {
-      const user = await tx.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { email: true },
-      });
-
       await tx.address.deleteMany({ where: { userId } });
       await tx.wishlistItem.deleteMany({ where: { userId } });
       await tx.cart.deleteMany({ where: { userId } });
-      await tx.backInStockSubscription.deleteMany({
-        where: { email: user.email },
-      });
       await tx.userRole.deleteMany({ where: { userId } });
 
       await tx.customer.updateMany({

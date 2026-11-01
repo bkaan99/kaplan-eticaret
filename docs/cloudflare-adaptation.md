@@ -92,16 +92,14 @@ DNS, SSL ve domain Cloudflare üzerinden yönetilir.
 
 ---
 
-### Faz 1 — Stok uyarısı ve ERP’yi kapsamdan düşürme
+### Faz 1 — Stok uyarısı ve ERP’yi kapsamdan düşürme ✅
 
-**Amaç:** Migrasyon yüzeyini küçültmek; kullanılmayan yollar taşınmasın.
+**Durum:** `cloudflare-adaptation` dalında tamamlandı.
 
-- Worker’dan `registerStockAlertJobs` / `registerErpJobs` kaldır
-- Vitrin “stok gelince haber ver” / bildirim-iptal akışlarını kapat veya kaldır
-- `features.erp` ve env zorunluluklarını dokümante et (kapalı kalır)
-- İlgili testleri ayıkla veya sil
-
-**Çıkış:** `npm run worker` yalnızca e-posta + sipariş release + maintenance kayıt eder (Postgres döneminde bile).
+- `modules/stock-alerts`, `modules/erp`, worker job’ları, vitrin formu, `/bildirim-iptal`, admin stok talebi paneli kaldırıldı
+- `BackInStockSubscription` şemadan düşürüldü (migration `20261101140000_drop_back_in_stock`)
+- `features.erp` ve `ERP_*` env anahtarları kaldırıldı
+- Worker yalnızca e-posta + sipariş release + maintenance kayıt eder
 
 ---
 

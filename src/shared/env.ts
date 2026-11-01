@@ -30,9 +30,6 @@ const envSchema = z
       .transform((value) => value === "true"),
     /** Yüklenen dosyaların dizini; varsayılan ./uploads */
     UPLOAD_DIR: optionalString,
-    /** features.erp açıkken HTTP JSON bağlayıcının adresi ve anahtarı */
-    ERP_STOCK_URL: optionalString,
-    ERP_API_KEY: optionalString,
     TURNSTILE_SITE_KEY: optionalString,
     TURNSTILE_SECRET_KEY: optionalString,
   })
@@ -66,10 +63,7 @@ export class EnvValidationError extends Error {
 }
 
 /** Yalnızca ilgili özellik açıksa zorunlu olan anahtarlar. */
-function featureIssues(
-  env: Env,
-  enabled: Pick<Features, "captcha"> & Partial<Pick<Features, "erp">>,
-): string[] {
+function featureIssues(env: Env, enabled: Pick<Features, "captcha">): string[] {
   const issues: string[] = [];
 
   if (enabled.captcha) {
@@ -80,17 +74,12 @@ function featureIssues(
     }
   }
 
-  if (enabled.erp && !env.ERP_STOCK_URL) {
-    issues.push("ERP_STOCK_URL: erp özelliği açıkken zorunludur");
-  }
-
   return issues;
 }
 
 export function parseEnv(
   source: Record<string, string | undefined>,
-  enabled: Pick<Features, "captcha"> &
-    Partial<Pick<Features, "erp">> = features,
+  enabled: Pick<Features, "captcha"> = features,
 ): Env {
   const result = envSchema.safeParse(source);
 

@@ -70,7 +70,6 @@ describe("KVKK: veri dışa aktarma ve anonimleştirme (veritabanı)", () => {
     });
     await db.wishlistItem.create({ data: { userId, productId } });
     await db.cart.create({ data: { userId } });
-    await db.backInStockSubscription.create({ data: { variantId, email } });
     await db.order.create({
       data: {
         orderNumber: `K${randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`,
@@ -114,7 +113,6 @@ describe("KVKK: veri dışa aktarma ve anonimleştirme (veritabanı)", () => {
     expect(data?.orders).toHaveLength(1);
     expect(data?.wishlist[0]?.slug).toBe(`kvkk-urunu-${tag}`);
     expect(data?.dealer).toMatchObject({ companyName: "Gizli Ltd." });
-    expect(data?.stockAlerts).toHaveLength(1);
   });
 
   it("teslim edilmiş ödenmiş siparişi açık sipariş saymaz", async () => {
@@ -145,9 +143,6 @@ describe("KVKK: veri dışa aktarma ve anonimleştirme (veritabanı)", () => {
     expect(await db.address.count({ where: { userId } })).toBe(0);
     expect(await db.wishlistItem.count({ where: { userId } })).toBe(0);
     expect(await db.cart.count({ where: { userId } })).toBe(0);
-    expect(await db.backInStockSubscription.count({ where: { email } })).toBe(
-      0,
-    );
 
     // Yasal saklama: sipariş kayıtları durur.
     expect(await db.order.count({ where: { userId } })).toBe(1);

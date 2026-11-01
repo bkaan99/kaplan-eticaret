@@ -17,8 +17,6 @@ export interface Features {
   sms: boolean;
   /** Cloudflare Turnstile ile bot koruması */
   captcha: boolean;
-  /** ERP ile zamanlanmış stok/fiyat senkronizasyonu (bağlayıcı gerektirir) */
-  erp: boolean;
 }
 
 const defaultFeatures: Features = {
@@ -28,7 +26,6 @@ const defaultFeatures: Features = {
   blog: false,
   sms: false,
   captcha: false,
-  erp: false,
 };
 
 export const features: Features = {

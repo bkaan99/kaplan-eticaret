@@ -43,7 +43,6 @@ describe("ReportingService.dashboard", () => {
       lowStock: async () => [
         { productName: "Cüzdan", sku: "C-1", available: 2 },
       ],
-      stockDemand: async () => [],
       customerMetrics: async () => ({
         newCustomers: 6,
         buyers: 8,

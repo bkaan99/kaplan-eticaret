@@ -36,7 +36,6 @@ class FakeRepo implements PrivacyRepository {
     orders: [],
     wishlist: [],
     dealer: null,
-    stockAlerts: [],
   };
 
   async collectExport() {

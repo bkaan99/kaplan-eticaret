@@ -4,12 +4,10 @@ import type { AccountMailer } from "../account/account.service";
 import type { DealerMailer } from "../b2b/dealer.service";
 import type { OrderLookupRepository } from "../orders/order.repository";
 import type { ReturnNotifier } from "../returns/return.service";
-import type { StockAlertMailer } from "../stock-alerts/stock-alert.service";
 import { AccountNotificationHandler } from "./handlers/account-notification.handler";
 import { DealerNotificationHandler } from "./handlers/dealer-notification.handler";
 import { OrderNotificationHandler } from "./handlers/order-notification.handler";
 import { ReturnNotificationHandler } from "./handlers/return-notification.handler";
-import { StockAlertNotificationHandler } from "./handlers/stock-alert-notification.handler";
 import {
   JOB_SEND_EMAIL,
   QueueNotificationDispatcher,
@@ -28,14 +26,13 @@ export { JOB_SEND_EMAIL };
  * ve tetikleyici mantığını ise odaklı domain handler'lara delege eder.
  */
 export class NotificationService
-  implements AccountMailer, DealerMailer, ReturnNotifier, StockAlertMailer
+  implements AccountMailer, DealerMailer, ReturnNotifier
 {
   private readonly dispatcher: NotificationDispatcher;
   private readonly orderHandler: OrderNotificationHandler;
   private readonly accountHandler: AccountNotificationHandler;
   private readonly dealerHandler: DealerNotificationHandler;
   private readonly returnHandler: ReturnNotificationHandler;
-  private readonly stockAlertHandler: StockAlertNotificationHandler;
 
   constructor(
     orders: OrderLookupRepository,
@@ -72,11 +69,6 @@ export class NotificationService
       dispatcher: this.dispatcher,
       context,
     });
-
-    this.stockAlertHandler = new StockAlertNotificationHandler({
-      dispatcher: this.dispatcher,
-      context,
-    });
   }
 
   getDispatcher(): NotificationDispatcher {
@@ -110,18 +102,6 @@ export class NotificationService
     note: string | null;
   }): Promise<void> {
     return this.returnHandler.onReturnDecided(info);
-  }
-
-  async sendStockAvailable(
-    email: string,
-    product: { name: string; slug: string },
-    unsubscribeUrl: string,
-  ): Promise<void> {
-    return this.stockAlertHandler.sendStockAvailable(
-      email,
-      product,
-      unsubscribeUrl,
-    );
   }
 
   async sendEmailVerification(email: string, link: string): Promise<void> {

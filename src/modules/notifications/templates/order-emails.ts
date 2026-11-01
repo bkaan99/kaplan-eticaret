@@ -146,26 +146,6 @@ export function renderAdminNewOrder(
   };
 }
 
-export function renderStockAvailable(
-  product: { name: string; slug: string },
-  context: EmailContext,
-  unsubscribeUrl: string,
-): RenderedEmail {
-  const link = `${context.baseUrl}/urun/${product.slug}`;
-
-  return {
-    subject: `${product.name} yeniden stokta`,
-    html: wrapInLayout({
-      siteName: context.siteName,
-      title: "Aradığınız ürün yeniden stokta",
-      bodyHtml: `<p>Haber vermemizi istediğiniz <strong>${escapeHtml(product.name)}</strong> yeniden stokta.</p>
-        <p><a href="${escapeHtml(link)}">Ürüne git</a></p>
-        <p style="color:#71717a;font-size:12px;"><a href="${escapeHtml(unsubscribeUrl)}">Bildirimden çık</a></p>`,
-    }),
-    text: `${product.name} yeniden stokta: ${link}\n\nBildirimden çıkmak için: ${unsubscribeUrl}`,
-  };
-}
-
 export interface BankAccountInfo {
   bank: string;
   accountName: string;

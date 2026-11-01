@@ -5,7 +5,6 @@ import type {
   LowStockItem,
   PeriodTotals,
   ReportingRepository,
-  StockDemandItem,
   TopProduct,
 } from "./reporting.service";
 
@@ -98,36 +97,6 @@ export class PrismaReportingRepository implements ReportingRepository {
       .filter((row) => row.available <= threshold)
       .sort((a, b) => a.available - b.available)
       .slice(0, limit);
-  }
-
-  async stockDemand(limit: number): Promise<StockDemandItem[]> {
-    const grouped = await this.db().backInStockSubscription.groupBy({
-      by: ["variantId"],
-      where: { notifiedAt: null },
-      _count: { _all: true },
-      orderBy: { _count: { variantId: "desc" } },
-      take: limit,
-    });
-    if (grouped.length === 0) return [];
-
-    const variants = await this.db().productVariant.findMany({
-      where: { id: { in: grouped.map((row) => row.variantId) } },
-      select: { id: true, sku: true, product: { select: { name: true } } },
-    });
-    const byId = new Map(variants.map((variant) => [variant.id, variant]));
-
-    return grouped.flatMap((row) => {
-      const variant = byId.get(row.variantId);
-      return variant
-        ? [
-            {
-              productName: variant.product.name,
-              sku: variant.sku,
-              waiting: row._count._all,
-            },
-          ]
-        : [];
-    });
   }
 
   async customerMetrics(from: Date, to: Date): Promise<CustomerMetrics> {
