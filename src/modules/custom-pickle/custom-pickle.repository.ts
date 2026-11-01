@@ -1,5 +1,6 @@
 import type Decimal from "decimal.js";
-import type { PrismaClient } from "@/shared/prisma-client";
+import { asc, eq, inArray } from "drizzle-orm";
+import { dec, pickleIngredient, product, setting, type Db } from "@/db";
 import {
   DEFAULT_BRINE_CONFIG,
   DEFAULT_SPICE_CONFIG,
@@ -56,127 +57,128 @@ export interface CustomPickleRepository {
   savePickleOptions(config: CustomPickleConfig): Promise<void>;
 }
 
-const ingredientSelect = {
-  id: true,
-  name: true,
-  slug: true,
-  group: true,
-  description: true,
-  imageUrl: true,
-  pricePerKg: true,
-  isActive: true,
-  sortOrder: true,
+const ingredientColumns = {
+  id: pickleIngredient.id,
+  name: pickleIngredient.name,
+  slug: pickleIngredient.slug,
+  group: pickleIngredient.group,
+  description: pickleIngredient.description,
+  imageUrl: pickleIngredient.imageUrl,
+  pricePerKg: pickleIngredient.pricePerKg,
+  isActive: pickleIngredient.isActive,
+  sortOrder: pickleIngredient.sortOrder,
 } as const;
 
-export class PrismaCustomPickleRepository implements CustomPickleRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+export class D1CustomPickleRepository implements CustomPickleRepository {
+  constructor(private readonly db: () => Db) {}
 
   listIngredients(options: {
     activeOnly: boolean;
   }): Promise<IngredientRecord[]> {
-    return this.db().pickleIngredient.findMany({
-      where: options.activeOnly ? { isActive: true } : undefined,
-      orderBy: [{ group: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
-      select: ingredientSelect,
-    });
+    return this.db()
+      .select(ingredientColumns)
+      .from(pickleIngredient)
+      .where(
+        options.activeOnly ? eq(pickleIngredient.isActive, true) : undefined,
+      )
+      .orderBy(
+        asc(pickleIngredient.group),
+        asc(pickleIngredient.sortOrder),
+        asc(pickleIngredient.name),
+      );
   }
 
-  findIngredients(ids: string[]): Promise<IngredientRecord[]> {
-    if (ids.length === 0) return Promise.resolve([]);
-    return this.db().pickleIngredient.findMany({
-      where: { id: { in: ids } },
-      select: ingredientSelect,
-    });
+  async findIngredients(ids: string[]): Promise<IngredientRecord[]> {
+    if (ids.length === 0) return [];
+    return this.db()
+      .select(ingredientColumns)
+      .from(pickleIngredient)
+      .where(inArray(pickleIngredient.id, ids));
   }
 
-  findIngredientBySlug(slug: string): Promise<{ id: string } | null> {
-    return this.db().pickleIngredient.findUnique({
-      where: { slug },
-      select: { id: true },
-    });
+  async findIngredientBySlug(slug: string): Promise<{ id: string } | null> {
+    const [row] = await this.db()
+      .select({ id: pickleIngredient.id })
+      .from(pickleIngredient)
+      .where(eq(pickleIngredient.slug, slug))
+      .limit(1);
+    return row ?? null;
   }
 
   async createIngredient(
     input: IngredientInput & { slug: string },
   ): Promise<string> {
-    const created = await this.db().pickleIngredient.create({
-      data: {
+    const [created] = await this.db()
+      .insert(pickleIngredient)
+      .values({
         name: input.name,
         slug: input.slug,
         group: input.group,
         description: input.description,
         imageUrl: input.imageUrl,
-        pricePerKg: input.pricePerKg.toFixed(2),
+        pricePerKg: dec(input.pricePerKg.toFixed(2)),
         sortOrder: input.sortOrder,
         isActive: input.isActive,
-      },
-      select: { id: true },
-    });
-    return created.id;
+      })
+      .returning({ id: pickleIngredient.id });
+    return created!.id;
   }
 
   async updateIngredient(id: string, input: IngredientInput): Promise<void> {
-    await this.db().pickleIngredient.update({
-      where: { id },
-      data: {
+    await this.db()
+      .update(pickleIngredient)
+      .set({
         name: input.name,
         group: input.group,
         description: input.description,
         imageUrl: input.imageUrl,
-        pricePerKg: input.pricePerKg.toFixed(2),
+        pricePerKg: dec(input.pricePerKg.toFixed(2)),
         sortOrder: input.sortOrder,
         isActive: input.isActive,
-      },
-    });
+      })
+      .where(eq(pickleIngredient.id, id));
   }
 
   async deleteIngredient(id: string): Promise<void> {
-    await this.db().pickleIngredient.delete({ where: { id } });
+    await this.db().delete(pickleIngredient).where(eq(pickleIngredient.id, id));
   }
 
   async findBuilderProduct(slug: string): Promise<BuilderProductRecord | null> {
-    const product = await this.db().product.findUnique({
-      where: { slug },
-      select: {
+    const found = await this.db().query.product.findFirst({
+      where: eq(product.slug, slug),
+      columns: {
         id: true,
         name: true,
         description: true,
         status: true,
         trackInventory: true,
+      },
+      with: {
         images: {
-          orderBy: { position: "asc" },
-          take: 1,
-          select: { url: true },
+          orderBy: (image, { asc }) => asc(image.position),
+          limit: 1,
+          columns: { url: true },
         },
         variants: {
-          orderBy: { price: "asc" },
-          select: {
-            id: true,
-            price: true,
-            compareAtPrice: true,
-            currency: true,
-            weightGram: true,
-            isActive: true,
-            stockQuantity: true,
-            reservedQuantity: true,
-            sku: true,
+          orderBy: (variant, { asc }) => asc(variant.price),
+          with: {
             optionValues: {
-              select: { optionValue: { select: { value: true } } },
+              with: { optionValue: { columns: { value: true } } },
             },
           },
         },
       },
     });
-    if (!product) return null;
+    if (!found) return null;
 
     return {
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      status: product.status,
-      trackInventory: product.trackInventory,
-      imageUrl: product.images[0]?.url ?? null,
-      variants: product.variants.map((variant) => ({
+      id: found.id,
+      name: found.name,
+      description: found.description,
+      status: found.status,
+      trackInventory: found.trackInventory,
+      imageUrl: found.images[0]?.url ?? null,
+      variants: found.variants.map((variant) => ({
         id: variant.id,
         label:
           variant.optionValues
@@ -195,35 +197,30 @@ export class PrismaCustomPickleRepository implements CustomPickleRepository {
 
   async getPickleOptions(): Promise<CustomPickleConfig> {
     try {
-      const record = await this.db().setting.findUnique({
-        where: { key: "custom_pickle_options" },
-      });
+      const [record] = await this.db()
+        .select()
+        .from(setting)
+        .where(eq(setting.key, "custom_pickle_options"))
+        .limit(1);
       if (record && record.value && typeof record.value === "object") {
         const val = record.value as Partial<CustomPickleConfig>;
         if (Array.isArray(val.brines) && Array.isArray(val.spices)) {
-          return {
-            brines: val.brines,
-            spices: val.spices,
-          };
+          return { brines: val.brines, spices: val.spices };
         }
       }
     } catch {
       // Varsayılan yapılandırmaya dön
     }
-    return {
-      brines: DEFAULT_BRINE_CONFIG,
-      spices: DEFAULT_SPICE_CONFIG,
-    };
+    return { brines: DEFAULT_BRINE_CONFIG, spices: DEFAULT_SPICE_CONFIG };
   }
 
   async savePickleOptions(config: CustomPickleConfig): Promise<void> {
-    await this.db().setting.upsert({
-      where: { key: "custom_pickle_options" },
-      update: { value: config as unknown as object },
-      create: {
-        key: "custom_pickle_options",
-        value: config as unknown as object,
-      },
-    });
+    await this.db()
+      .insert(setting)
+      .values({ key: "custom_pickle_options", value: config })
+      .onConflictDoUpdate({
+        target: setting.key,
+        set: { value: config, updatedAt: new Date() },
+      });
   }
 }
