@@ -17,12 +17,6 @@
   },
   "workers_dev": true,
   "preview_urls": false,
-  "services": [
-    {
-      "binding": "WORKER_SELF_REFERENCE",
-      "service": "kaplan-eticaret"
-    }
-  ],
   "vars": {
     "NODE_ENV": "production",
     // Staging adresi; kendi alan adı bağlanınca (routes) burası ve Auth/e-posta bağlantıları güncellenmeli.
