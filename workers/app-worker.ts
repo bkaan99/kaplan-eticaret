@@ -22,10 +22,17 @@ async function callCron(env: CloudflareEnv, path: string): Promise<void> {
     return;
   }
 
+  const headers: Record<string, string> = {
+    authorization: `Bearer ${secret}`,
+  };
+  // Cloudflare Access açıksa cron self-fetch Service Token ile geçer.
+  if (env.CF_ACCESS_CLIENT_ID && env.CF_ACCESS_CLIENT_SECRET) {
+    headers["CF-Access-Client-Id"] = env.CF_ACCESS_CLIENT_ID;
+    headers["CF-Access-Client-Secret"] = env.CF_ACCESS_CLIENT_SECRET;
+  }
+
   const base = env.APP_URL ?? "https://kaplan-eticaret.workers.dev";
-  const res = await fetch(`${base}${path}`, {
-    headers: { authorization: `Bearer ${secret}` },
-  });
+  const res = await fetch(`${base}${path}`, { headers });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Cron ${path} başarısız: ${res.status} ${text}`);

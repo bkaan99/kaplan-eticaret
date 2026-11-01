@@ -14,13 +14,13 @@ export function getRateLimiter(): RateLimiter {
   return limiter;
 }
 
-/** İsteği yapan istemcinin IP adresi (reverse proxy başlıklarından). */
+/** İsteği yapan istemcinin IP adresi (CF / reverse proxy başlıklarından). */
 export async function getClientIp(): Promise<string> {
   const requestHeaders = await headers();
-  const forwarded = requestHeaders.get("x-forwarded-for");
   return (
-    forwarded?.split(",")[0]?.trim() ||
+    requestHeaders.get("cf-connecting-ip") ||
     requestHeaders.get("x-real-ip") ||
+    requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
   );
 }

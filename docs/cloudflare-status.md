@@ -38,7 +38,10 @@ Tarih: 2026-11-01 · Dal: `cloudflare-adaptation`
 | Para şema Int harden | Düşük | Helper var; kolonlar Decimal emülasyonu |
 | `pg-boss` paketi / ölü dosya temizliği | Düşük | Kullanılmıyor |
 | CI D1 migrate | Orta | GitHub Actions güncellemesi |
-| Müşteri staging URL + Access | Yüksek | Deploy sonrası |
+| Müşteri staging URL + Access | Orta | URL açık; Access için Zero Trust henüz hesapta enable değil (dashboard) |
+| Turnstile (captcha) | — | **Açık:** widget + `TURNSTILE_*` secrets/vars |
+| Observability traces | — | **Açık:** `wrangler.jsonc` traces.enabled |
+| Rate-limit IP | — | `cf-connecting-ip` öncelikli |
 
 ## Yerel çalıştırma
 

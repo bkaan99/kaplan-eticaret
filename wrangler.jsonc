@@ -9,7 +9,11 @@
     "binding": "ASSETS"
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    }
   },
   "workers_dev": true,
   "preview_urls": false,
@@ -20,7 +24,8 @@
     "SMTP_HOST": "localhost",
     "SMTP_PORT": "1025",
     "MAIL_FROM": "Kaplan Turşu <no-reply@kaplantursu.com>",
-    "PAYTR_TEST_MODE": "true"
+    "PAYTR_TEST_MODE": "true",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFvl5QAAi-Eo6q6D"
   },
   "d1_databases": [
     {

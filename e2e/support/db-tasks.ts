@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { createAdminUser } from "../../scripts/lib/create-admin-user";
-import { createPrismaClient } from "../../src/shared/prisma-client";
+import { createPrismaClient } from "../../src/shared/prisma-client-node";
 
 /**
  * Playwright'ın CJS yükleyicisi Prisma istemcisini (ESM) yükleyemediğinden

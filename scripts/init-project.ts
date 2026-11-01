@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline/promises";
-import { createPrismaClient } from "../src/shared/prisma-client";
+import { createPrismaClient } from "../src/shared/prisma-client-node";
 import {
   createAdminUser,
   MIN_ADMIN_PASSWORD_LENGTH,

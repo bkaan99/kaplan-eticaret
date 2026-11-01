@@ -17,6 +17,12 @@ declare global {
     CRON_SECRET?: string;
     /** Self-fetch tabanı; örn. https://kaplan-eticaret.<subdomain>.workers.dev */
     APP_URL?: string;
+    /** Turnstile (site key vars'ta, secret wrangler secret) */
+    TURNSTILE_SITE_KEY?: string;
+    TURNSTILE_SECRET_KEY?: string;
+    /** Access Service Token — staging Access açıkken cron self-fetch için */
+    CF_ACCESS_CLIENT_ID?: string;
+    CF_ACCESS_CLIENT_SECRET?: string;
   }
 }
 
