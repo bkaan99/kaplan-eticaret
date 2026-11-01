@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
-import { PrismaCatalogRepository } from "./catalog.repository";
+import { attribute, attributeValue, brand, type Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import {
+  insertRow,
+  makeCategory,
+  makeProduct,
+} from "../../../tests/support/factories";
+import { D1CatalogRepository } from "./catalog.repository";
 import { CatalogService } from "./catalog.service";
 import { parseListQuery } from "./query-params";
 
@@ -9,39 +15,51 @@ describe("Catalog (veritabanı)", () => {
   const tag = randomUUID().slice(0, 8);
   const slug = (name: string) => `${name}-${tag}`;
 
-  let db: PrismaClient;
+  let t: TestDb;
+  let db: Db;
   let service: CatalogService;
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    service = new CatalogService(new PrismaCatalogRepository(() => db));
+    t = await createTestDb();
+    db = t.db;
+    service = new CatalogService(new D1CatalogRepository(() => db));
 
-    const root = await db.category.create({
-      data: { name: "Kök", slug: slug("kok") },
+    const root = await makeCategory(db, { name: "Kök", slug: slug("kok") });
+    const child = await makeCategory(db, {
+      name: "Alt",
+      slug: slug("alt"),
+      parentId: root.id,
     });
-    const child = await db.category.create({
-      data: { name: "Alt", slug: slug("alt"), parentId: root.id },
+    const brandA = await insertRow(db, brand, {
+      name: `Marka A ${tag}`,
+      slug: slug("marka-a"),
     });
-    const brandA = await db.brand.create({
-      data: { name: `Marka A ${tag}`, slug: slug("marka-a") },
+    const brandB = await insertRow(db, brand, {
+      name: `Marka B ${tag}`,
+      slug: slug("marka-b"),
     });
-    const brandB = await db.brand.create({
-      data: { name: `Marka B ${tag}`, slug: slug("marka-b") },
+    const color = await insertRow(db, attribute, {
+      name: "Renk",
+      slug: slug("renk"),
     });
-    const color = await db.attribute.create({
-      data: { name: "Renk", slug: slug("renk") },
+    const fabric = await insertRow(db, attribute, {
+      name: "Kumaş",
+      slug: slug("kumas"),
     });
-    const fabric = await db.attribute.create({
-      data: { name: "Kumaş", slug: slug("kumas") },
+    const red = await insertRow(db, attributeValue, {
+      attributeId: color.id,
+      value: "Kırmızı",
+      slug: "kirmizi",
     });
-    const red = await db.attributeValue.create({
-      data: { attributeId: color.id, value: "Kırmızı", slug: "kirmizi" },
+    const blue = await insertRow(db, attributeValue, {
+      attributeId: color.id,
+      value: "Mavi",
+      slug: "mavi",
     });
-    const blue = await db.attributeValue.create({
-      data: { attributeId: color.id, value: "Mavi", slug: "mavi" },
-    });
-    const cotton = await db.attributeValue.create({
-      data: { attributeId: fabric.id, value: "Pamuk", slug: "pamuk" },
+    const cotton = await insertRow(db, attributeValue, {
+      attributeId: fabric.id,
+      value: "Pamuk",
+      slug: "pamuk",
     });
 
     const make = (
@@ -52,21 +70,18 @@ describe("Catalog (veritabanı)", () => {
       values: string[],
       status: "ACTIVE" | "DRAFT" = "ACTIVE",
     ) =>
-      db.product.create({
-        data: {
+      makeProduct(
+        db,
+        {
           name: `${name} ${tag}`,
           slug: slug(name.toLowerCase().replace(/\s/g, "-")),
           status,
           categoryId,
           brandId,
-          attributes: {
-            create: values.map((attributeValueId) => ({ attributeValueId })),
-          },
-          variants: {
-            create: [{ sku: `${slug(name)}-1`, price, stockQuantity: 3 }],
-          },
         },
-      });
+        [{ sku: `${slug(name)}-1`, price, stockQuantity: 3 }],
+        { attributeValueIds: values },
+      );
 
     await make("Kırmızı Pamuk", child.id, brandA.id, "100", [
       red.id,
@@ -78,7 +93,7 @@ describe("Catalog (veritabanı)", () => {
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   const list = (params: Record<string, string>, categorySlug?: string) =>

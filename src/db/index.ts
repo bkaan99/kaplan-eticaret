@@ -1,9 +1,10 @@
 import type { D1Database } from "@cloudflare/workers-types";
+import { sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
 export * from "./schema";
-export { decimal, json, newId, timestamp } from "./types";
+export { dec, decimal, json, newId, timestamp } from "./types";
 
 export type Db = DrizzleD1Database<typeof schema>;
 
@@ -40,4 +41,26 @@ export function isUniqueViolation(error: unknown): boolean {
     e = (e as { cause?: unknown }).cause;
   }
   return false;
+}
+
+/**
+ * `contains` karşılığı: büyük/küçük harfe duyarsız alt dize araması. SQLite `LIKE` yalnızca ASCII harflerde
+ * duyarsızdır; Türkçe harfler (Ü/ü, İ/ı…) için aranan metnin küçük/büyük harf varyantları da denenir.
+ * Kullanıcı girdisindeki `%`, `_` ve `\` joker olarak yorumlanmaz.
+ */
+export function containsText(column: SQLWrapper, value: string): SQL {
+  const variants = [
+    ...new Set([
+      value,
+      value.toLowerCase(),
+      value.toLocaleLowerCase("tr-TR"),
+      value.toUpperCase(),
+      value.toLocaleUpperCase("tr-TR"),
+    ]),
+  ];
+  const like = (text: string) => {
+    const escaped = text.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+    return sql`${column} LIKE ${`%${escaped}%`} ESCAPE '\\'`;
+  };
+  return sql`(${sql.join(variants.map(like), sql` OR `)})`;
 }

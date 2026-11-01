@@ -1,10 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
-import { PrismaCatalogRepository } from "../catalog/catalog.repository";
+import {
+  createPrismaClient,
+  type PrismaClient,
+} from "@/shared/prisma-client-node";
+import { D1CatalogRepository } from "../catalog/catalog.repository";
 import { CatalogService } from "../catalog/catalog.service";
 import { GroupPriceResolver } from "../catalog/pricing";
-import { PrismaPricingRepository } from "../catalog/pricing.repository";
+import { D1PricingRepository } from "../catalog/pricing.repository";
 import { PrismaPriceListRepository } from "../admin/pricing/price-list.repository";
 import { PrismaDealerRepository } from "./dealer.repository";
 
@@ -20,9 +23,9 @@ describe("B2B fiyatlandırma ve bayi (veritabanı)", () => {
 
   beforeAll(async () => {
     db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    resolver = new GroupPriceResolver(new PrismaPricingRepository(() => db));
+    resolver = new GroupPriceResolver(new D1PricingRepository(() => db));
     catalog = new CatalogService(
-      new PrismaCatalogRepository(() => db),
+      new D1CatalogRepository(() => db),
       resolver,
     );
 

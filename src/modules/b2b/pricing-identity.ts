@@ -5,7 +5,7 @@ import { siteConfig } from "@/config/site.config";
 import { getDb } from "@/shared/db";
 import type { PricingIdentity } from "../catalog/catalog.service";
 import { getCurrentUser } from "../auth/session";
-import { PrismaDealerRepository } from "./dealer.repository";
+import { D1DealerRepository } from "./dealer.repository";
 import type { DealerProfile } from "./dealer.types";
 
 export interface RequestPricing extends PricingIdentity {
@@ -27,7 +27,7 @@ export const getRequestPricing = cache(async (): Promise<RequestPricing> => {
 
   let dealer: DealerProfile | null = null;
   if (user && features.b2b) {
-    dealer = await new PrismaDealerRepository(getDb).findProfile(user.id);
+    dealer = await new D1DealerRepository(getDb).findProfile(user.id);
   }
 
   const dealerApproved = dealer?.status === "APPROVED";

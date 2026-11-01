@@ -1,25 +1,34 @@
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import type Decimal from "decimal.js";
-import type { PrismaClient } from "@/shared/prisma-client";
+import { customerGroup, tierPrice, variantGroupPrice, type Db } from "@/db";
 import type { PricingRepository, TierPriceRecord } from "./pricing";
 
-export class PrismaPricingRepository implements PricingRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+export class D1PricingRepository implements PricingRepository {
+  constructor(private readonly db: () => Db) {}
 
   async groupPrices(
     groupId: string,
     variantIds: string[],
   ): Promise<Map<string, Decimal>> {
-    const rows = await this.db().variantGroupPrice.findMany({
-      where: { groupId, variantId: { in: variantIds } },
-    });
+    if (variantIds.length === 0) return new Map();
+    const rows = await this.db()
+      .select()
+      .from(variantGroupPrice)
+      .where(
+        and(
+          eq(variantGroupPrice.groupId, groupId),
+          inArray(variantGroupPrice.variantId, variantIds),
+        ),
+      );
     return new Map(rows.map((row) => [row.variantId, row.price]));
   }
 
   async groupDiscountPercent(groupId: string): Promise<Decimal | null> {
-    const group = await this.db().customerGroup.findUnique({
-      where: { id: groupId },
-      select: { discountPercent: true },
-    });
+    const [group] = await this.db()
+      .select({ discountPercent: customerGroup.discountPercent })
+      .from(customerGroup)
+      .where(eq(customerGroup.id, groupId))
+      .limit(1);
     return group?.discountPercent ?? null;
   }
 
@@ -27,12 +36,19 @@ export class PrismaPricingRepository implements PricingRepository {
     variantIds: string[],
     groupId: string | null,
   ): Promise<Map<string, TierPriceRecord[]>> {
-    const rows = await this.db().tierPrice.findMany({
-      where: {
-        variantId: { in: variantIds },
-        OR: [{ groupId: null }, ...(groupId ? [{ groupId }] : [])],
-      },
-    });
+    if (variantIds.length === 0) return new Map();
+    const rows = await this.db()
+      .select()
+      .from(tierPrice)
+      .where(
+        and(
+          inArray(tierPrice.variantId, variantIds),
+          or(
+            isNull(tierPrice.groupId),
+            groupId ? eq(tierPrice.groupId, groupId) : undefined,
+          ),
+        ),
+      );
 
     const result = new Map<string, TierPriceRecord[]>();
     for (const row of rows) {

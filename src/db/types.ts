@@ -36,3 +36,10 @@ export const json = <T = unknown>(name: string) =>
 export function newId(): string {
   return crypto.randomUUID().replace(/-/g, "");
 }
+
+/** Null-güvenli Decimal dönüşümü (zod'dan gelen number/string değerleri için). */
+export function dec(value: Decimal.Value): Decimal;
+export function dec(value: Decimal.Value | null | undefined): Decimal | null;
+export function dec(value: Decimal.Value | null | undefined): Decimal | null {
+  return value === null || value === undefined ? null : new Decimal(value);
+}

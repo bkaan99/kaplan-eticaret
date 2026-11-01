@@ -41,8 +41,8 @@ describe("CreditLimitPolicy", () => {
   it("limit 0 veya tanımsızsa kredi kullanımına izin vermez", () => {
     const result = CreditLimitPolicy.evaluate("0", "100.00", "0");
     expect(result.hasEnoughCredit).toBe(false);
-    expect(() =>
-      CreditLimitPolicy.assertAllowed("0", "100.00", "0"),
-    ).toThrow("Kredi limitiniz yetersiz");
+    expect(() => CreditLimitPolicy.assertAllowed("0", "100.00", "0")).toThrow(
+      "Kredi limitiniz yetersiz",
+    );
   });
 });
