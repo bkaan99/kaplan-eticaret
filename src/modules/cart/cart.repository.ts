@@ -279,39 +279,57 @@ export class PrismaCartRepository implements CartRepository {
     toCartId: string,
     maxQuantity: number,
   ): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      const items = await tx.cartItem.findMany({
-        where: { cartId: fromCartId },
-      });
+    const db = this.db();
+    const items = await db.cartItem.findMany({
+      where: { cartId: fromCartId },
+    });
+    if (items.length === 0) {
+      await db.cart.deleteMany({ where: { id: fromCartId } });
+      return;
+    }
 
-      for (const item of items) {
-        const where = {
+    const existingItems = await db.cartItem.findMany({
+      where: { cartId: toCartId },
+    });
+    const existingByKey = new Map(
+      existingItems.map((e) => [
+        `${e.variantId}\u0000${e.customizationKey}`,
+        e,
+      ]),
+    );
+
+    // Tüm işlemler önceden bilinir: dizi formu (interaktif transaction yok).
+    const ops = items.map((item) => {
+      const existing = existingByKey.get(
+        `${item.variantId}\u0000${item.customizationKey}`,
+      );
+      const quantity = Math.min(
+        maxQuantity,
+        item.quantity + (existing?.quantity ?? 0),
+      );
+
+      return db.cartItem.upsert({
+        where: {
           cartId_variantId_customizationKey: {
             cartId: toCartId,
             variantId: item.variantId,
             customizationKey: item.customizationKey,
           },
-        };
-        const existing = await tx.cartItem.findUnique({ where });
-        const quantity = Math.min(
-          maxQuantity,
-          item.quantity + (existing?.quantity ?? 0),
-        );
-
-        await tx.cartItem.upsert({
-          where,
-          update: { quantity },
-          create: {
-            cartId: toCartId,
-            variantId: item.variantId,
-            quantity,
-            customizationKey: item.customizationKey,
-            customization: item.customization ?? undefined,
-          },
-        });
-      }
-
-      await tx.cart.deleteMany({ where: { id: fromCartId } });
+        },
+        update: { quantity },
+        create: {
+          cartId: toCartId,
+          variantId: item.variantId,
+          quantity,
+          customizationKey: item.customizationKey,
+          customization: item.customization ?? undefined,
+        },
+      });
     });
+
+    await db.$transaction([
+      ...ops,
+      db.cart.deleteMany({ where: { id: fromCartId } }),
+    ]);
   }
 }

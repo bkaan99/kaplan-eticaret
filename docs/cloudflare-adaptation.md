@@ -123,10 +123,10 @@ Yerel `file:./dev.db` migrate deploy edildi. Seed’in D1 remote’a basılması
 
 ---
 
-### Faz 5 — Repository / D1 transaction 🔴 (kritik kalan)
+### Faz 5 — Repository / D1 transaction ✅
 
-**Durum:** `getDb()` D1 veya SQLite seçiyor.  
-**Eksik:** ~10 dosyadaki interaktif `$transaction(async tx => …)` D1’de çalışmaz. Bunlar batch / koşullu update / telafi ile yeniden yazılmadan **production D1 checkout güvenli değil**.
+**Durum:** Interaktif `$transaction(async …)` kaldırıldı; dizi formu + koşullu stok UPDATE + telafi adımları.  
+`getDb()` D1 veya SQLite seçiyor.
 
 ---
 

@@ -212,13 +212,17 @@ export class PrismaPriceListRepository implements PriceListRepository {
     groupId: string | null,
     tiers: { minQuantity: number; price: number }[],
   ): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      await tx.tierPrice.deleteMany({ where: { variantId, groupId } });
-      if (tiers.length > 0) {
-        await tx.tierPrice.createMany({
-          data: tiers.map((tier) => ({ variantId, groupId, ...tier })),
-        });
-      }
-    });
+    const db = this.db();
+    // Silme + ekleme önceden bilinir: dizi formu (interaktif transaction yok).
+    await db.$transaction([
+      db.tierPrice.deleteMany({ where: { variantId, groupId } }),
+      ...(tiers.length > 0
+        ? [
+            db.tierPrice.createMany({
+              data: tiers.map((tier) => ({ variantId, groupId, ...tier })),
+            }),
+          ]
+        : []),
+    ]);
   }
 }

@@ -1,3 +1,4 @@
+import type { Prisma } from "../../../generated/prisma/client";
 import type { PrismaClient } from "@/shared/prisma-client";
 import type { SavedAddressInput } from "./address.schema";
 
@@ -74,27 +75,35 @@ export class PrismaAddressRepository implements AddressRepository {
   }
 
   async create(userId: string, input: SavedAddressInput): Promise<string> {
-    return this.db().$transaction(async (tx) => {
-      // Varsayılan bayrağı yalnızca tek adreste bulunur.
-      if (input.isDefaultShipping) {
-        await tx.address.updateMany({
+    const db = this.db();
+    // Önce varsayılan bayrakları temizle, sonra ekle (dizi formu: işlemler önceden bilinir).
+    // Varsayılan bayrağı yalnızca tek adreste bulunur.
+    const ops: Prisma.PrismaPromise<unknown>[] = [];
+    if (input.isDefaultShipping) {
+      ops.push(
+        db.address.updateMany({
           where: { userId },
           data: { isDefaultShipping: false },
-        });
-      }
-      if (input.isDefaultBilling) {
-        await tx.address.updateMany({
+        }),
+      );
+    }
+    if (input.isDefaultBilling) {
+      ops.push(
+        db.address.updateMany({
           where: { userId },
           data: { isDefaultBilling: false },
-        });
-      }
-
-      const created = await tx.address.create({
+        }),
+      );
+    }
+    ops.push(
+      db.address.create({
         data: { ...input, userId },
         select: { id: true },
-      });
-      return created.id;
-    });
+      }),
+    );
+
+    const results = await db.$transaction(ops);
+    return (results[results.length - 1] as { id: string }).id;
   }
 
   async update(
@@ -102,29 +111,34 @@ export class PrismaAddressRepository implements AddressRepository {
     id: string,
     input: SavedAddressInput,
   ): Promise<boolean> {
-    return this.db().$transaction(async (tx) => {
-      const owned = await tx.address.findFirst({
-        where: { id, userId },
-        select: { id: true },
-      });
-      if (!owned) return false;
+    const db = this.db();
+    const owned = await db.address.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!owned) return false;
 
-      if (input.isDefaultShipping) {
-        await tx.address.updateMany({
+    const ops: Prisma.PrismaPromise<unknown>[] = [];
+    if (input.isDefaultShipping) {
+      ops.push(
+        db.address.updateMany({
           where: { userId, id: { not: id } },
           data: { isDefaultShipping: false },
-        });
-      }
-      if (input.isDefaultBilling) {
-        await tx.address.updateMany({
+        }),
+      );
+    }
+    if (input.isDefaultBilling) {
+      ops.push(
+        db.address.updateMany({
           where: { userId, id: { not: id } },
           data: { isDefaultBilling: false },
-        });
-      }
+        }),
+      );
+    }
+    ops.push(db.address.update({ where: { id }, data: input }));
 
-      await tx.address.update({ where: { id }, data: input });
-      return true;
-    });
+    await db.$transaction(ops);
+    return true;
   }
 
   async delete(userId: string, id: string): Promise<boolean> {

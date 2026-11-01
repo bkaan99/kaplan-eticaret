@@ -157,13 +157,14 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
   }
 
   async anonymize(userId: string): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      await tx.address.deleteMany({ where: { userId } });
-      await tx.wishlistItem.deleteMany({ where: { userId } });
-      await tx.cart.deleteMany({ where: { userId } });
-      await tx.userRole.deleteMany({ where: { userId } });
-
-      await tx.customer.updateMany({
+    const db = this.db();
+    // Tüm operasyonlar önceden bilinir: dizi formu (interaktif transaction yok).
+    await db.$transaction([
+      db.address.deleteMany({ where: { userId } }),
+      db.wishlistItem.deleteMany({ where: { userId } }),
+      db.cart.deleteMany({ where: { userId } }),
+      db.userRole.deleteMany({ where: { userId } }),
+      db.customer.updateMany({
         where: { userId },
         data: {
           b2bStatus: "NONE",
@@ -175,9 +176,8 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
           minOrderAmount: null,
           b2bNote: null,
         },
-      });
-
-      await tx.user.update({
+      }),
+      db.user.update({
         where: { id: userId },
         data: {
           // Sipariş kayıtları yasal saklama gereği korunur; kimlik bağlantısı kopar.
@@ -190,7 +190,7 @@ export class PrismaPrivacyRepository implements PrivacyRepository {
           emailVerifiedAt: null,
           anonymizedAt: new Date(),
         },
-      });
-    });
+      }),
+    ]);
   }
 }

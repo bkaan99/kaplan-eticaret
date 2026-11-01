@@ -1,4 +1,5 @@
 import type Decimal from "decimal.js";
+import type { Prisma } from "../../../generated/prisma/client";
 import { NotFoundError } from "@/shared/errors";
 import type { PrismaClient } from "@/shared/prisma-client";
 import type { ReturnStatus } from "./return.types";
@@ -267,74 +268,104 @@ export class PrismaReturnRepository implements ReturnRepository {
     requestId: string,
     data: { amount: string; providerRef: string | null; restock: boolean },
   ): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      const request = await tx.returnRequest.findUnique({
-        where: { id: requestId },
-        include: {
-          items: { include: { orderItem: true } },
-          order: {
-            include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } },
-          },
+    const db = this.db();
+    const request = await db.returnRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        items: { include: { orderItem: true } },
+        order: {
+          include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } },
         },
-      });
-      if (!request) throw new NotFoundError("İade talebi");
+      },
+    });
+    if (!request) throw new NotFoundError("İade talebi");
 
-      const claimed = await tx.returnRequest.updateMany({
-        where: { id: requestId, status: "REQUESTED" },
-        data: { status: "COMPLETED", resolvedAt: new Date() },
-      });
-      if (claimed.count === 0) return;
+    // İdempotency kapısı: yalnızca REQUESTED talep tamamlanır.
+    const claimed = await db.returnRequest.updateMany({
+      where: { id: requestId, status: "REQUESTED" },
+      data: { status: "COMPLETED", resolvedAt: new Date() },
+    });
+    if (claimed.count === 0) return;
+
+    try {
+      // Tüm işlemler önceden bilinir: dizi formu tek batch.
+      const ops: Prisma.PrismaPromise<unknown>[] = [];
 
       const payment = request.order.payments[0];
       if (payment) {
-        await tx.refund.create({
-          data: {
-            paymentId: payment.id,
-            amount: data.amount,
-            reason: `İade talebi: ${request.reason}`,
-            providerRef: data.providerRef,
-            status: "COMPLETED",
-            completedAt: new Date(),
-          },
-        });
-
-        const refunded = await tx.refund.aggregate({
+        const refundedBefore = await db.refund.aggregate({
           where: { paymentId: payment.id, status: "COMPLETED" },
           _sum: { amount: true },
         });
-        const total = refunded._sum.amount ?? payment.amount.mul(0);
+        const total = (
+          refundedBefore._sum.amount ?? payment.amount.mul(0)
+        ).plus(data.amount);
         const full = total.gte(payment.amount);
 
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: { status: full ? "REFUNDED" : "PARTIALLY_REFUNDED" },
-        });
-        await tx.order.update({
-          where: { id: request.orderId },
-          data: {
-            paymentStatus: full ? "REFUNDED" : "PARTIALLY_REFUNDED",
-            ...(full ? { status: "REFUNDED" as const } : {}),
-          },
-        });
+        ops.push(
+          db.refund.create({
+            data: {
+              paymentId: payment.id,
+              amount: data.amount,
+              reason: `İade talebi: ${request.reason}`,
+              providerRef: data.providerRef,
+              status: "COMPLETED",
+              completedAt: new Date(),
+            },
+          }),
+          db.payment.update({
+            where: { id: payment.id },
+            data: { status: full ? "REFUNDED" : "PARTIALLY_REFUNDED" },
+          }),
+          db.order.update({
+            where: { id: request.orderId },
+            data: {
+              paymentStatus: full ? "REFUNDED" : "PARTIALLY_REFUNDED",
+              ...(full ? { status: "REFUNDED" as const } : {}),
+            },
+          }),
+        );
       }
 
       if (data.restock) {
+        const variantIds = request.items
+          .map((item) => item.orderItem.variantId)
+          .filter((id): id is string => id !== null);
+        const variants =
+          variantIds.length > 0
+            ? await db.productVariant.findMany({
+                where: { id: { in: variantIds } },
+                select: {
+                  id: true,
+                  product: { select: { trackInventory: true } },
+                },
+              })
+            : [];
+        const tracked = new Set(
+          variants.filter((v) => v.product.trackInventory).map((v) => v.id),
+        );
         for (const item of request.items) {
           const variantId = item.orderItem.variantId;
-          if (!variantId) continue;
-
-          const variant = await tx.productVariant.findUnique({
-            where: { id: variantId },
-            select: { product: { select: { trackInventory: true } } },
-          });
-          if (variant?.product.trackInventory) {
-            await tx.productVariant.update({
+          if (!variantId || !tracked.has(variantId)) continue;
+          ops.push(
+            db.productVariant.update({
               where: { id: variantId },
               data: { stockQuantity: { increment: item.quantity } },
-            });
-          }
+            }),
+          );
         }
       }
-    });
+
+      if (ops.length > 0) await db.$transaction(ops);
+    } catch (error) {
+      // Telafi: iade yazılamadıysa talebi tekrar işlenebilir hale getir.
+      await db.returnRequest
+        .updateMany({
+          where: { id: requestId, status: "COMPLETED" },
+          data: { status: "REQUESTED", resolvedAt: null },
+        })
+        .catch(() => undefined);
+      throw error;
+    }
   }
 }

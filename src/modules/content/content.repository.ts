@@ -173,24 +173,28 @@ export class PrismaContentRepository implements ContentRepository {
   }
 
   async replaceMenu(key: MenuKey, items: MenuItemView[]): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      const menu = await tx.menu.upsert({
-        where: { key },
-        update: {},
-        create: { key },
-        select: { id: true },
-      });
-      await tx.menuItem.deleteMany({ where: { menuId: menu.id } });
-      if (items.length > 0) {
-        await tx.menuItem.createMany({
-          data: items.map((item, position) => ({
-            menuId: menu.id,
-            label: item.label,
-            url: item.url,
-            position,
-          })),
-        });
-      }
+    const db = this.db();
+    const menu = await db.menu.upsert({
+      where: { key },
+      update: {},
+      create: { key },
+      select: { id: true },
     });
+    // Silme + ekleme önceden bilinir: dizi formu (interaktif transaction yok).
+    await db.$transaction([
+      db.menuItem.deleteMany({ where: { menuId: menu.id } }),
+      ...(items.length > 0
+        ? [
+            db.menuItem.createMany({
+              data: items.map((item, position) => ({
+                menuId: menu.id,
+                label: item.label,
+                url: item.url,
+                position,
+              })),
+            }),
+          ]
+        : []),
+    ]);
   }
 }

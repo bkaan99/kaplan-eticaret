@@ -31,9 +31,12 @@ export class PrismaBulkUpdateRepository implements BulkUpdateRepository {
   }
 
   async applyUpdates(updates: VariantUpdate[]): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      for (const update of updates) {
-        await tx.productVariant.update({
+    if (updates.length === 0) return;
+    const db = this.db();
+    // Tüm güncellemeler önceden bilinir: dizi formu (interaktif transaction yok).
+    await db.$transaction(
+      updates.map((update) =>
+        db.productVariant.update({
           where: { id: update.id },
           data: {
             ...(update.price !== undefined ? { price: update.price } : {}),
@@ -44,8 +47,8 @@ export class PrismaBulkUpdateRepository implements BulkUpdateRepository {
               ? { stockQuantity: update.stockQuantity }
               : {}),
           },
-        });
-      }
-    });
+        }),
+      ),
+    );
   }
 }

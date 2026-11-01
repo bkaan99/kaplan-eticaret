@@ -273,43 +273,54 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
   }
 
   async create(input: ProductInput, slug: string): Promise<string> {
-    return this.db().$transaction(async (tx) => {
-      const product = await tx.product.create({
-        data: {
-          ...this.productFields(input, slug),
-          attributes: {
-            create: input.attributeValueIds.map((attributeValueId) => ({
-              attributeValueId,
-            })),
-          },
+    const db = this.db();
+    const product = await db.product.create({
+      data: {
+        ...this.productFields(input, slug),
+        attributes: {
+          create: input.attributeValueIds.map((attributeValueId) => ({
+            attributeValueId,
+          })),
         },
-        select: { id: true },
-      });
-
-      await this.syncOptionsVariantsImages(tx, product.id, input);
-      return product.id;
+      },
+      select: { id: true },
     });
+
+    try {
+      await this.syncOptionsVariantsImages(db, product.id, input);
+    } catch (error) {
+      // Telafi: yarım kalan ürünü kaldır (interaktif transaction yok).
+      await db.product
+        .delete({ where: { id: product.id } })
+        .catch(() => undefined);
+      throw error;
+    }
+    return product.id;
   }
 
   async update(id: string, input: ProductInput, slug: string): Promise<void> {
-    await this.db().$transaction(async (tx) => {
-      await tx.product.update({
-        where: { id },
-        data: this.productFields(input, slug),
-      });
-
-      await tx.productAttributeValue.deleteMany({ where: { productId: id } });
-      if (input.attributeValueIds.length > 0) {
-        await tx.productAttributeValue.createMany({
-          data: input.attributeValueIds.map((attributeValueId) => ({
-            productId: id,
-            attributeValueId,
-          })),
-        });
-      }
-
-      await this.syncOptionsVariantsImages(tx, id, input);
+    const db = this.db();
+    await db.product.update({
+      where: { id },
+      data: this.productFields(input, slug),
     });
+
+    // Öznitelik değerleri: işlemler önceden bilinir (dizi formu).
+    await db.$transaction([
+      db.productAttributeValue.deleteMany({ where: { productId: id } }),
+      ...(input.attributeValueIds.length > 0
+        ? [
+            db.productAttributeValue.createMany({
+              data: input.attributeValueIds.map((attributeValueId) => ({
+                productId: id,
+                attributeValueId,
+              })),
+            }),
+          ]
+        : []),
+    ]);
+
+    await this.syncOptionsVariantsImages(db, id, input);
   }
 
   async addRedirect(fromPath: string, toPath: string): Promise<void> {
@@ -346,7 +357,7 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
    * baştan yazar.
    */
   private async syncOptionsVariantsImages(
-    tx: Prisma.TransactionClient,
+    db: PrismaClient,
     productId: string,
     input: ProductInput,
   ): Promise<void> {
@@ -354,7 +365,7 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
     const optionIds = new Map<string, string>();
     const valueIds = new Map<string, string>(); // "Seçenek\u0000Değer" → id
 
-    const existingOptions = await tx.productOption.findMany({
+    const existingOptions = await db.productOption.findMany({
       where: { productId },
       include: { values: true },
     });
@@ -364,7 +375,7 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
       const optionId =
         existing?.id ??
         (
-          await tx.productOption.create({
+          await db.productOption.create({
             data: { productId, name: option.name, position },
             select: { id: true },
           })
@@ -378,7 +389,7 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
         const valueId =
           known.get(value) ??
           (
-            await tx.productOptionValue.create({
+            await db.productOptionValue.create({
               data: { optionId, value, position: valuePosition },
               select: { id: true },
             })
@@ -399,12 +410,12 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
       };
 
       if (variant.id) {
-        await tx.productVariant.update({ where: { id: variant.id }, data });
+        await db.productVariant.update({ where: { id: variant.id }, data });
         keep.add(variant.id);
         continue;
       }
 
-      const created = await tx.productVariant.create({
+      const created = await db.productVariant.create({
         data: {
           ...data,
           productId,
@@ -421,26 +432,30 @@ export class PrismaProductAdminRepository implements ProductAdminRepository {
       keep.add(created.id);
     }
 
-    await tx.productVariant.updateMany({
+    await db.productVariant.updateMany({
       where: { productId, id: { notIn: [...keep] } },
       data: { isActive: false },
     });
 
-    await tx.productImage.deleteMany({ where: { productId } });
-    if (input.images.length > 0) {
-      await tx.productImage.createMany({
-        data: input.images.map((image, position) => ({
-          productId,
-          url: image.url,
-          alt: image.alt,
-          position,
-          optionValueId: image.forOption
-            ? (valueIds.get(
-                `${image.forOption.option}\u0000${image.forOption.value}`,
-              ) ?? null)
-            : null,
-        })),
-      });
-    }
+    await db.$transaction([
+      db.productImage.deleteMany({ where: { productId } }),
+      ...(input.images.length > 0
+        ? [
+            db.productImage.createMany({
+              data: input.images.map((image, position) => ({
+                productId,
+                url: image.url,
+                alt: image.alt,
+                position,
+                optionValueId: image.forOption
+                  ? (valueIds.get(
+                      `${image.forOption.option}\u0000${image.forOption.value}`,
+                    ) ?? null)
+                  : null,
+              })),
+            }),
+          ]
+        : []),
+    ]);
   }
 }

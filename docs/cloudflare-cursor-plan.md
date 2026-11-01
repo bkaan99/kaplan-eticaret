@@ -30,7 +30,7 @@ D1 yalnızca toplu (batch) çalıştırmayı destekler; Prisma `$transaction(asy
 ### 2. Para helper’ları ✅ (şema Int harden sonra)
 ### 3. SQLite baseline ✅ (`migrations-archive` + D1 SQL)
 ### 4. FOR UPDATE / rate-limit ✅
-### 5. Repository `$transaction` → D1 batch 🔴 **sıradaki kritik iş**
+### 5. Repository `$transaction` → D1 batch ✅
 ### 6. Queue/Cron iskeleti 🟡 (consumer + cron wiring eksik)
 ### 7. R2 adaptörü 🟡
 ### 8. OpenNext iskeleti 🟡 (deploy kullanıcı onayı + resource id)
