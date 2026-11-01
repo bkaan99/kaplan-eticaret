@@ -1,4 +1,5 @@
-import type { PrismaClient } from "@/shared/prisma-client";
+import { and, asc, desc, eq, gte, isNull, lte, ne, or } from "drizzle-orm";
+import { banner, menu, menuItem, page, newId, runBatch, type Db } from "@/db";
 import type { BannerInput, MenuKey, PageInput } from "./content.schema";
 
 export interface BannerView {
@@ -48,153 +49,138 @@ export interface ContentRepository {
   replaceMenu(key: MenuKey, items: MenuItemView[]): Promise<void>;
 }
 
-export class PrismaContentRepository implements ContentRepository {
-  constructor(private readonly db: () => PrismaClient) {}
-
-  private banner(row: {
-    id: string;
-    title: string;
-    imageUrl: string;
-    linkUrl: string | null;
-    sortOrder: number;
-    startsAt: Date | null;
-    endsAt: Date | null;
-    isActive: boolean;
-  }): BannerView {
-    return { ...row };
-  }
+export class D1ContentRepository implements ContentRepository {
+  constructor(private readonly db: () => Db) {}
 
   async listBanners(): Promise<BannerView[]> {
-    const rows = await this.db().banner.findMany({
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    });
-    return rows.map((row) => this.banner(row));
+    return this.db()
+      .select()
+      .from(banner)
+      .orderBy(asc(banner.sortOrder), desc(banner.createdAt));
   }
 
   async listActiveBanners(now: Date): Promise<BannerView[]> {
-    const rows = await this.db().banner.findMany({
-      where: {
-        isActive: true,
-        AND: [
-          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
-          { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
-        ],
-      },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    });
-    return rows.map((row) => this.banner(row));
+    return this.db()
+      .select()
+      .from(banner)
+      .where(
+        and(
+          eq(banner.isActive, true),
+          or(isNull(banner.startsAt), lte(banner.startsAt, now)),
+          or(isNull(banner.endsAt), gte(banner.endsAt, now)),
+        ),
+      )
+      .orderBy(asc(banner.sortOrder), desc(banner.createdAt));
   }
 
   async createBanner(input: BannerInput): Promise<string> {
-    const created = await this.db().banner.create({
-      data: input,
-      select: { id: true },
-    });
-    return created.id;
+    const [created] = await this.db()
+      .insert(banner)
+      .values(input)
+      .returning({ id: banner.id });
+    return created!.id;
   }
 
   async updateBanner(id: string, input: BannerInput): Promise<void> {
-    await this.db().banner.update({ where: { id }, data: input });
+    await this.db().update(banner).set(input).where(eq(banner.id, id));
   }
 
   async deleteBanner(id: string): Promise<void> {
-    await this.db().banner.delete({ where: { id } });
-  }
-
-  private page(row: {
-    id: string;
-    title: string;
-    slug: string;
-    content: string;
-    isPublished: boolean;
-    seoTitle: string | null;
-    seoDescription: string | null;
-    updatedAt: Date;
-  }): PageView {
-    return { ...row };
+    await this.db().delete(banner).where(eq(banner.id, id));
   }
 
   async listPages(): Promise<PageView[]> {
-    const rows = await this.db().page.findMany({ orderBy: { title: "asc" } });
-    return rows.map((row) => this.page(row));
+    return this.db().select().from(page).orderBy(asc(page.title));
   }
 
   async findPublishedPage(slug: string): Promise<PageView | null> {
-    const row = await this.db().page.findFirst({
-      where: { slug, isPublished: true },
-    });
-    return row ? this.page(row) : null;
+    const [row] = await this.db()
+      .select()
+      .from(page)
+      .where(and(eq(page.slug, slug), eq(page.isPublished, true)))
+      .limit(1);
+    return row ?? null;
   }
 
   listPublishedPageSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
-    return this.db().page.findMany({
-      where: { isPublished: true },
-      select: { slug: true, updatedAt: true },
-    });
+    return this.db()
+      .select({ slug: page.slug, updatedAt: page.updatedAt })
+      .from(page)
+      .where(eq(page.isPublished, true));
   }
 
   async pageSlugTaken(slug: string, excludeId?: string): Promise<boolean> {
-    const found = await this.db().page.findFirst({
-      where: { slug, ...(excludeId ? { id: { not: excludeId } } : {}) },
-      select: { id: true },
-    });
-    return found !== null;
+    const [found] = await this.db()
+      .select({ id: page.id })
+      .from(page)
+      .where(
+        and(
+          eq(page.slug, slug),
+          excludeId ? ne(page.id, excludeId) : undefined,
+        ),
+      )
+      .limit(1);
+    return found !== undefined;
   }
 
   async findPage(id: string): Promise<PageView | null> {
-    const row = await this.db().page.findUnique({ where: { id } });
-    return row ? this.page(row) : null;
+    const [row] = await this.db()
+      .select()
+      .from(page)
+      .where(eq(page.id, id))
+      .limit(1);
+    return row ?? null;
   }
 
   async createPage(input: PageInput, slug: string): Promise<string> {
-    const created = await this.db().page.create({
-      data: { ...input, slug },
-      select: { id: true },
-    });
-    return created.id;
+    const [created] = await this.db()
+      .insert(page)
+      .values({ ...input, slug })
+      .returning({ id: page.id });
+    return created!.id;
   }
 
   async updatePage(id: string, input: PageInput, slug: string): Promise<void> {
-    await this.db().page.update({ where: { id }, data: { ...input, slug } });
+    await this.db()
+      .update(page)
+      .set({ ...input, slug })
+      .where(eq(page.id, id));
   }
 
   async deletePage(id: string): Promise<void> {
-    await this.db().page.delete({ where: { id } });
+    await this.db().delete(page).where(eq(page.id, id));
   }
 
   async getMenu(key: MenuKey): Promise<MenuItemView[]> {
-    const menu = await this.db().menu.findUnique({
-      where: { key },
-      include: { items: { orderBy: { position: "asc" } } },
+    const found = await this.db().query.menu.findFirst({
+      where: eq(menu.key, key),
+      with: { items: { orderBy: asc(menuItem.position) } },
     });
     return (
-      menu?.items.map((item) => ({ label: item.label, url: item.url })) ?? []
+      found?.items.map((item) => ({ label: item.label, url: item.url })) ?? []
     );
   }
 
   async replaceMenu(key: MenuKey, items: MenuItemView[]): Promise<void> {
     const db = this.db();
-    const menu = await db.menu.upsert({
-      where: { key },
-      update: {},
-      create: { key },
-      select: { id: true },
+    await db.insert(menu).values({ key }).onConflictDoNothing();
+    const found = await db.query.menu.findFirst({
+      where: eq(menu.key, key),
+      columns: { id: true },
     });
-    // Silme + ekleme önceden bilinir: dizi formu (interaktif transaction yok).
-    await db.$transaction([
-      db.menuItem.deleteMany({ where: { menuId: menu.id } }),
-      ...(items.length > 0
-        ? [
-            db.menuItem.createMany({
-              data: items.map((item, position) => ({
-                menuId: menu.id,
-                label: item.label,
-                url: item.url,
-                position,
-              })),
-            }),
-          ]
-        : []),
+    const menuId = found!.id;
+    // Silme + ekleme tek batch'te (satır başına ekleme: D1 sorgu başına 100 parametre sınırı).
+    await runBatch(db, [
+      db.delete(menuItem).where(eq(menuItem.menuId, menuId)),
+      ...items.map((item, position) =>
+        db.insert(menuItem).values({
+          id: newId(),
+          menuId,
+          label: item.label,
+          url: item.url,
+          position,
+        }),
+      ),
     ]);
   }
 }

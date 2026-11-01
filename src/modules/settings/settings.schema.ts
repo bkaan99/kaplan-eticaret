@@ -13,11 +13,7 @@ export const contactSettingsSchema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v ? v : null)),
-  email: z
-    .string()
-    .trim()
-    .email("Geçerli bir e-posta adresi girin")
-    .max(100),
+  email: z.string().trim().email("Geçerli bir e-posta adresi girin").max(100),
   address: z
     .string()
     .trim()
