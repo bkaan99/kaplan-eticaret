@@ -1,19 +1,15 @@
 import "server-only";
+import { createDb, type Db } from "@/db";
 import { getCloudflareEnv } from "./cloudflare";
-import {
-  createPrismaClientFromD1,
-  type PrismaClient,
-} from "./prisma-client";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const globalForDb = globalThis as unknown as { db?: Db };
 
 /**
- * Uygulama genelinde tek PrismaClient — yalnızca D1.
+ * Uygulama genelinde tek Drizzle istemcisi — yalnızca D1.
  * Yerel `next dev` OpenNext `initOpenNextCloudflareForDev` ile D1 bağlar.
- * CLI seed/admin: `prisma-client-node` (Workers bundle'a girmez).
  */
-export function getDb(): PrismaClient {
-  if (globalForPrisma.prisma) return globalForPrisma.prisma;
+export function getDb(): Db {
+  if (globalForDb.db) return globalForDb.db;
 
   const cf = getCloudflareEnv();
   if (!cf?.DB) {
@@ -22,6 +18,8 @@ export function getDb(): PrismaClient {
     );
   }
 
-  globalForPrisma.prisma = createPrismaClientFromD1(cf.DB);
-  return globalForPrisma.prisma;
+  globalForDb.db = createDb(cf.DB);
+  return globalForDb.db;
 }
+
+export type { Db };
