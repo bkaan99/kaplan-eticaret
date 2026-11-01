@@ -237,3 +237,28 @@ Faz 6 ve 7, Faz 5 sonrası paralel yürütülebilir. Faz 8’in iskeleti spike s
 3. Faz 2 para tasarımını kilitle (`money` API taslağı)
 
 Bu belge, uygulama ilerledikçe güncellenir; Faz 0 ORM kararı buraya işlenir.
+
+---
+
+## Faz 0 kararı: Drizzle + D1 (tamamlandı)
+
+**Karar:** Prisma kaldırıldı, ORM olarak **Drizzle + D1** kullanılıyor.
+
+**Neden:** Prisma'nın WASM sorgu derleyicisi Turbopack + OpenNext paketlemesinde projedeki tüm `.wasm` dosyalarını
+(geliştirme araçlarındaki `playwright-core` dahil) sunucu paketine alıyor ve `wrangler deploy` çöküyordu.
+Drizzle ile `.open-next` 748 MB → 66 MB, Worker paketi ~14 MB.
+
+**Nasıl çalışıyor:**
+- Şema: `src/db/schema.ts` (tek kaynak, elle sürdürülür). Migration'lar `db/migrations/NNNN_*.sql` (wrangler D1).
+- `Decimal` (`decimal.js`) ve `Date` için özel kolon tipleri (`src/db/types.ts`): servis katmanı değişmedi.
+- D1'de interaktif transaction yok: çok adımlı yazmalar `runBatch(db, [...])` ile tek atomik batch'te çalışır;
+  kimlikler uygulamada üretilir. Stok için koşullu `UPDATE` (yarış testi geçiyor).
+- D1 sorgu başına 100 bağlı parametre sınırı: uzun `IN (...)` listeleri `chunk()` ile, toplu eklemeler satır başına
+  ekleme ile yapılır.
+- Testler: bellek içi D1 (`tests/support/test-db.ts`, `getPlatformProxy`) üzerinde, canlıdaki ile aynı SQLite çalışma zamanı.
+- Betikler: `npm run db:migrate-local`, `db:seed`, `create-admin` (hepsi `--remote` destekler).
+
+**Bilinen sınırlar:**
+- `cacheComponents` / `partialPrefetching` (PPR) kapalı: OpenNext üretim Worker'ında sayfalar 500 dönüyordu.
+- Parola hash'i saf JS argon2id: ~1 sn CPU/işlem (Workers ücretli planda sorun değil; ücretsiz planda çalışmaz).
+- E-posta kuyruğu tüketicisi hâlâ bir `TODO` (e-postalar gönderilmez).
