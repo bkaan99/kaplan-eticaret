@@ -1,5 +1,5 @@
-import type { Prisma } from "../../../../generated/prisma/client";
-import type { PrismaClient } from "@/shared/prisma-client";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { auditLog, containsText, countWhere, type Db } from "@/db";
 
 export interface AuditQuery {
   action?: string;
@@ -32,33 +32,31 @@ export interface AuditPage {
 
 /** Denetim günlüğü okuma modeli: yalnızca sorgular, yazma `AuditLogger`dadır. */
 export class AuditQueryService {
-  constructor(private readonly db: () => PrismaClient) {}
+  constructor(private readonly db: () => Db) {}
 
   async search(query: AuditQuery): Promise<AuditPage> {
-    const where: Prisma.AuditLogWhereInput = {
-      ...(query.action
-        ? { action: { contains: query.action } }
-        : {}),
-      ...(query.entityType ? { entityType: query.entityType } : {}),
-      ...(query.actorId ? { actorId: query.actorId } : {}),
-    };
+    const db = this.db();
+    const where = and(
+      query.action ? containsText(auditLog.action, query.action) : undefined,
+      query.entityType ? eq(auditLog.entityType, query.entityType) : undefined,
+      query.actorId ? eq(auditLog.actorId, query.actorId) : undefined,
+    );
 
     const [total, rows, types] = await Promise.all([
-      this.db().auditLog.count({ where }),
-      this.db().auditLog.findMany({
+      countWhere(db, auditLog, where),
+      db.query.auditLog.findMany({
         where,
-        orderBy: { createdAt: "desc" },
-        skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize,
-        include: {
-          actor: { select: { firstName: true, lastName: true, email: true } },
+        orderBy: desc(auditLog.createdAt),
+        offset: (query.page - 1) * query.pageSize,
+        limit: query.pageSize,
+        with: {
+          actor: { columns: { firstName: true, lastName: true, email: true } },
         },
       }),
-      this.db().auditLog.findMany({
-        distinct: ["entityType"],
-        select: { entityType: true },
-        orderBy: { entityType: "asc" },
-      }),
+      db
+        .selectDistinct({ entityType: auditLog.entityType })
+        .from(auditLog)
+        .orderBy(asc(auditLog.entityType)),
     ]);
 
     return {

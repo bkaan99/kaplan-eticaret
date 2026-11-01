@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  MAX_INGREDIENTS,
-  MAX_NOTE_LENGTH,
-} from "./custom-pickle.types";
+import { MAX_INGREDIENTS, MAX_NOTE_LENGTH } from "./custom-pickle.types";
 
 /** Müşterinin oluşturduğu bidon; malzemelerin ve seçeneklerin geçerliliğini servis ayrıca denetler. */
 export const customPickleInputSchema = z.object({
@@ -74,7 +71,9 @@ export const pickleOptionsConfigSchema = z.object({
     .min(1, "En az bir acılık seçeneği olmalıdır"),
 });
 
-export type PickleOptionsConfigInput = z.infer<typeof pickleOptionsConfigSchema>;
+export type PickleOptionsConfigInput = z.infer<
+  typeof pickleOptionsConfigSchema
+>;
 
 /** Yönetim panelindeki malzeme formu. */
 export const ingredientInputSchema = z.object({

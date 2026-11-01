@@ -75,3 +75,13 @@ export async function countWhere(
   const [row] = await db.select({ n: count() }).from(table).where(where);
   return row!.n;
 }
+
+/** D1 sorgu başına en fazla 100 bağlı parametre kabul eder; uzun `IN (...)` listeleri bu boyutta parçalanır. */
+export const D1_MAX_IN = 90;
+
+export function chunk<T>(items: readonly T[], size = D1_MAX_IN): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size)
+    out.push(items.slice(i, i + size));
+  return out;
+}

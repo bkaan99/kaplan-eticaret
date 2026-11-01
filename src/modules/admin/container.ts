@@ -6,17 +6,17 @@ import { D1ProductAdminRepository } from "./catalog/product-admin.repository";
 import { ProductAdminService } from "./catalog/product-admin.service";
 import { D1TaxonomyRepository } from "./taxonomy/taxonomy.repository";
 import { TaxonomyService } from "./taxonomy/taxonomy.service";
-import { PrismaPromotionRepository } from "./promotions/promotion.repository";
+import { D1PromotionRepository } from "./promotions/promotion.repository";
 import { PromotionService } from "./promotions/promotion.service";
 import { AuditQueryService } from "./audit/audit-query";
 import { CustomerQueryService } from "./customers/customer-query";
 import { D1PriceListRepository } from "./pricing/price-list.repository";
 import { PriceListService } from "./pricing/price-list.service";
-import { PrismaAdminOrderRepository } from "./orders/admin-order.repository";
+import { D1AdminOrderRepository } from "./orders/admin-order.repository";
 import { AdminOrderService } from "./orders/admin-order.service";
-import { PrismaBulkUpdateRepository } from "./import/bulk-update.repository";
+import { D1BulkUpdateRepository } from "./import/bulk-update.repository";
 import { BulkUpdateService } from "./import/bulk-update.service";
-import { PrismaImportRepository } from "./import/import.repository";
+import { D1ImportRepository } from "./import/import.repository";
 import { ProductImportService } from "./import/product-import.service";
 import { getAccountService } from "../account/container";
 import { D1StaffRepository } from "./staff/staff.repository";
@@ -24,7 +24,7 @@ import { StaffService } from "./staff/staff.service";
 
 export function getAdminOrderService(): AdminOrderService {
   return new AdminOrderService(
-    new PrismaAdminOrderRepository(getDb),
+    new D1AdminOrderRepository(getDb),
     getOrderService(),
     getEventBus(),
     getAuditLogger(),
@@ -41,15 +41,12 @@ export function getProductAdminService(): ProductAdminService {
 }
 
 export function getTaxonomyService(): TaxonomyService {
-  return new TaxonomyService(
-    new D1TaxonomyRepository(getDb),
-    getAuditLogger(),
-  );
+  return new TaxonomyService(new D1TaxonomyRepository(getDb), getAuditLogger());
 }
 
 export function getPromotionService(): PromotionService {
   return new PromotionService(
-    new PrismaPromotionRepository(getDb),
+    new D1PromotionRepository(getDb),
     getAuditLogger(),
   );
 }
@@ -71,7 +68,7 @@ export function getPriceListService(): PriceListService {
 
 export function getBulkUpdateService(): BulkUpdateService {
   return new BulkUpdateService(
-    new PrismaBulkUpdateRepository(getDb),
+    new D1BulkUpdateRepository(getDb),
     getEventBus(),
     getAuditLogger(),
   );
@@ -80,7 +77,7 @@ export function getBulkUpdateService(): BulkUpdateService {
 export function getProductImportService(): ProductImportService {
   return new ProductImportService(
     getProductAdminService(),
-    new PrismaImportRepository(getDb),
+    new D1ImportRepository(getDb),
   );
 }
 

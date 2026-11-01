@@ -1,4 +1,4 @@
-import type { OrderStatus } from "../../../../generated/prisma/client";
+import type { OrderStatus } from "@/db";
 
 /** Personelin uygulayabildiği sipariş durumu geçişleri. */
 const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {

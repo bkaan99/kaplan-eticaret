@@ -1,22 +1,29 @@
 import { toCsv } from "@/shared/csv";
-import type { PrismaClient } from "@/shared/prisma-client";
+import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import {
+  brand,
+  category,
+  order as orderTable,
+  product,
+  productVariant,
+  type Db,
+} from "@/db";
 
 const MAX_ROWS = 20_000;
 
 export class ExportService {
-  constructor(private readonly db: () => PrismaClient) {}
+  constructor(private readonly db: () => Db) {}
 
   /** Siparişleri satır bazında (her ürün bir satır) CSV olarak döndürür. */
   async ordersCsv(range: { from?: Date; to?: Date } = {}): Promise<string> {
-    const orders = await this.db().order.findMany({
-      where: {
-        ...(range.from || range.to
-          ? { createdAt: { gte: range.from, lte: range.to } }
-          : {}),
-      },
-      orderBy: { createdAt: "desc" },
-      take: MAX_ROWS,
-      include: { items: true },
+    const orders = await this.db().query.order.findMany({
+      where: and(
+        range.from ? gte(orderTable.createdAt, range.from) : undefined,
+        range.to ? lte(orderTable.createdAt, range.to) : undefined,
+      ),
+      orderBy: desc(orderTable.createdAt),
+      limit: MAX_ROWS,
+      with: { items: true },
     });
 
     const rows: unknown[][] = [];
@@ -74,19 +81,33 @@ export class ExportService {
 
   /** Ürünleri varyant bazında CSV olarak döndürür (fiyat/stok kontrolü için). */
   async productsCsv(): Promise<string> {
-    const variants = await this.db().productVariant.findMany({
-      orderBy: [{ product: { name: "asc" } }, { sku: "asc" }],
-      take: MAX_ROWS,
-      include: {
-        product: {
-          include: {
-            category: { select: { name: true } },
-            brand: { select: { name: true } },
-          },
-        },
-        optionValues: { include: { optionValue: true } },
-      },
-    });
+    const variants = await this.db()
+      .select({
+        productName: product.name,
+        productStatus: product.status,
+        categoryName: category.name,
+        brandName: brand.name,
+        taxRate: product.taxRate,
+        sku: productVariant.sku,
+        barcode: productVariant.barcode,
+        price: productVariant.price,
+        compareAtPrice: productVariant.compareAtPrice,
+        stockQuantity: productVariant.stockQuantity,
+        reservedQuantity: productVariant.reservedQuantity,
+        isActive: productVariant.isActive,
+        optionLabel: sql<string | null>`(
+          SELECT group_concat("ProductOptionValue"."value", ' / ')
+          FROM "VariantOptionValue"
+          INNER JOIN "ProductOptionValue" ON "ProductOptionValue"."id" = "VariantOptionValue"."optionValueId"
+          WHERE "VariantOptionValue"."variantId" = ${productVariant.id}
+        )`,
+      })
+      .from(productVariant)
+      .innerJoin(product, eq(product.id, productVariant.productId))
+      .innerJoin(category, eq(category.id, product.categoryId))
+      .leftJoin(brand, eq(brand.id, product.brandId))
+      .orderBy(asc(product.name), asc(productVariant.sku))
+      .limit(MAX_ROWS);
 
     return toCsv(
       [
@@ -105,16 +126,16 @@ export class ExportService {
         "Aktif",
       ],
       variants.map((variant) => [
-        variant.product.name,
-        variant.product.status,
-        variant.product.category.name,
-        variant.product.brand?.name ?? "",
+        variant.productName,
+        variant.productStatus,
+        variant.categoryName,
+        variant.brandName ?? "",
         variant.sku,
         variant.barcode ?? "",
-        variant.optionValues.map((link) => link.optionValue.value).join(" / "),
+        variant.optionLabel ?? "",
         variant.price.toFixed(2),
         variant.compareAtPrice?.toFixed(2) ?? "",
-        variant.product.taxRate.toFixed(2),
+        variant.taxRate.toFixed(2),
         variant.stockQuantity,
         variant.reservedQuantity,
         variant.isActive ? "Evet" : "Hayır",

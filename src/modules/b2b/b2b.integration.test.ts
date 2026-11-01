@@ -75,14 +75,12 @@ describe("B2B fiyatlandırma ve bayi (veritabanı)", () => {
       .insert(variantGroupPrice)
       .values({ variantId: variantA, groupId, price: d("70.00") });
     // Genel (herkese) kademe: 10 adetten itibaren 150
-    await db
-      .insert(tierPrice)
-      .values({
-        variantId: variantB,
-        groupId: null,
-        minQuantity: 10,
-        price: d("150.00"),
-      });
+    await db.insert(tierPrice).values({
+      variantId: variantB,
+      groupId: null,
+      minQuantity: 10,
+      price: d("150.00"),
+    });
   });
 
   afterAll(async () => {

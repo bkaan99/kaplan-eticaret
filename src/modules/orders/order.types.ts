@@ -1,8 +1,4 @@
-import type {
-  InvoiceType,
-  OrderStatus,
-  PaymentStatus,
-} from "../../../generated/prisma/client";
+import type { InvoiceType, OrderStatus, PaymentStatus } from "@/db";
 
 export type { InvoiceType, OrderStatus, PaymentStatus };
 

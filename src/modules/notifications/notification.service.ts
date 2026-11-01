@@ -13,10 +13,7 @@ import {
   QueueNotificationDispatcher,
   type NotificationDispatcher,
 } from "./notification-dispatcher";
-import type {
-  BankAccountInfo,
-  EmailContext,
-} from "./templates/order-emails";
+import type { BankAccountInfo, EmailContext } from "./templates/order-emails";
 
 export { JOB_SEND_EMAIL };
 

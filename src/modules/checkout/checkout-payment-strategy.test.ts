@@ -85,7 +85,11 @@ describe("CheckoutPaymentStrategy", () => {
     it("havale hesabı tanımlı değilse hata fırlatır", async () => {
       await expect(
         strategy.validate({
-          dealer: { status: "APPROVED", creditLimit: "1000", minOrderAmount: null },
+          dealer: {
+            status: "APPROVED",
+            creditLimit: "1000",
+            minOrderAmount: null,
+          },
           userId: "u1",
           grandTotal: "100.00",
           settings: { ...defaultSettings, bankTransferConfigured: false },
@@ -95,7 +99,9 @@ describe("CheckoutPaymentStrategy", () => {
 
     it("tutma saatini dakikaya çevirir ve bank_transfer sağlayıcısı döner", () => {
       expect(strategy.getReservationMinutes(defaultSettings)).toBe(48 * 60);
-      expect(strategy.getPaymentProvider(defaultSettings)).toBe("bank_transfer");
+      expect(strategy.getPaymentProvider(defaultSettings)).toBe(
+        "bank_transfer",
+      );
     });
 
     it("pending sipariş oluşturur ve order.placed olayı yayınlar", async () => {
@@ -115,7 +121,11 @@ describe("CheckoutPaymentStrategy", () => {
       const created = await strategy.placeOrder({
         orders,
         newOrder: {} as any,
-        dealer: { status: "APPROVED", creditLimit: "1000", minOrderAmount: null },
+        dealer: {
+          status: "APPROVED",
+          creditLimit: "1000",
+          minOrderAmount: null,
+        },
         settings: defaultSettings,
         now: () => new Date(),
       });
@@ -135,7 +145,11 @@ describe("CheckoutPaymentStrategy", () => {
     it("kredi limiti tanımlı değilse veya yetersizse reddeder", async () => {
       await expect(
         strategy.validate({
-          dealer: { status: "APPROVED", creditLimit: null, minOrderAmount: null },
+          dealer: {
+            status: "APPROVED",
+            creditLimit: null,
+            minOrderAmount: null,
+          },
           userId: "u1",
           grandTotal: "100.00",
           settings: defaultSettings,
@@ -144,7 +158,11 @@ describe("CheckoutPaymentStrategy", () => {
 
       await expect(
         strategy.validate({
-          dealer: { status: "APPROVED", creditLimit: "50.00", minOrderAmount: null },
+          dealer: {
+            status: "APPROVED",
+            creditLimit: "50.00",
+            minOrderAmount: null,
+          },
           userId: "u1",
           grandTotal: "100.00",
           settings: defaultSettings,
@@ -174,7 +192,11 @@ describe("CheckoutPaymentStrategy", () => {
       const created = await strategy.placeOrder({
         orders,
         newOrder: {} as any,
-        dealer: { status: "APPROVED", creditLimit: "5000.00", minOrderAmount: null },
+        dealer: {
+          status: "APPROVED",
+          creditLimit: "5000.00",
+          minOrderAmount: null,
+        },
         settings: defaultSettings,
         now: () => now,
       });
@@ -202,7 +224,9 @@ describe("CheckoutPaymentStrategy", () => {
       expect(registry.get("CARD").method).toBe("CARD");
       expect(registry.get("BANK_TRANSFER").method).toBe("BANK_TRANSFER");
       expect(registry.get("DEFERRED").method).toBe("DEFERRED");
-      expect(() => registry.get("INVALID" as any)).toThrow("Geçersiz ödeme yöntemi");
+      expect(() => registry.get("INVALID" as any)).toThrow(
+        "Geçersiz ödeme yöntemi",
+      );
     });
   });
 });

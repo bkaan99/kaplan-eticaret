@@ -37,7 +37,7 @@ describe("D1CheckoutRepository", () => {
     };
 
     const repo = new D1CheckoutRepository(
-      () => ({} as any),
+      () => ({}) as any,
       mockCartRepo as CartRepository,
     );
 

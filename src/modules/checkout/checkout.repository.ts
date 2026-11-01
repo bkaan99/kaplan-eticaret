@@ -93,7 +93,11 @@ export class D1CheckoutRepository implements CheckoutRepository {
   }
 
   async findCoupon(code: string): Promise<CouponRecord | null> {
-    const [row] = await this.db().select().from(coupon).where(eq(coupon.code, code)).limit(1);
+    const [row] = await this.db()
+      .select()
+      .from(coupon)
+      .where(eq(coupon.code, code))
+      .limit(1);
     return row ?? null;
   }
 

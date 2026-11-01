@@ -1,4 +1,5 @@
-import type { PrismaClient } from "@/shared/prisma-client";
+import { desc, eq } from "drizzle-orm";
+import { campaign, coupon, dec, type Db } from "@/db";
 
 export interface CouponView {
   id: string;
@@ -62,13 +63,14 @@ export interface PromotionRepository {
   deleteCampaign(id: string): Promise<void>;
 }
 
-export class PrismaPromotionRepository implements PromotionRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+export class D1PromotionRepository implements PromotionRepository {
+  constructor(private readonly db: () => Db) {}
 
   async listCoupons(): Promise<CouponView[]> {
-    const rows = await this.db().coupon.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const rows = await this.db()
+      .select()
+      .from(coupon)
+      .orderBy(desc(coupon.createdAt));
     return rows.map((row) => ({
       id: row.id,
       code: row.code,
@@ -84,40 +86,56 @@ export class PrismaPromotionRepository implements PromotionRepository {
     }));
   }
 
-  findCouponByCode(code: string) {
-    return this.db().coupon.findUnique({
-      where: { code },
-      select: { id: true },
-    });
+  async findCouponByCode(code: string) {
+    const [row] = await this.db()
+      .select({ id: coupon.id })
+      .from(coupon)
+      .where(eq(coupon.code, code))
+      .limit(1);
+    return row ?? null;
   }
 
-  findCoupon(id: string) {
-    return this.db().coupon.findUnique({
-      where: { id },
-      select: { id: true, code: true, usedCount: true },
-    });
+  async findCoupon(id: string) {
+    const [row] = await this.db()
+      .select({ id: coupon.id, code: coupon.code, usedCount: coupon.usedCount })
+      .from(coupon)
+      .where(eq(coupon.id, id))
+      .limit(1);
+    return row ?? null;
+  }
+
+  private couponValues(data: CouponData) {
+    return {
+      ...data,
+      value: dec(data.value),
+      minSubtotal: dec(data.minSubtotal),
+    };
   }
 
   async createCoupon(data: CouponData): Promise<string> {
-    const created = await this.db().coupon.create({
-      data,
-      select: { id: true },
-    });
-    return created.id;
+    const [created] = await this.db()
+      .insert(coupon)
+      .values(this.couponValues(data))
+      .returning({ id: coupon.id });
+    return created!.id;
   }
 
   async updateCoupon(id: string, data: CouponData): Promise<void> {
-    await this.db().coupon.update({ where: { id }, data });
+    await this.db()
+      .update(coupon)
+      .set(this.couponValues(data))
+      .where(eq(coupon.id, id));
   }
 
   async deleteCoupon(id: string): Promise<void> {
-    await this.db().coupon.delete({ where: { id } });
+    await this.db().delete(coupon).where(eq(coupon.id, id));
   }
 
   async listCampaigns(): Promise<CampaignView[]> {
-    const rows = await this.db().campaign.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const rows = await this.db()
+      .select()
+      .from(campaign)
+      .orderBy(desc(campaign.createdAt));
     return rows.map((row) => ({
       id: row.id,
       name: row.name,
@@ -131,18 +149,18 @@ export class PrismaPromotionRepository implements PromotionRepository {
   }
 
   async createCampaign(data: CampaignData): Promise<string> {
-    const created = await this.db().campaign.create({
-      data,
-      select: { id: true },
-    });
-    return created.id;
+    const [created] = await this.db()
+      .insert(campaign)
+      .values(data)
+      .returning({ id: campaign.id });
+    return created!.id;
   }
 
   async updateCampaign(id: string, data: CampaignData): Promise<void> {
-    await this.db().campaign.update({ where: { id }, data });
+    await this.db().update(campaign).set(data).where(eq(campaign.id, id));
   }
 
   async deleteCampaign(id: string): Promise<void> {
-    await this.db().campaign.delete({ where: { id } });
+    await this.db().delete(campaign).where(eq(campaign.id, id));
   }
 }

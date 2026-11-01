@@ -1,5 +1,13 @@
-import type { Prisma } from "../../../../generated/prisma/client";
-import type { PrismaClient } from "@/shared/prisma-client";
+import Decimal from "decimal.js";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import {
+  chunk,
+  containsText,
+  countWhere,
+  order,
+  user as userTable,
+  type Db,
+} from "@/db";
 
 export interface CustomerRow {
   id: string;
@@ -36,36 +44,36 @@ const PAID_STATUSES = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
 
 /** Müşteri okuma modeli (yönetim panelinde yalnızca görüntüleme). */
 export class CustomerQueryService {
-  constructor(private readonly db: () => PrismaClient) {}
+  constructor(private readonly db: () => Db) {}
 
   async search(query: {
     search?: string;
     page: number;
     pageSize: number;
   }): Promise<CustomerPage> {
+    const db = this.db();
     const term = query.search?.trim();
-    const where: Prisma.UserWhereInput = {
-      type: "CUSTOMER",
-      anonymizedAt: null,
-      ...(term
-        ? {
-            OR: [
-              { email: { contains: term } },
-              { firstName: { contains: term } },
-              { lastName: { contains: term } },
-            ],
-          }
-        : {}),
-    };
+    const where = and(
+      eq(userTable.type, "CUSTOMER"),
+      isNull(userTable.anonymizedAt),
+      term
+        ? or(
+            containsText(userTable.email, term),
+            containsText(userTable.firstName, term),
+            containsText(userTable.lastName, term),
+          )
+        : undefined,
+    );
 
     const [total, users] = await Promise.all([
-      this.db().user.count({ where }),
-      this.db().user.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize,
-      }),
+      countWhere(db, userTable, where),
+      db
+        .select()
+        .from(userTable)
+        .where(where)
+        .orderBy(desc(userTable.createdAt))
+        .offset((query.page - 1) * query.pageSize)
+        .limit(query.pageSize),
     ]);
 
     const stats = await this.statsFor(users.map((user) => user.id));
@@ -89,11 +97,11 @@ export class CustomerQueryService {
   }
 
   async get(id: string): Promise<CustomerDetail | null> {
-    const user = await this.db().user.findFirst({
-      where: { id, type: "CUSTOMER" },
-      include: {
-        customer: { include: { group: { select: { name: true } } } },
-        orders: { orderBy: { createdAt: "desc" }, take: 50 },
+    const user = await this.db().query.user.findFirst({
+      where: and(eq(userTable.id, id), eq(userTable.type, "CUSTOMER")),
+      with: {
+        customer: { with: { group: { columns: { name: true } } } },
+        orders: { orderBy: desc(order.createdAt), limit: 50 },
       },
     });
     if (!user) return null;
@@ -125,29 +133,39 @@ export class CustomerQueryService {
   private async statsFor(
     userIds: string[],
   ): Promise<Map<string, { count: number; total: string }>> {
-    if (userIds.length === 0) return new Map();
+    const db = this.db();
+    const totals = new Map<string, { count: number; total: Decimal }>();
 
-    const grouped = await this.db().order.groupBy({
-      by: ["userId"],
-      where: { userId: { in: userIds }, status: { in: [...PAID_STATUSES] } },
-      _count: { _all: true },
-      _sum: { grandTotal: true },
-    });
+    // Toplama JS'te Decimal ile yapılır (SQL SUM kayan nokta hatası üretebilir);
+    // kimlik listesi D1 parametre sınırı için parçalanır.
+    for (const ids of chunk(userIds)) {
+      const rows = await db
+        .select({ userId: order.userId, grandTotal: order.grandTotal })
+        .from(order)
+        .where(
+          and(
+            inArray(order.userId, ids),
+            inArray(order.status, [...PAID_STATUSES]),
+          ),
+        );
+      for (const row of rows) {
+        if (!row.userId) continue;
+        const current = totals.get(row.userId) ?? {
+          count: 0,
+          total: new Decimal(0),
+        };
+        totals.set(row.userId, {
+          count: current.count + 1,
+          total: current.total.plus(row.grandTotal),
+        });
+      }
+    }
 
     return new Map(
-      grouped.flatMap((row) =>
-        row.userId
-          ? [
-              [
-                row.userId,
-                {
-                  count: row._count._all,
-                  total: (row._sum.grandTotal ?? 0).toString(),
-                },
-              ] as const,
-            ]
-          : [],
-      ),
+      [...totals].map(([id, value]) => [
+        id,
+        { count: value.count, total: value.total.toString() },
+      ]),
     );
   }
 }

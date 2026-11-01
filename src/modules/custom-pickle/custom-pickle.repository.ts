@@ -220,7 +220,10 @@ export class PrismaCustomPickleRepository implements CustomPickleRepository {
     await this.db().setting.upsert({
       where: { key: "custom_pickle_options" },
       update: { value: config as unknown as object },
-      create: { key: "custom_pickle_options", value: config as unknown as object },
+      create: {
+        key: "custom_pickle_options",
+        value: config as unknown as object,
+      },
     });
   }
 }

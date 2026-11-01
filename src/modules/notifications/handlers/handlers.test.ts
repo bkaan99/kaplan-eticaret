@@ -14,14 +14,21 @@ describe("Notification Handlers", () => {
       siteName: "Test Mağaza",
     });
 
-    await handler.sendEmailVerification("user@test.com", "https://site.test/verify");
+    await handler.sendEmailVerification(
+      "user@test.com",
+      "https://site.test/verify",
+    );
     await handler.sendPasswordReset("user@test.com", "https://site.test/reset");
 
     expect(dispatch).toHaveBeenCalledTimes(2);
     expect(dispatch.mock.calls[0]?.[0]).toBe("user@test.com");
-    expect(dispatch.mock.calls[0]?.[1].text).toContain("https://site.test/verify");
+    expect(dispatch.mock.calls[0]?.[1].text).toContain(
+      "https://site.test/verify",
+    );
     expect(dispatch.mock.calls[1]?.[0]).toBe("user@test.com");
-    expect(dispatch.mock.calls[1]?.[1].text).toContain("https://site.test/reset");
+    expect(dispatch.mock.calls[1]?.[1].text).toContain(
+      "https://site.test/reset",
+    );
   });
 
   it("DealerNotificationHandler yönetici ve bayi bildirimlerini dağıtır", async () => {
@@ -92,4 +99,3 @@ describe("Notification Handlers", () => {
     expect(orders.findById).toHaveBeenCalledTimes(4);
   });
 });
-

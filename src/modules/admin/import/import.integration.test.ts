@@ -1,28 +1,31 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { InMemoryEventBus } from "@/shared/events/event-bus";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
+import { asc, eq, like } from "drizzle-orm";
+import { product as productTable, productVariant, type Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../../tests/support/test-db";
+import { makeCategory } from "../../../../tests/support/factories";
 import { D1ProductAdminRepository } from "../catalog/product-admin.repository";
 import { ProductAdminService } from "../catalog/product-admin.service";
-import { PrismaBulkUpdateRepository } from "./bulk-update.repository";
+import { D1BulkUpdateRepository } from "./bulk-update.repository";
 import { BulkUpdateService } from "./bulk-update.service";
-import { PrismaImportRepository } from "./import.repository";
+import { D1ImportRepository } from "./import.repository";
 import { ProductImportService } from "./product-import.service";
 
 describe("ürün içe aktarma ve toplu güncelleme (veritabanı)", () => {
   const tag = randomUUID().slice(0, 8).toUpperCase();
   const categorySlug = `import-${tag.toLowerCase()}`;
   const actor = { userId: null as unknown as string, ip: null };
-  let db: PrismaClient;
+  let t: TestDb;
+  let db: Db;
   let importer: ProductImportService;
   let bulk: BulkUpdateService;
   const audit = { log: async () => {}, purgeOlderThan: async () => 0 };
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    await db.category.create({
-      data: { name: `Import ${tag}`, slug: categorySlug },
-    });
+    t = await createTestDb();
+    db = t.db;
+    await makeCategory(db, { name: `Import ${tag}`, slug: categorySlug });
     const events = new InMemoryEventBus();
     importer = new ProductImportService(
       new ProductAdminService(
@@ -30,17 +33,17 @@ describe("ürün içe aktarma ve toplu güncelleme (veritabanı)", () => {
         events,
         audit,
       ),
-      new PrismaImportRepository(() => db),
+      new D1ImportRepository(() => db),
     );
     bulk = new BulkUpdateService(
-      new PrismaBulkUpdateRepository(() => db),
+      new D1BulkUpdateRepository(() => db),
       events,
       audit,
     );
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   const csv = [
@@ -53,9 +56,9 @@ describe("ürün içe aktarma ve toplu güncelleme (veritabanı)", () => {
     const first = await importer.run(csv, { dryRun: false }, actor);
     expect(first).toMatchObject({ created: 1, issues: [] });
 
-    const product = await db.product.findFirst({
-      where: { name: `Import Ürünü ${tag}` },
-      include: { variants: true, options: { include: { values: true } } },
+    const product = await db.query.product.findFirst({
+      where: eq(productTable.name, `Import Ürünü ${tag}`),
+      with: { variants: true, options: { with: { values: true } } },
     });
     expect(product?.status).toBe("ACTIVE");
     expect(product?.variants).toHaveLength(2);
@@ -74,10 +77,11 @@ describe("ürün içe aktarma ve toplu güncelleme (veritabanı)", () => {
     );
     expect(report).toMatchObject({ updated: 2, issues: [] });
 
-    const variants = await db.productVariant.findMany({
-      where: { sku: { startsWith: `IMP-${tag}` } },
-      orderBy: { sku: "asc" },
-    });
+    const variants = await db
+      .select()
+      .from(productVariant)
+      .where(like(productVariant.sku, `IMP-${tag}%`))
+      .orderBy(asc(productVariant.sku));
     expect(variants.map((v) => [v.price.toFixed(2), v.stockQuantity])).toEqual([
       ["100.50", 3],
       ["120.00", 9],
