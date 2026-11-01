@@ -5,14 +5,19 @@ import type { FileStorage, StoredFile } from "./storage";
 export class R2FileStorage implements FileStorage {
   constructor(
     private readonly bucket: R2Bucket,
+    /** Relative `/uploads` veya absolute CDN (r2.dev / custom domain). */
     private readonly publicBasePath = "/uploads",
   ) {}
 
   async put(key: string, data: Buffer, contentType: string): Promise<string> {
     await this.bucket.put(key, data, {
-      httpMetadata: { contentType },
+      httpMetadata: {
+        contentType,
+        cacheControl: "public, max-age=31536000, immutable",
+      },
     });
-    return `${this.publicBasePath}/${key}`;
+    const base = this.publicBasePath.replace(/\/$/, "");
+    return `${base}/${key}`;
   }
 
   async read(key: string): Promise<StoredFile | null> {

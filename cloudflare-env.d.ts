@@ -27,6 +27,11 @@ declare global {
     CF_ACCESS_CLIENT_SECRET?: string;
     /** Cron'un Access/public URL'e çıkmadan kendini çağırması */
     WORKER_SELF_REFERENCE?: Fetcher;
+    /** R2 public base (r2.dev veya custom domain); yoksa /uploads */
+    UPLOADS_PUBLIC_BASE_URL?: string;
+    /** Queue consumer: Resend API */
+    RESEND_API_KEY?: string;
+    MAIL_FROM?: string;
   }
 }
 

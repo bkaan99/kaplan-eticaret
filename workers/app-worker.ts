@@ -16,6 +16,13 @@ type JobBody = {
   retryLimit?: number;
 };
 
+type EmailPayload = {
+  to?: string;
+  subject?: string;
+  html?: string;
+  text?: string;
+};
+
 async function callCron(env: CloudflareEnv, path: string): Promise<void> {
   const secret = env.CRON_SECRET;
   if (!secret) {
@@ -48,10 +55,44 @@ async function callCron(env: CloudflareEnv, path: string): Promise<void> {
   }
 }
 
+async function sendEmailViaResend(
+  env: CloudflareEnv,
+  payload: EmailPayload,
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY tanımlı değil");
+  }
+  if (!payload.to || !payload.subject || !payload.html || !payload.text) {
+    throw new Error("email.send gövdesi eksik (to/subject/html/text)");
+  }
+
+  const from = env.MAIL_FROM ?? "Kaplan Turşu <no-reply@kaplantursu.com>";
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [payload.to],
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend ${res.status}: ${body.slice(0, 500)}`);
+  }
+}
+
 const worker: ExportedHandler<CloudflareEnv> = {
   fetch: handler.fetch,
 
-  async queue(batch: MessageBatch, _env: CloudflareEnv): Promise<void> {
+  async queue(batch: MessageBatch, env: CloudflareEnv): Promise<void> {
     for (const message of batch.messages) {
       const body = message.body as JobBody;
       const name = body?.name;
@@ -61,11 +102,23 @@ const worker: ExportedHandler<CloudflareEnv> = {
       }
 
       if (name === "email.send") {
-        console.log("email.send kuyruk mesajı alındı", {
-          to: (body.data as { to?: string } | undefined)?.to,
-        });
-        // TODO: Resend / Email Sending adapter
-        message.ack();
+        const payload = (body.data ?? {}) as EmailPayload;
+        if (!env.RESEND_API_KEY) {
+          // Secret yokken kuyruğu zehirleme; staging'de log + ack.
+          console.warn("RESEND_API_KEY yok; email.send atlandı", {
+            to: payload.to,
+          });
+          message.ack();
+          continue;
+        }
+        try {
+          await sendEmailViaResend(env, payload);
+          console.log("email.send gönderildi", { to: payload.to });
+          message.ack();
+        } catch (error) {
+          console.error("email.send başarısız; yeniden denenecek", error);
+          message.retry();
+        }
         continue;
       }
 

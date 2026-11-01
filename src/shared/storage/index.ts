@@ -14,7 +14,9 @@ export function getFileStorage(): FileStorage {
 
   const cf = getCloudflareEnv();
   if (cf?.UPLOADS) {
-    storage = new R2FileStorage(cf.UPLOADS);
+    const publicBase =
+      cf.UPLOADS_PUBLIC_BASE_URL?.replace(/\/$/, "") || "/uploads";
+    storage = new R2FileStorage(cf.UPLOADS, publicBase);
     return storage;
   }
 

@@ -33,7 +33,7 @@ Tarih: 2026-11-01 · Dal: `cloudflare-adaptation`
 | `npm run deploy` | — | **Tamam:** https://kaplan-eticaret.bilgekagangurgen.workers.dev |
 | Worker secrets | Orta | AUTH/CRON set; APP_URL vars ile çakışma uyarısı kontrol |
 | D1 seed (katalog + admin) | — | **Tamam:** `npm run db:seed-remote -- --admin …` |
-| E-posta adapter (Queue consumer) | Yüksek | Workers’ta SMTP kısıtlı; Resend / Email Sending |
+| E-posta adapter (Queue consumer) | Yüksek | Kod hazır (Resend); `wrangler secret put RESEND_API_KEY` + doğrulanmış from domain |
 | Integration testler SQLite | Orta | Hâlâ eski Postgres URL varsayımı |
 | Para şema Int harden | Düşük | Helper var; kolonlar Decimal emülasyonu |
 | `pg-boss` paketi / ölü dosya temizliği | Düşük | Kullanılmıyor |

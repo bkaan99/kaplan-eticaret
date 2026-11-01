@@ -30,10 +30,19 @@ const envSchema = z
       .transform((value) => value === "true"),
     /** Yüklenen dosyaların dizini; varsayılan ./uploads */
     UPLOAD_DIR: optionalString,
+    /** R2 / CDN public kök (ör. https://cdn… veya r2.dev); boşsa /uploads */
+    UPLOADS_PUBLIC_BASE_URL: optionalString,
+    /** Opsiyonel: /cdn-cgi/image resizing (CF zone custom domain gerekir) */
+    CF_IMAGE_RESIZING: z
+      .enum(["true", "false"])
+      .optional()
+      .transform((value) => value === "true"),
     /** Cloudflare Cron → /api/cron/* Bearer secret */
     CRON_SECRET: optionalString,
     TURNSTILE_SITE_KEY: optionalString,
     TURNSTILE_SECRET_KEY: optionalString,
+    /** Workers queue consumer; yerelde SMTP kullanılır */
+    RESEND_API_KEY: optionalString,
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;
