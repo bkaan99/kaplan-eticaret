@@ -156,3 +156,11 @@ export async function makeOrder(
   await runBatch(db, ops as never);
   return id;
 }
+
+export async function variantById(db: Db, id: string) {
+  const [row] = await db
+    .select()
+    .from(productVariant)
+    .where(eq(productVariant.id, id));
+  return row!;
+}

@@ -1,7 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createPrismaClient, type PrismaClient } from "@/shared/prisma-client-node";
-import { PrismaOrderRepository } from "./order.repository";
+import { eq } from "drizzle-orm";
+import { productVariant, type Db } from "@/db";
+import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import {
+  makeCategory,
+  makeProduct,
+  makeUser,
+  variantById,
+  d,
+} from "../../../tests/support/factories";
+import { D1OrderRepository } from "./order.repository";
 import type { AddressSnapshot, NewOrder } from "./order.types";
 
 const address: AddressSnapshot = {
@@ -20,45 +29,46 @@ const address: AddressSnapshot = {
   taxOffice: null,
 };
 
-describe("PrismaOrderRepository", () => {
+describe("D1OrderRepository", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
-  let repo: PrismaOrderRepository;
+  let t: TestDb;
+  let db: Db;
+  let repo: D1OrderRepository;
   let variantId: string;
   let sku: string;
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    repo = new PrismaOrderRepository(() => db);
+    t = await createTestDb();
+    db = t.db;
+    repo = new D1OrderRepository(() => db);
 
-    const category = await db.category.create({
-      data: { name: "Sipariş Test", slug: `order-test-${tag}` },
+    const category = await makeCategory(db, {
+      name: "Sipariş Test",
+      slug: `order-test-${tag}`,
     });
-    const product = await db.product.create({
-      data: {
+    const product = await makeProduct(
+      db,
+      {
         name: `Sipariş Ürünü ${tag}`,
         slug: `siparis-urunu-${tag}`,
         status: "ACTIVE",
         categoryId: category.id,
-        variants: {
-          create: { sku: `ORD-${tag}`, price: "100.00", stockQuantity: 3 },
-        },
       },
-      include: { variants: true },
-    });
+      [{ sku: `ORD-${tag}`, price: "100.00", stockQuantity: 3 }],
+    );
     variantId = product.variants[0]!.id;
     sku = product.variants[0]!.sku;
   });
 
   beforeEach(async () => {
-    await db.productVariant.update({
-      where: { id: variantId },
-      data: { stockQuantity: 3, reservedQuantity: 0 },
-    });
+    await db
+      .update(productVariant)
+      .set({ stockQuantity: 3, reservedQuantity: 0 })
+      .where(eq(productVariant.id, variantId));
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   const newOrder = (
@@ -98,9 +108,7 @@ describe("PrismaOrderRepository", () => {
   });
 
   const stock = async () => {
-    const variant = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const variant = await variantById(db, variantId);
     return {
       stock: variant.stockQuantity,
       reserved: variant.reservedQuantity,
@@ -265,47 +273,45 @@ describe("PrismaOrderRepository", () => {
   });
 });
 
-describe("PrismaOrderRepository: vadeli sipariş", () => {
+describe("D1OrderRepository: vadeli sipariş", () => {
   const tag = randomUUID().slice(0, 8);
-  let db: PrismaClient;
-  let repo: PrismaOrderRepository;
+  let t: TestDb;
+  let db: Db;
+  let repo: D1OrderRepository;
   let variantId: string;
   let userId: string;
 
   beforeAll(async () => {
-    db = createPrismaClient(process.env["TEST_DATABASE_URL"]!);
-    repo = new PrismaOrderRepository(() => db);
+    t = await createTestDb();
+    db = t.db;
+    repo = new D1OrderRepository(() => db);
 
-    const category = await db.category.create({
-      data: { name: "Vadeli", slug: `deferred-${tag}` },
+    const category = await makeCategory(db, {
+      name: "Vadeli",
+      slug: `deferred-${tag}`,
     });
-    const product = await db.product.create({
-      data: {
+    const product = await makeProduct(
+      db,
+      {
         name: `Vadeli Ürün ${tag}`,
         slug: `vadeli-urun-${tag}`,
         status: "ACTIVE",
         categoryId: category.id,
-        variants: {
-          create: { sku: `DEF-${tag}`, price: "100.00", stockQuantity: 100 },
-        },
       },
-      include: { variants: true },
-    });
+      [{ sku: `DEF-${tag}`, price: "100.00", stockQuantity: 100 }],
+    );
     variantId = product.variants[0]!.id;
 
-    const user = await db.user.create({
-      data: {
-        email: `bayi-${tag}@example.com`,
-        firstName: "Bayi",
-        lastName: "Test",
-        customer: { create: { b2bStatus: "APPROVED", creditLimit: "1000.00" } },
-      },
-    });
+    const user = await makeUser(
+      db,
+      { email: `bayi-${tag}@example.com`, firstName: "Bayi", lastName: "Test" },
+      { b2bStatus: "APPROVED", creditLimit: d("1000.00") },
+    );
     userId = user.id;
   });
 
   afterAll(async () => {
-    await db.$disconnect();
+    await t.close();
   });
 
   const deferredOrder = (amount: number): NewOrder => ({
@@ -346,9 +352,7 @@ describe("PrismaOrderRepository: vadeli sipariş", () => {
   };
 
   it("kredi limiti içinde siparişi onaylar ve stoğu doğrudan düşer", async () => {
-    const before = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const before = await variantById(db, variantId);
 
     const created = await repo.createDeferredOrder(deferredOrder(300), terms);
 
@@ -360,51 +364,48 @@ describe("PrismaOrderRepository: vadeli sipariş", () => {
     });
     expect(order?.paymentDueAt).not.toBeNull();
 
-    const after = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const after = await variantById(db, variantId);
     expect(after.stockQuantity).toBe(before.stockQuantity - 3);
     expect(after.reservedQuantity).toBe(before.reservedQuantity);
   });
 
   it("kredi limitini aşan siparişi reddeder ve stoğa dokunmaz", async () => {
     // Önceki testten 300 TL kullanımda; 800 TL eklenince 1100 > 1000
-    const before = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const before = await variantById(db, variantId);
 
     await expect(
       repo.createDeferredOrder(deferredOrder(800), terms),
     ).rejects.toThrow("Kredi limitiniz yetersiz");
 
-    const after = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const after = await variantById(db, variantId);
     expect(after.stockQuantity).toBe(before.stockQuantity);
   });
 
   it("eşzamanlı siparişlerde koşullu stok UPDATE fazla satışı önler", async () => {
-    const scarce = await db.product.create({
-      data: {
+    const scarceCategory = await makeCategory(db, {
+      name: "Kıt",
+      slug: `kit-${tag}`,
+    });
+    const scarce = await makeProduct(
+      db,
+      {
         name: `Kıt Stok ${tag}`,
         slug: `kit-stok-${tag}`,
         status: "ACTIVE",
-        category: { create: { name: "Kıt", slug: `kit-${tag}` } },
-        variants: {
-          create: { sku: `KIT-${tag}`, price: "100.00", stockQuantity: 3 },
-        },
+        categoryId: scarceCategory.id,
       },
-      include: { variants: true },
-    });
+      [{ sku: `KIT-${tag}`, price: "100.00", stockQuantity: 3 }],
+    );
     const scarceVariantId = scarce.variants[0]!.id;
-    const racer = await db.user.create({
-      data: {
+    const racer = await makeUser(
+      db,
+      {
         email: `yaris-${tag}@example.com`,
         firstName: "Yarış",
         lastName: "Bayi",
-        customer: { create: { b2bStatus: "APPROVED", creditLimit: "5000.00" } },
       },
-    });
+      { b2bStatus: "APPROVED", creditLimit: d("5000.00") },
+    );
     const make = (): NewOrder => ({
       ...deferredOrder(300),
       userId: racer.id,
@@ -430,9 +431,7 @@ describe("PrismaOrderRepository: vadeli sipariş", () => {
     ]);
 
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
-    const after = await db.productVariant.findUniqueOrThrow({
-      where: { id: scarceVariantId },
-    });
+    const after = await variantById(db, scarceVariantId);
     expect(after.stockQuantity).toBe(0);
   });
 
@@ -454,15 +453,11 @@ describe("PrismaOrderRepository: vadeli sipariş", () => {
       ...terms,
       creditLimit: "5000.00",
     });
-    const mid = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const mid = await variantById(db, variantId);
 
     await repo.cancelOrder(created.orderId, false);
 
-    const after = await db.productVariant.findUniqueOrThrow({
-      where: { id: variantId },
-    });
+    const after = await variantById(db, variantId);
     expect(after.stockQuantity).toBe(mid.stockQuantity + 1);
     const order = await repo.findByOrderNumber(created.orderNumber);
     expect(order?.status).toBe("CANCELLED");

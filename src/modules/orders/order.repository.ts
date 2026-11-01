@@ -1,9 +1,34 @@
 import { randomBytes, randomInt } from "node:crypto";
 import Decimal from "decimal.js";
-import type { Prisma } from "../../../generated/prisma/client";
 import { ConflictError, NotFoundError } from "@/shared/errors";
 import { CreditLimitPolicy } from "../b2b/credit-limit.policy";
-import type { PrismaClient } from "@/shared/prisma-client";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  exists,
+  gt,
+  inArray,
+  lt,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
+import {
+  cart as carts,
+  coupon as coupons,
+  newId,
+  order as orders,
+  orderItem as orderItems,
+  payment as payments,
+  productVariant as variants,
+  refund as refunds,
+  runBatch,
+  shipment as shipments,
+  stockReservation as reservations,
+  type Db,
+} from "@/db";
 import type {
   AddressSnapshot,
   CreatedOrder,
@@ -148,13 +173,17 @@ function toAddress(json: unknown): AddressSnapshot {
   return json as AddressSnapshot;
 }
 
-const orderInclude = {
+const orderWith = {
   items: true,
-  shipments: { orderBy: { createdAt: "desc" }, take: 1 },
-  payments: { orderBy: { createdAt: "desc" }, take: 1 },
+  shipments: { orderBy: desc(shipments.createdAt), limit: 1 },
+  payments: { orderBy: desc(payments.createdAt), limit: 1 },
 } as const;
 
-type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
+type OrderRow = typeof orders.$inferSelect & {
+  items: (typeof orderItems.$inferSelect)[];
+  shipments: (typeof shipments.$inferSelect)[];
+  payments: (typeof payments.$inferSelect)[];
+};
 
 function toView(row: OrderRow): OrderView {
   const shipment = row.shipments[0];
@@ -196,8 +225,33 @@ function toView(row: OrderRow): OrderView {
   };
 }
 
-export class PrismaOrderRepository implements OrderRepository {
-  constructor(private readonly db: () => PrismaClient) {}
+/** Sipariş ve ödeme kayıtlarındaki JSON/Decimal alanlarıyla birlikte yazılacak sipariş satırı. */
+function orderValues(
+  order: NewOrder,
+  ids: { orderId: string; orderNumber: string; lookupToken: string },
+) {
+  return {
+    id: ids.orderId,
+    orderNumber: ids.orderNumber,
+    lookupToken: ids.lookupToken,
+    userId: order.userId,
+    guestEmail: order.email,
+    cartId: order.cartId,
+    currency: order.currency,
+    subtotal: new Decimal(order.subtotal),
+    discountTotal: new Decimal(order.discountTotal),
+    shippingTotal: new Decimal(order.shippingTotal),
+    taxTotal: new Decimal(order.taxTotal),
+    grandTotal: new Decimal(order.grandTotal),
+    couponCode: order.couponCode,
+    shippingAddress: order.shippingAddress,
+    billingAddress: order.billingAddress,
+    customerNote: order.customerNote,
+  };
+}
+
+export class D1OrderRepository implements OrderRepository {
+  constructor(private readonly db: () => Db) {}
 
   /**
    * Koşullu UPDATE ile stok rezerve eder (rezervasyon: reservedQuantity artar,
@@ -214,22 +268,27 @@ export class PrismaOrderRepository implements OrderRepository {
     for (const item of items) {
       if (!item.trackInventory) continue;
 
-      const updated =
-        mode === "reserve"
-          ? await db.$executeRaw`
-          UPDATE "ProductVariant"
-          SET "reservedQuantity" = "reservedQuantity" + ${item.quantity}
-          WHERE "id" = ${item.variantId}
-            AND "isActive" = true
-            AND ("stockQuantity" - "reservedQuantity") >= ${item.quantity}`
-          : await db.$executeRaw`
-          UPDATE "ProductVariant"
-          SET "stockQuantity" = "stockQuantity" - ${item.quantity}
-          WHERE "id" = ${item.variantId}
-            AND "isActive" = true
-            AND ("stockQuantity" - "reservedQuantity") >= ${item.quantity}`;
+      const result = await db
+        .update(variants)
+        .set(
+          mode === "reserve"
+            ? {
+                reservedQuantity: sql`${variants.reservedQuantity} + ${item.quantity}`,
+              }
+            : {
+                stockQuantity: sql`${variants.stockQuantity} - ${item.quantity}`,
+              },
+        )
+        .where(
+          and(
+            eq(variants.id, item.variantId),
+            eq(variants.isActive, true),
+            sql`(${variants.stockQuantity} - ${variants.reservedQuantity}) >= ${item.quantity}`,
+          ),
+        )
+        .run();
 
-      if (updated === 0) {
+      if (result.meta.changes === 0) {
         await this.revertStockClaims(claimed, mode);
         throw new ConflictError(`"${item.productName}" için yeterli stok yok`);
       }
@@ -246,99 +305,118 @@ export class PrismaOrderRepository implements OrderRepository {
     const db = this.db();
     for (const claim of claims) {
       try {
-        if (mode === "reserve") {
-          await db.$executeRaw`
-            UPDATE "ProductVariant"
-            SET "reservedQuantity" = "reservedQuantity" - ${claim.quantity}
-            WHERE "id" = ${claim.variantId}`;
-        } else {
-          await db.$executeRaw`
-            UPDATE "ProductVariant"
-            SET "stockQuantity" = "stockQuantity" + ${claim.quantity}
-            WHERE "id" = ${claim.variantId}`;
-        }
+        await db
+          .update(variants)
+          .set(
+            mode === "reserve"
+              ? {
+                  reservedQuantity: sql`${variants.reservedQuantity} - ${claim.quantity}`,
+                }
+              : {
+                  stockQuantity: sql`${variants.stockQuantity} + ${claim.quantity}`,
+                },
+          )
+          .where(eq(variants.id, claim.variantId));
       } catch {
         // En iyi çaba: telafi başarısız olursa rezervasyon süre aşımı işi toparlar.
       }
     }
   }
 
+  /** Sipariş kalemleri: satır başına ekleme (D1 sorgu başına 100 parametre sınırı). */
+  private itemInserts(db: Db, orderId: string, items: NewOrder["items"]) {
+    return items.map((item) =>
+      db.insert(orderItems).values({
+        orderId,
+        variantId: item.variantId,
+        productName: item.productName,
+        variantName: item.variantName,
+        sku: item.sku,
+        unitPrice: new Decimal(item.unitPrice),
+        taxRate: new Decimal(item.taxRate),
+        quantity: item.quantity,
+        lineTotal: new Decimal(item.lineTotal),
+        customization: item.customization ?? undefined,
+      }),
+    );
+  }
+
   async createPendingOrder(order: NewOrder): Promise<CreatedOrder> {
     const orderNumber = generateOrderNumber();
     const lookupToken = randomBytes(24).toString("base64url");
+    const orderId = newId();
     const expiresAt = new Date(Date.now() + order.reservationMinutes * 60_000);
 
     // Stok rezervasyonu: koşullu güncelleme yarış durumunu ve fazla satışı önler.
     const claimed = await this.claimStock(order.items, "reserve");
 
     try {
-      // Sipariş, ödeme, kalemler ve stok rezervasyonları tek (iç içe) yazımda oluşur.
-      const created = await this.db().order.create({
-        data: {
-          orderNumber,
-          lookupToken,
-          userId: order.userId,
-          guestEmail: order.email,
-          cartId: order.cartId,
+      const db = this.db();
+      // Sipariş, ödeme, kalemler ve stok rezervasyonları tek batch'te (atomik) oluşur.
+      await runBatch(db, [
+        db
+          .insert(orders)
+          .values(orderValues(order, { orderId, orderNumber, lookupToken })),
+        ...this.itemInserts(db, orderId, order.items),
+        db.insert(payments).values({
+          orderId,
+          provider: order.paymentProvider,
+          method: order.paymentMethod,
+          amount: new Decimal(order.grandTotal),
           currency: order.currency,
-          subtotal: order.subtotal,
-          discountTotal: order.discountTotal,
-          shippingTotal: order.shippingTotal,
-          taxTotal: order.taxTotal,
-          grandTotal: order.grandTotal,
-          couponCode: order.couponCode,
-          shippingAddress:
-            order.shippingAddress as unknown as Prisma.InputJsonValue,
-          billingAddress:
-            order.billingAddress as unknown as Prisma.InputJsonValue,
-          customerNote: order.customerNote,
-          items: {
-            create: order.items.map((item) => ({
+          merchantOid: orderNumber,
+        }),
+        ...order.items
+          .filter((item) => item.trackInventory)
+          .map((item) =>
+            db.insert(reservations).values({
+              orderId,
               variantId: item.variantId,
-              productName: item.productName,
-              variantName: item.variantName,
-              sku: item.sku,
-              unitPrice: item.unitPrice,
-              taxRate: item.taxRate,
               quantity: item.quantity,
-              lineTotal: item.lineTotal,
-              customization: item.customization
-                ? (item.customization as Prisma.InputJsonValue)
-                : undefined,
-            })),
-          },
-          payments: {
-            create: {
-              provider: order.paymentProvider,
-              method: order.paymentMethod,
-              amount: order.grandTotal,
-              currency: order.currency,
-              merchantOid: orderNumber,
-            },
-          },
-          reservations: {
-            create: order.items
-              .filter((item) => item.trackInventory)
-              .map((item) => ({
-                variantId: item.variantId,
-                quantity: item.quantity,
-                expiresAt,
-              })),
-          },
-        },
-        select: { id: true },
-      });
+              expiresAt,
+            }),
+          ),
+      ]);
 
-      return {
-        orderId: created.id,
-        orderNumber,
-        lookupToken,
-        merchantOid: orderNumber,
-      };
+      return { orderId, orderNumber, lookupToken, merchantOid: orderNumber };
     } catch (error) {
       await this.revertStockClaims(claimed, "reserve");
       throw error;
     }
+  }
+
+  /** Ödenmemiş vadeli sipariş toplamı (kredi kullanımı); toplama Decimal ile JS'te yapılır. */
+  private async outstandingDeferred(userId: string): Promise<Decimal> {
+    const db = this.db();
+    const rows = await db
+      .select({ grandTotal: orders.grandTotal })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.userId, userId),
+          eq(orders.paymentStatus, "PENDING"),
+          notInArray(orders.status, [
+            "CANCELLED",
+            "REFUNDED",
+            "PENDING_PAYMENT",
+          ]),
+          exists(
+            db
+              .select({ one: payments.id })
+              .from(payments)
+              .where(
+                and(
+                  eq(payments.orderId, orders.id),
+                  eq(payments.method, "DEFERRED"),
+                ),
+              ),
+          ),
+        ),
+      );
+    return rows.reduce(
+      (total, row) => total.plus(row.grandTotal),
+      new Decimal(0),
+    );
   }
 
   async createDeferredOrder(
@@ -347,6 +425,7 @@ export class PrismaOrderRepository implements OrderRepository {
   ): Promise<CreatedOrder> {
     const orderNumber = generateOrderNumber();
     const lookupToken = randomBytes(24).toString("base64url");
+    const orderId = newId();
 
     if (!order.userId) {
       throw new ConflictError("Vadeli ödeme yalnızca üye bayiler içindir");
@@ -355,17 +434,9 @@ export class PrismaOrderRepository implements OrderRepository {
     // Kredi: outstanding okunur sonra insert edilir (satır kilidi yok).
     // Eşzamanlı limit aşımı için uygulama katmanında retry gerekir.
     // Stok fazla satışı aşağıdaki koşullu UPDATE ile engellenir.
-    const outstanding = await this.db().order.aggregate({
-      where: {
-        userId: order.userId,
-        paymentStatus: "PENDING",
-        status: { notIn: ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"] },
-        payments: { some: { method: "DEFERRED" } },
-      },
-      _sum: { grandTotal: true },
-    });
+    const outstanding = await this.outstandingDeferred(order.userId);
     CreditLimitPolicy.assertAllowed(
-      outstanding._sum.grandTotal?.toString() ?? 0,
+      outstanding.toString(),
       order.grandTotal,
       terms.creditLimit,
     );
@@ -375,78 +446,37 @@ export class PrismaOrderRepository implements OrderRepository {
 
     try {
       const db = this.db();
-      const createOrder = db.order.create({
-        data: {
-          orderNumber,
-          lookupToken,
-          userId: order.userId,
-          guestEmail: order.email,
-          cartId: order.cartId,
+      // Sipariş + ödeme + kalemler + kupon sayacı + sepet temizliği tek batch'te (atomik).
+      await runBatch(db, [
+        db.insert(orders).values({
+          ...orderValues(order, { orderId, orderNumber, lookupToken }),
           status: "PROCESSING",
           paymentStatus: "PENDING",
+        }),
+        ...this.itemInserts(db, orderId, order.items),
+        db.insert(payments).values({
+          orderId,
+          provider: "deferred",
+          method: "DEFERRED",
+          amount: new Decimal(order.grandTotal),
           currency: order.currency,
-          subtotal: order.subtotal,
-          discountTotal: order.discountTotal,
-          shippingTotal: order.shippingTotal,
-          taxTotal: order.taxTotal,
-          grandTotal: order.grandTotal,
-          couponCode: order.couponCode,
-          shippingAddress:
-            order.shippingAddress as unknown as Prisma.InputJsonValue,
-          billingAddress:
-            order.billingAddress as unknown as Prisma.InputJsonValue,
-          customerNote: order.customerNote,
-          items: {
-            create: order.items.map((item) => ({
-              variantId: item.variantId,
-              productName: item.productName,
-              variantName: item.variantName,
-              sku: item.sku,
-              unitPrice: item.unitPrice,
-              taxRate: item.taxRate,
-              quantity: item.quantity,
-              lineTotal: item.lineTotal,
-              customization: item.customization
-                ? (item.customization as Prisma.InputJsonValue)
-                : undefined,
-            })),
-          },
-          payments: {
-            create: {
-              provider: "deferred",
-              method: "DEFERRED",
-              amount: order.grandTotal,
-              currency: order.currency,
-              merchantOid: orderNumber,
-              dueAt: terms.dueAt,
-            },
-          },
-        },
-        select: { id: true },
-      });
+          merchantOid: orderNumber,
+          dueAt: terms.dueAt,
+        }),
+        ...(order.couponCode
+          ? [
+              db
+                .update(coupons)
+                .set({ usedCount: sql`${coupons.usedCount} + 1` })
+                .where(eq(coupons.code, order.couponCode)),
+            ]
+          : []),
+        ...(order.cartId
+          ? [db.delete(carts).where(eq(carts.id, order.cartId))]
+          : []),
+      ]);
 
-      // Sipariş + kupon sayacı + sepet temizliği: operasyonlar önceden bilinir (dizi formu).
-      const ops: Prisma.PrismaPromise<unknown>[] = [createOrder];
-      if (order.couponCode) {
-        ops.push(
-          db.coupon.updateMany({
-            where: { code: order.couponCode },
-            data: { usedCount: { increment: 1 } },
-          }),
-        );
-      }
-      if (order.cartId) {
-        ops.push(db.cart.deleteMany({ where: { id: order.cartId } }));
-      }
-      const results = await db.$transaction(ops);
-      const created = results[0] as { id: string };
-
-      return {
-        orderId: created.id,
-        orderNumber,
-        lookupToken,
-        merchantOid: orderNumber,
-      };
+      return { orderId, orderNumber, lookupToken, merchantOid: orderNumber };
     } catch (error) {
       await this.revertStockClaims(claimed, "deduct");
       throw error;
@@ -456,186 +486,212 @@ export class PrismaOrderRepository implements OrderRepository {
   async markDeferredPaid(orderId: string): Promise<boolean> {
     const db = this.db();
     // Tahsilat talebi (idempotency kapısı): yalnızca PENDING vadeli ödeme alınır.
-    const claimed = await db.payment.updateMany({
-      where: { orderId, method: "DEFERRED", status: "PENDING" },
-      data: { status: "PAID", paidAt: new Date() },
-    });
-    if (claimed.count === 0) return false;
+    const claimed = await db
+      .update(payments)
+      .set({ status: "PAID", paidAt: new Date() })
+      .where(
+        and(
+          eq(payments.orderId, orderId),
+          eq(payments.method, "DEFERRED"),
+          eq(payments.status, "PENDING"),
+        ),
+      )
+      .run();
+    if (claimed.meta.changes === 0) return false;
 
     try {
-      await db.order.update({
-        where: { id: orderId },
-        data: { paymentStatus: "PAID" },
-      });
+      await db
+        .update(orders)
+        .set({ paymentStatus: "PAID" })
+        .where(eq(orders.id, orderId));
     } catch (error) {
       // Telafi: sipariş güncellenemediyse tahsilat işaretini geri al.
-      await db.payment
-        .updateMany({
-          where: { orderId, method: "DEFERRED", status: "PAID" },
-          data: { status: "PENDING", paidAt: null },
-        })
+      await db
+        .update(payments)
+        .set({ status: "PENDING", paidAt: null })
+        .where(
+          and(
+            eq(payments.orderId, orderId),
+            eq(payments.method, "DEFERRED"),
+            eq(payments.status, "PAID"),
+          ),
+        )
         .catch(() => undefined);
       throw error;
     }
     return true;
   }
 
-  async findById(orderId: string): Promise<OrderView | null> {
-    const row = await this.db().order.findUnique({
-      where: { id: orderId },
-      include: orderInclude,
+  private async findOne(
+    where: ReturnType<typeof eq>,
+  ): Promise<OrderView | null> {
+    const row = await this.db().query.order.findFirst({
+      where,
+      with: orderWith,
     });
     return row ? toView(row) : null;
   }
 
-  async findByOrderNumber(orderNumber: string): Promise<OrderView | null> {
-    const row = await this.db().order.findUnique({
-      where: { orderNumber },
-      include: orderInclude,
-    });
-    return row ? toView(row) : null;
+  findById(orderId: string): Promise<OrderView | null> {
+    return this.findOne(eq(orders.id, orderId));
   }
 
-  async findByLookupToken(token: string): Promise<OrderView | null> {
-    const row = await this.db().order.findUnique({
-      where: { lookupToken: token },
-      include: orderInclude,
-    });
-    return row ? toView(row) : null;
+  findByOrderNumber(orderNumber: string): Promise<OrderView | null> {
+    return this.findOne(eq(orders.orderNumber, orderNumber));
+  }
+
+  findByLookupToken(token: string): Promise<OrderView | null> {
+    return this.findOne(eq(orders.lookupToken, token));
   }
 
   async listByUser(userId: string): Promise<OrderView[]> {
-    const rows = await this.db().order.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      include: orderInclude,
+    const rows = await this.db().query.order.findMany({
+      where: eq(orders.userId, userId),
+      orderBy: desc(orders.createdAt),
+      with: orderWith,
     });
     return rows.map(toView);
   }
 
   async getPaymentForOrder(orderId: string) {
-    const payment = await this.db().payment.findFirst({
-      where: { orderId },
-      orderBy: { createdAt: "desc" },
-    });
-    if (!payment) return null;
+    const [row] = await this.db()
+      .select()
+      .from(payments)
+      .where(eq(payments.orderId, orderId))
+      .orderBy(desc(payments.createdAt))
+      .limit(1);
+    if (!row) return null;
 
     return {
-      merchantOid: payment.merchantOid,
-      amount: payment.amount.toFixed(2),
-      currency: payment.currency,
-      status: payment.status,
-      provider: payment.provider,
-      method: payment.method,
+      merchantOid: row.merchantOid,
+      amount: row.amount.toFixed(2),
+      currency: row.currency,
+      status: row.status,
+      provider: row.provider,
+      method: row.method,
     };
   }
 
   async applyPaymentResult(input: PaymentResultInput): Promise<PaymentOutcome> {
     const db = this.db();
-    const payment = await db.payment.findUnique({
-      where: { merchantOid: input.merchantOid },
-      include: { order: true },
+    const found = await db.query.payment.findFirst({
+      where: eq(payments.merchantOid, input.merchantOid),
+      with: { order: true },
     });
-    if (!payment) return { kind: "not-found" } as const;
+    if (!found) return { kind: "not-found" } as const;
 
     // Tutar uyuşmuyor: ödeme kabul edilmez, inceleme için FAILED işaretlenir.
     const amountMismatch =
-      input.success && !new Decimal(input.amount).eq(payment.amount);
+      input.success && !new Decimal(input.amount).eq(found.amount);
 
     // Aynı bildirim tekrar gelirse: yalnızca PENDING ödeme işlenir (idempotent).
-    const claimed = await db.payment.updateMany({
-      where: { id: payment.id, status: "PENDING" },
-      data: {
+    const claimed = await db
+      .update(payments)
+      .set({
         status: input.success && !amountMismatch ? "PAID" : "FAILED",
-        rawPayload: input.rawPayload as Prisma.InputJsonValue,
+        rawPayload: input.rawPayload,
         paidAt: input.success ? new Date() : null,
-      },
-    });
-    if (claimed.count === 0) {
-      return { kind: "already-processed", orderId: payment.orderId } as const;
+      })
+      .where(and(eq(payments.id, found.id), eq(payments.status, "PENDING")))
+      .run();
+    if (claimed.meta.changes === 0) {
+      return { kind: "already-processed", orderId: found.orderId } as const;
     }
 
-    const orderId = payment.orderId;
+    const orderId = found.orderId;
     if (amountMismatch) {
       return { kind: "amount-mismatch", orderId } as const;
     }
 
     try {
-      const reservations = await db.stockReservation.findMany({
-        where: { orderId, status: "ACTIVE" },
-      });
-
-      // Tüm operasyonlar önceden bilinir: dizi formunda tek batch.
-      const ops: Prisma.PrismaPromise<unknown>[] = [];
+      const active = await db
+        .select()
+        .from(reservations)
+        .where(
+          and(
+            eq(reservations.orderId, orderId),
+            eq(reservations.status, "ACTIVE"),
+          ),
+        );
 
       if (input.success) {
-        for (const reservation of reservations) {
-          ops.push(
-            db.productVariant.update({
-              where: { id: reservation.variantId },
-              data: {
-                stockQuantity: { decrement: reservation.quantity },
-                reservedQuantity: { decrement: reservation.quantity },
-              },
-            }),
-          );
-        }
-        ops.push(
-          db.stockReservation.updateMany({
-            where: { orderId, status: "ACTIVE" },
-            data: { status: "CONSUMED" },
-          }),
-          db.order.update({
-            where: { id: orderId },
-            data: { status: "PAID", paymentStatus: "PAID" },
-          }),
-        );
-        if (payment.order.couponCode) {
-          ops.push(
-            db.coupon.updateMany({
-              where: { code: payment.order.couponCode },
-              data: { usedCount: { increment: 1 } },
-            }),
-          );
-        }
-        if (payment.order.cartId) {
-          ops.push(db.cart.deleteMany({ where: { id: payment.order.cartId } }));
-        }
-        await db.$transaction(ops);
+        await runBatch(db, [
+          ...active.map((reservation) =>
+            db
+              .update(variants)
+              .set({
+                stockQuantity: sql`${variants.stockQuantity} - ${reservation.quantity}`,
+                reservedQuantity: sql`${variants.reservedQuantity} - ${reservation.quantity}`,
+              })
+              .where(eq(variants.id, reservation.variantId)),
+          ),
+          db
+            .update(reservations)
+            .set({ status: "CONSUMED" })
+            .where(
+              and(
+                eq(reservations.orderId, orderId),
+                eq(reservations.status, "ACTIVE"),
+              ),
+            ),
+          db
+            .update(orders)
+            .set({ status: "PAID", paymentStatus: "PAID" })
+            .where(eq(orders.id, orderId)),
+          ...(found.order.couponCode
+            ? [
+                db
+                  .update(coupons)
+                  .set({ usedCount: sql`${coupons.usedCount} + 1` })
+                  .where(eq(coupons.code, found.order.couponCode)),
+              ]
+            : []),
+          ...(found.order.cartId
+            ? [db.delete(carts).where(eq(carts.id, found.order.cartId))]
+            : []),
+        ]);
         return { kind: "paid", orderId } as const;
       }
 
-      for (const reservation of reservations) {
-        ops.push(
-          db.productVariant.update({
-            where: { id: reservation.variantId },
-            data: { reservedQuantity: { decrement: reservation.quantity } },
-          }),
-        );
-      }
-      ops.push(
-        db.stockReservation.updateMany({
-          where: { orderId, status: "ACTIVE" },
-          data: { status: "RELEASED" },
-        }),
-        db.order.update({
-          where: { id: orderId },
-          data: {
+      await runBatch(db, [
+        ...active.map((reservation) =>
+          db
+            .update(variants)
+            .set({
+              reservedQuantity: sql`${variants.reservedQuantity} - ${reservation.quantity}`,
+            })
+            .where(eq(variants.id, reservation.variantId)),
+        ),
+        db
+          .update(reservations)
+          .set({ status: "RELEASED" })
+          .where(
+            and(
+              eq(reservations.orderId, orderId),
+              eq(reservations.status, "ACTIVE"),
+            ),
+          ),
+        db
+          .update(orders)
+          .set({
             status: "CANCELLED",
             paymentStatus: "FAILED",
             cancelledAt: new Date(),
-          },
-        }),
-      );
-      await db.$transaction(ops);
+          })
+          .where(eq(orders.id, orderId)),
+      ]);
       return { kind: "failed", orderId } as const;
     } catch (error) {
       // Telafi: sonuç uygulanamadıysa talebi geri bırak ki sağlayıcı bildirimi tekrar işlensin.
-      await db.payment
-        .updateMany({
-          where: { id: payment.id, status: { in: ["PAID", "FAILED"] } },
-          data: { status: "PENDING", paidAt: null },
-        })
+      await db
+        .update(payments)
+        .set({ status: "PENDING", paidAt: null })
+        .where(
+          and(
+            eq(payments.id, found.id),
+            inArray(payments.status, ["PAID", "FAILED"]),
+          ),
+        )
         .catch(() => undefined);
       throw error;
     }
@@ -643,80 +699,93 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async cancelOrder(orderId: string, markRefunded: boolean): Promise<void> {
     const db = this.db();
-    const order = await db.order.findUnique({
-      where: { id: orderId },
-      include: {
+    const found = await db.query.order.findFirst({
+      where: eq(orders.id, orderId),
+      with: {
         items: true,
-        payments: { orderBy: { createdAt: "desc" }, take: 1 },
+        payments: { orderBy: desc(payments.createdAt), limit: 1 },
       },
     });
-    if (!order) throw new NotFoundError("Sipariş");
+    if (!found) throw new NotFoundError("Sipariş");
 
     // Ödenmiş siparişte ve vadeli (stoğu doğrudan düşülmüş) siparişte stok geri yüklenir.
-    const wasPaid = order.paymentStatus === "PAID";
-    const stockConsumed = wasPaid || order.payments[0]?.method === "DEFERRED";
+    const wasPaid = found.paymentStatus === "PAID";
+    const stockConsumed = wasPaid || found.payments[0]?.method === "DEFERRED";
 
-    // Tüm operasyonlar önceden bilinir: dizi formunda tek batch.
-    const ops: Prisma.PrismaPromise<unknown>[] = [];
+    // Tüm operasyonlar önceden bilinir: tek batch (atomik).
+    const ops: Parameters<typeof runBatch>[1] = [];
 
     if (stockConsumed) {
       // Düşülmüş stok iade edilir (yalnızca stok takibi yapılan ürünler).
-      const variantIds = order.items
+      const variantIds = found.items
         .map((item) => item.variantId)
         .filter((id): id is string => id !== null);
-      const variants =
+      const known =
         variantIds.length > 0
-          ? await db.productVariant.findMany({
-              where: { id: { in: variantIds } },
-              select: {
-                id: true,
-                product: { select: { trackInventory: true } },
-              },
+          ? await db.query.productVariant.findMany({
+              where: inArray(variants.id, variantIds),
+              columns: { id: true },
+              with: { product: { columns: { trackInventory: true } } },
             })
           : [];
       const tracked = new Set(
-        variants.filter((v) => v.product.trackInventory).map((v) => v.id),
+        known.filter((v) => v.product.trackInventory).map((v) => v.id),
       );
-      for (const item of order.items) {
+      for (const item of found.items) {
         if (!item.variantId || !tracked.has(item.variantId)) continue;
         ops.push(
-          db.productVariant.update({
-            where: { id: item.variantId },
-            data: { stockQuantity: { increment: item.quantity } },
-          }),
+          db
+            .update(variants)
+            .set({
+              stockQuantity: sql`${variants.stockQuantity} + ${item.quantity}`,
+            })
+            .where(eq(variants.id, item.variantId)),
         );
       }
     } else {
-      const reservations = await db.stockReservation.findMany({
-        where: { orderId, status: "ACTIVE" },
-      });
-      for (const reservation of reservations) {
+      const active = await db
+        .select()
+        .from(reservations)
+        .where(
+          and(
+            eq(reservations.orderId, orderId),
+            eq(reservations.status, "ACTIVE"),
+          ),
+        );
+      for (const reservation of active) {
         ops.push(
-          db.productVariant.update({
-            where: { id: reservation.variantId },
-            data: { reservedQuantity: { decrement: reservation.quantity } },
-          }),
+          db
+            .update(variants)
+            .set({
+              reservedQuantity: sql`${variants.reservedQuantity} - ${reservation.quantity}`,
+            })
+            .where(eq(variants.id, reservation.variantId)),
         );
       }
       ops.push(
-        db.stockReservation.updateMany({
-          where: { orderId, status: "ACTIVE" },
-          data: { status: "RELEASED" },
-        }),
+        db
+          .update(reservations)
+          .set({ status: "RELEASED" })
+          .where(
+            and(
+              eq(reservations.orderId, orderId),
+              eq(reservations.status, "ACTIVE"),
+            ),
+          ),
       );
     }
 
     ops.push(
-      db.order.update({
-        where: { id: orderId },
-        data: {
+      db
+        .update(orders)
+        .set({
           status: markRefunded ? "REFUNDED" : "CANCELLED",
-          paymentStatus: markRefunded ? "REFUNDED" : order.paymentStatus,
+          paymentStatus: markRefunded ? "REFUNDED" : found.paymentStatus,
           cancelledAt: new Date(),
-        },
-      }),
+        })
+        .where(eq(orders.id, orderId)),
     );
-    await db.$transaction(ops);
+    await runBatch(db, ops);
   }
 
   async recordRefund(
@@ -725,33 +794,40 @@ export class PrismaOrderRepository implements OrderRepository {
     reason: string | null,
     providerRef: string | null,
   ): Promise<void> {
-    const payment = await this.db().payment.findFirst({
-      where: { orderId },
-      orderBy: { createdAt: "desc" },
-    });
-    if (!payment) throw new NotFoundError("Ödeme");
+    const db = this.db();
+    const [row] = await db
+      .select({ id: payments.id })
+      .from(payments)
+      .where(eq(payments.orderId, orderId))
+      .orderBy(desc(payments.createdAt))
+      .limit(1);
+    if (!row) throw new NotFoundError("Ödeme");
 
-    await this.db().refund.create({
-      data: {
-        paymentId: payment.id,
-        amount,
+    // İade kaydı ve ödeme durumu birlikte (atomik) yazılır.
+    await runBatch(db, [
+      db.insert(refunds).values({
+        paymentId: row.id,
+        amount: new Decimal(amount),
         reason,
         providerRef,
         status: "COMPLETED",
         completedAt: new Date(),
-      },
-    });
-    await this.db().payment.update({
-      where: { id: payment.id },
-      data: { status: "REFUNDED" },
-    });
+      }),
+      db
+        .update(payments)
+        .set({ status: "REFUNDED" })
+        .where(eq(payments.id, row.id)),
+    ]);
   }
 
   async releaseExpired(now: Date): Promise<number> {
-    const expired = await this.db().stockReservation.findMany({
-      where: { status: "ACTIVE", expiresAt: { lt: now } },
-      select: { orderId: true },
-    });
+    const db = this.db();
+    const expired = await db
+      .select({ orderId: reservations.orderId })
+      .from(reservations)
+      .where(
+        and(eq(reservations.status, "ACTIVE"), lt(reservations.expiresAt, now)),
+      );
     const orderIds = [
       ...new Set(
         expired.map((r) => r.orderId).filter((id): id is string => id !== null),
@@ -760,20 +836,23 @@ export class PrismaOrderRepository implements OrderRepository {
 
     let released = 0;
     for (const orderId of orderIds) {
-      const order = await this.db().order.findUnique({
-        where: { id: orderId },
-        select: { status: true, paymentStatus: true },
-      });
+      const [row] = await db
+        .select({ status: orders.status, paymentStatus: orders.paymentStatus })
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
       // Yalnızca ödemesi hâlâ beklenen siparişler iptal edilir.
       if (
-        order?.status === "PENDING_PAYMENT" &&
-        order.paymentStatus === "PENDING"
+        row?.status === "PENDING_PAYMENT" &&
+        row.paymentStatus === "PENDING"
       ) {
         await this.cancelOrder(orderId, false);
-        await this.db().payment.updateMany({
-          where: { orderId, status: "PENDING" },
-          data: { status: "FAILED" },
-        });
+        await db
+          .update(payments)
+          .set({ status: "FAILED" })
+          .where(
+            and(eq(payments.orderId, orderId), eq(payments.status, "PENDING")),
+          );
         released += 1;
       }
     }
@@ -784,15 +863,19 @@ export class PrismaOrderRepository implements OrderRepository {
     code: string,
     owner: { userId: string | null; email: string },
   ): Promise<number> {
-    return this.db().order.count({
-      where: {
-        couponCode: code,
-        status: { notIn: ["CANCELLED", "REFUNDED"] },
-        OR: [
-          ...(owner.userId ? [{ userId: owner.userId }] : []),
-          { guestEmail: owner.email },
-        ],
-      },
-    });
+    const [row] = await this.db()
+      .select({ n: count() })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.couponCode, code),
+          notInArray(orders.status, ["CANCELLED", "REFUNDED"]),
+          or(
+            owner.userId ? eq(orders.userId, owner.userId) : undefined,
+            eq(orders.guestEmail, owner.email),
+          ),
+        ),
+      );
+    return row!.n;
   }
 }

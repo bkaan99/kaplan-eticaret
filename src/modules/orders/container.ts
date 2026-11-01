@@ -6,14 +6,14 @@ import {
   getPaymentProvider,
 } from "@/integrations/payment/container";
 import { getNotificationService } from "../notifications/container";
-import { PrismaOrderRepository } from "./order.repository";
+import { D1OrderRepository } from "./order.repository";
 import { OrderService } from "./order.service";
 import { PaymentService } from "./payment.service";
 
 // Geriye dönük uyumluluk için payment provider re-export'ları:
 export { getDevPaymentProvider, getPaymentProvider };
 
-export const orderRepository = new PrismaOrderRepository(getDb);
+export const orderRepository = new D1OrderRepository(getDb);
 
 export function getPaymentService(): PaymentService {
   getNotificationService();

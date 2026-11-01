@@ -6,7 +6,7 @@ import { getEnv } from "@/shared/env";
 import { getEventBus } from "@/shared/events";
 import { getJobQueue } from "@/shared/queue";
 import { getSiteUrl } from "@/shared/site-url";
-import { PrismaOrderRepository } from "../orders/order.repository";
+import { D1OrderRepository } from "../orders/order.repository";
 import { DirectNotificationDispatcher } from "./direct-notification-dispatcher";
 import {
   QueueNotificationDispatcher,
@@ -44,7 +44,7 @@ export function getNotificationService(): NotificationService {
   if (notifications) return notifications;
 
   notifications = new NotificationService(
-    new PrismaOrderRepository(getDb),
+    new D1OrderRepository(getDb),
     getNotificationDispatcher(),
     {
       siteName: siteConfig.name,
