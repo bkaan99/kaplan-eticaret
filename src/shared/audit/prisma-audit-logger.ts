@@ -8,7 +8,12 @@ function toJson(value: unknown): Prisma.InputJsonValue | undefined {
 }
 
 export class PrismaAuditLogger implements AuditLogger {
-  constructor(private readonly db: PrismaClient) {}
+  /** Fonksiyon verilirse istemci ilk kullanımda alınır (modül yüklenirken D1 bağlaması olmayabilir). */
+  constructor(private readonly source: PrismaClient | (() => PrismaClient)) {}
+
+  private get db(): PrismaClient {
+    return typeof this.source === "function" ? this.source() : this.source;
+  }
 
   async log(entry: AuditEntry): Promise<void> {
     await this.db.auditLog.create({

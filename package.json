@@ -24,7 +24,7 @@
     "db:seed-remote": "tsx scripts/seed-remote-d1.ts",
     "worker": "tsx --conditions react-server src/worker/index.ts",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "opennextjs-cloudflare build && node scripts/prune-opennext-bundle.mjs && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",

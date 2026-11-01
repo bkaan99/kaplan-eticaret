@@ -25,6 +25,8 @@ declare global {
     /** Access Service Token — staging Access açıkken cron self-fetch için */
     CF_ACCESS_CLIENT_ID?: string;
     CF_ACCESS_CLIENT_SECRET?: string;
+    /** Cron'un Access/public URL'e çıkmadan kendini çağırması */
+    WORKER_SELF_REFERENCE?: Fetcher;
   }
 }
 

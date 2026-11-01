@@ -8,6 +8,6 @@ export type { Actor, AuditEntry, AuditLogger } from "./audit-logger";
 let logger: AuditLogger | undefined;
 
 export function getAuditLogger(): AuditLogger {
-  logger ??= new PrismaAuditLogger(getDb());
+  logger ??= new PrismaAuditLogger(getDb);
   return logger;
 }
