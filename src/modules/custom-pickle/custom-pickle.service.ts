@@ -15,6 +15,10 @@ import type {
   CustomPickleRepository,
   IngredientRecord,
 } from "./custom-pickle.repository";
+import type {
+  CustomizationLineItem,
+  ItemCustomizationHandler,
+} from "../cart/customization";
 import {
   customPickleInputSchema,
   ingredientInputSchema,
@@ -160,12 +164,38 @@ export interface PreparedCustomPickle {
   key: string;
 }
 
-export class CustomPickleService implements CustomizationPricer {
+export class CustomPickleService
+  implements CustomizationPricer, ItemCustomizationHandler
+{
   constructor(
     private readonly repository: CustomPickleRepository,
     private readonly priceResolver: PriceResolver,
     private readonly audit?: AuditLogger,
   ) {}
+
+  /** Bu ürün özelleştirilebilir mi? (Kendi Turşunu Yap bidonu) */
+  isCustomizable(productSlug: string): boolean {
+    return productSlug === CUSTOM_PICKLE_PRODUCT_SLUG;
+  }
+
+  /** Standart ekleme denenirse gösterilecek mesaj */
+  getStandardAddErrorMessage(productSlug: string): string {
+    if (productSlug === CUSTOM_PICKLE_PRODUCT_SLUG) {
+      return 'Bu bidon "Kendi Turşunu Yap" sayfasından malzeme seçilerek oluşturulur';
+    }
+    return "Bu ürün özelleştirilerek sepete eklenmelidir";
+  }
+
+  /** Özel satırın geçerli olduğunu doğrular */
+  validateCustomItem(productSlug: string, customization: unknown): void {
+    if (productSlug !== CUSTOM_PICKLE_PRODUCT_SLUG) {
+      throw new ValidationError("Bu ürün özelleştirilemez");
+    }
+    const read = readStoredCustomization(customization);
+    if (!read) {
+      throw new ValidationError("Geçersiz seçim");
+    }
+  }
 
   /** Yapıcı sayfası için bidon boyutları (müşteri fiyatıyla) ve aktif malzemeler. */
   async getBuilder(context: PricingContext): Promise<BuilderData | null> {
@@ -312,10 +342,49 @@ export class CustomPickleService implements CustomizationPricer {
 
   /** Sepet/checkout satırları için güncel ek ücretleri ve özetleri hesaplar. */
   async quote(
-    lines: { customization: StoredCustomization; weightGram: number | null }[],
-  ): Promise<CustomizationQuote[]> {
+    lines: (
+      | CustomizationLineItem
+      | { customization: StoredCustomization; weightGram: number | null }
+    )[],
+  ): Promise<(CustomizationQuote | undefined)[]> {
+    const parsedLines = lines.map((line) => {
+      // Satır özelleştirme anahtarı boş string olarak verilmişse standart satırdır
+      if ("customizationKey" in line && line.customizationKey === "") {
+        return null;
+      }
+      if (!line.customization) return null;
+
+      const stored = readStoredCustomization(line.customization);
+      if (!stored) return null;
+
+      const weightGram =
+        line.weightGram !== undefined &&
+        line.weightGram !== null &&
+        line.weightGram > 0 &&
+        !("optionLabels" in line && line.optionLabels?.length)
+          ? line.weightGram
+          : bidonWeightGram(
+              line.weightGram ?? null,
+              "optionLabels" in line && line.optionLabels
+                ? line.optionLabels.join(" ")
+                : null,
+            );
+      return { stored, weightGram };
+    });
+
+    const activeEntries = parsedLines.filter(
+      (
+        entry,
+      ): entry is { stored: StoredCustomization; weightGram: number | null } =>
+        entry !== null,
+    );
+
+    if (activeEntries.length === 0) {
+      return lines.map(() => undefined);
+    }
+
     const ids = [
-      ...new Set(lines.flatMap((line) => line.customization.ingredientIds)),
+      ...new Set(activeEntries.flatMap((line) => line.stored.ingredientIds)),
     ];
     const [rawIngredients, options] = await Promise.all([
       this.repository.findIngredients(ids),
@@ -329,7 +398,9 @@ export class CustomPickleService implements CustomizationPricer {
       options.spices.map((item) => [item.key, item.label]),
     );
 
-    return lines.map(({ customization, weightGram }) => {
+    return parsedLines.map((entry) => {
+      if (!entry) return undefined;
+      const { stored: customization, weightGram } = entry;
       const found = customization.ingredientIds
         .map((id) => records.get(id))
         .filter((item): item is IngredientRecord => item !== undefined)

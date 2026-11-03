@@ -50,6 +50,9 @@ export function getNotificationService(): NotificationService {
       siteName: siteConfig.name,
       baseUrl: getSiteUrl(),
     },
+    siteConfig.contact.email,
+    siteConfig.b2b.bankAccounts,
+    siteConfig.currency,
   );
 
   const bus = getEventBus();

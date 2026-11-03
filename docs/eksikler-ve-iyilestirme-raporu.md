@@ -81,27 +81,7 @@ Bütün kod tabanı (70 test paketi, 473 birim testi ve TypeScript derleyicisi) 
 
 ## 3. Mimari ve SOLID Prensipleri İyileştirmeleri (P2)
 
-### 3.1. OCP İhlali: Şablona Özgü Olmayan Ürün Mantığının Çekirdeğe Katı Kodlanması
-- **İlgili Dosyalar:**
-  - [`src/modules/cart/cart.service.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/cart/cart.service.ts#L88-L93)
-  - [`src/modules/checkout/checkout-customizations.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/checkout/checkout-customizations.ts#L24-L28)
-- **Sorun:**
-  Proje genel bir e-ticaret şablonu (e-commerce-template) mimarisine sahiptir. Ancak:
-  1. `cart.service.ts` içinde doğrudan şu kontroller yer almaktadır:
-     ```typescript
-     if (stock.productSlug === CUSTOM_PICKLE_PRODUCT_SLUG) {
-       throw new ValidationError('Bu bidon "Kendi Turşunu Yap" sayfasından malzeme seçilerek oluşturulur');
-     }
-     ```
-  2. `checkout-customizations.ts` dosyasında turşuya özel `bidonWeightGram` doğrudan import edilerek çağrılmaktadır.
-- **Etki:**
-  Yarın sisteme özelleştirilebilir yeni bir ürün (örneğin hediye sepeti, özel sos karışımı veya promosyon kutusu) eklendiğinde çekirdek sepet ve ödeme servisleri değiştirilmek zorundadır (Open/Closed Principle ihlali).
-- **Çözüm:**
-  `ItemCustomizationHandler` veya `ProductCustomizationPolicy` arayüzü tanımlanmalı; ürünün özelleştirilebilir olup olmadığı ve sepete eklenme kuralları bu arayüz üzerinden dinamik olarak çözümlenmelidir.
-
----
-
-### 3.2. DIP İhlali: Statik Konfigürasyona (`siteConfig`) Doğrudan Bağımlılık
+### 3.1. DIP İhlali: Statik Konfigürasyona (`siteConfig`) Doğrudan Bağımlılık
 - **İlgili Dosyalar:**
   - [`src/modules/checkout/shipping.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/checkout/shipping.ts#L20-L21)
   - [`src/modules/notifications/container.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/notifications/container.ts#L50)
@@ -114,7 +94,7 @@ Bütün kod tabanı (70 test paketi, 473 birim testi ve TypeScript derleyicisi) 
 
 ---
 
-### 3.3. Terk Edilmiş Sepetlerin Süpürülmemesi (Missing Cart Cleanup Cron)
+### 3.2. Terk Edilmiş Sepetlerin Süpürülmemesi (Missing Cart Cleanup Cron)
 - **İlgili Dosyalar:**
   - [`src/app/api/cron/`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/app/api/cron/)
   - [`workers/app-worker.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/workers/app-worker.ts#L130-L147)
@@ -175,6 +155,9 @@ Aşağıdaki maddelerin güncel kod tabanında çözüldüğü ve birim testlerl
    - `account-nav.tsx` exact rota tipi, `admin-sidebar.tsx` version parametresi ve `textarea.tsx` React 19 `ref` tipi uyumsuzlukları giderilmiştir (`npm run typecheck` 0 hata vermektedir).
 5. ✅ **Ödeme ve İade Strateji Deseni (OCP):**
    - `PaymentRefundStrategyRegistry` ve `CheckoutPaymentStrategyRegistry` oluşturulmuş; sipariş iptal ve sipariş oluşturma süreçleri polimorfik hale getirilmiştir.
+6. ✅ **Ürün Özelleştirme Stratejisi (OCP / `ItemCustomizationHandler`):**
+   - Çekirdek `CartService`, `CheckoutPricing`, `CheckoutValidator` ve `checkout-customizations.ts` dosyalarındaki katı kodlanmış `CUSTOM_PICKLE_PRODUCT_SLUG`, `bidonWeightGram` ve turşu metinleri temizlenmiştir.
+   - Genel `ItemCustomizationHandler` sözleşmesi (`src/modules/cart/customization.ts`) tanımlanmış; `CustomPickleService` bu sözleşmeyi uygulayarak çekirdek sepetten ve ödeme servislerinden tamamen soyutlanmıştır.
 
 ---
 
@@ -186,7 +169,6 @@ Aşağıdaki maddelerin güncel kod tabanında çözüldüğü ve birim testlerl
 | 🔴 **P1 - Acil** | Havale/vadeli sipariş iade onayında PayTR çağrısının engellenmesi | `src/modules/returns/return.service.ts`, `container.ts` | 1-2 saat |
 | 🔴 **P1 - Acil** | Vadeli sipariş kredi limiti yarış durumu (race condition) koruması | `src/modules/orders/order.repository.ts` | 2 saat |
 | 🟠 **P2** | `DevPaymentProvider.signPayload` sızıntısının izole edilmesi | `src/integrations/payment/`, `odeme/actions.ts` | 1 saat |
-| 🟠 **P2** | `CartService` içerisindeki turşu bağımlılığının `ItemCustomizationHandler` ile soyutlanması | `src/modules/cart/cart.service.ts`, `checkout` | 3 saat |
 | 🟠 **P2** | Terk edilmiş sahipsiz sepetlerin süpürülmesi (cron) | `src/app/api/cron/purge-abandoned-carts/` | 1 saat |
 | 🟠 **P2** | Global `siteConfig` doğrudan import bağımlılıklarının temizlenmesi | `src/modules/checkout/shipping.ts` | 1 saat |
 | 🟢 **P3** | Malzeme bazında stok ve mevsimsellik takibi | `src/db/schema.ts`, `custom-pickle/` | 3-4 saat |

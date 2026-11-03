@@ -4,13 +4,7 @@ import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import { toDecimal } from "@/shared/money";
 import { availableQuantity } from "../catalog/availability";
 import { RetailPriceResolver, type PriceResolver } from "../catalog/pricing";
-import {
-  bidonWeightGram,
-  CUSTOM_PICKLE_PRODUCT_SLUG,
-  type CustomizationPricer,
-  type StoredCustomization,
-} from "../custom-pickle/custom-pickle.types";
-import { readStoredCustomization } from "../custom-pickle/custom-pickle.service";
+import type { ItemCustomizationHandler } from "./customization";
 import type {
   CartItemRecord,
   CartRecord,
@@ -58,8 +52,13 @@ export class CartService {
   constructor(
     private readonly repository: CartRepository,
     private readonly priceResolver: PriceResolver = new RetailPriceResolver(),
-    private readonly customizations?: CustomizationPricer,
+    private readonly customizations?: ItemCustomizationHandler,
   ) {}
+
+  /** Terk edilmiş sahipsiz (anonim) sepetleri ve satırlarını temizler. */
+  async purgeAbandoned(olderThan: Date): Promise<number> {
+    return this.repository.purgeAbandoned(olderThan);
+  }
 
   /** Mevcut sepeti görüntüler; sepet yoksa boş döner (oluşturmaz). */
   async getCart(identity: CartIdentity): Promise<CartMutationResult> {
@@ -86,10 +85,14 @@ export class CartService {
     const next = Math.min(MAX_LINE_QUANTITY, current + quantity);
 
     const stock = await this.assertSellable(variantId, next);
-    if (stock.productSlug === CUSTOM_PICKLE_PRODUCT_SLUG) {
-      throw new ValidationError(
-        'Bu bidon "Kendi Turşunu Yap" sayfasından malzeme seçilerek oluşturulur',
-      );
+    if (
+      stock.productSlug &&
+      this.customizations?.isCustomizable(stock.productSlug)
+    ) {
+      const message =
+        this.customizations.getStandardAddErrorMessage?.(stock.productSlug) ??
+        "Bu ürün özelleştirilerek sepete eklenmelidir";
+      throw new ValidationError(message);
     }
     await this.repository.setItemQuantity(cart.id, variantId, next);
 
@@ -101,13 +104,13 @@ export class CartService {
   }
 
   /**
-   * Özelleştirilmiş satır ekler (kendi turşunu yap). Seçim önceden doğrulanmış
+   * Özelleştirilmiş satır ekler. Seçim önceden doğrulanmış
    * olmalıdır; aynı seçim aynı anahtarla gelir ve adetler toplanır.
    */
   async addCustomItem(
     identity: CartIdentity,
     variantId: string,
-    line: { key: string; customization: StoredCustomization },
+    line: { key: string; customization: unknown },
     quantity: number,
   ): Promise<CartMutationResult> {
     this.assertQuantity(quantity, 1);
@@ -123,9 +126,11 @@ export class CartService {
     const next = Math.min(MAX_LINE_QUANTITY, current + quantity);
 
     const stock = await this.assertSellable(variantId, next);
-    if (stock.productSlug !== CUSTOM_PICKLE_PRODUCT_SLUG) {
+    if (!this.customizations || !stock.productSlug) {
       throw new ValidationError("Bu ürün özelleştirilemez");
     }
+    this.customizations.validateCustomItem(stock.productSlug, line.customization);
+
     await this.repository.setItemQuantity(cart.id, variantId, next, {
       key: line.key,
       customization: line.customization,
@@ -362,39 +367,9 @@ export class CartService {
     };
   }
 
-  /** Özelleştirilmiş satırların güncel ek ücretleri; diğer satırlar için boş. */
+  /** Özelleştirilmiş satırların güncel ek ücretleri; diğer satırlar için boş döner. */
   private async quoteCustomizations(items: CartItemRecord[]) {
-    const result: (
-      Awaited<ReturnType<CustomizationPricer["quote"]>>[number] | undefined
-    )[] = items.map(() => undefined);
-    if (!this.customizations) return result;
-
-    const pending = items
-      .map((item, index) => ({
-        index,
-        customization: item.customizationKey
-          ? readStoredCustomization(item.customization)
-          : null,
-        weightGram: bidonWeightGram(
-          item.weightGram ?? null,
-          item.optionLabels.join(" "),
-        ),
-      }))
-      .filter(
-        (
-          entry,
-        ): entry is {
-          index: number;
-          customization: StoredCustomization;
-          weightGram: number | null;
-        } => entry.customization !== null,
-      );
-    if (pending.length === 0) return result;
-
-    const quotes = await this.customizations.quote(pending);
-    pending.forEach((entry, position) => {
-      result[entry.index] = quotes[position];
-    });
-    return result;
+    if (!this.customizations) return items.map(() => undefined);
+    return this.customizations.quote(items);
   }
 }

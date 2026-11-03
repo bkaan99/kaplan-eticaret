@@ -13,6 +13,7 @@ export interface ProjectConfig {
     description?: string;
     salesMode?: SalesMode;
     contact?: Partial<SiteConfig["contact"]>;
+    cart?: Partial<SiteConfig["cart"]>;
     /** B2B ödeme ayarları (havale hesapları, vade, rezervasyon süresi) */
     b2b?: Partial<SiteConfig["b2b"]>;
   };

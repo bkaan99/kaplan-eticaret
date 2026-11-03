@@ -1,5 +1,5 @@
 import type Decimal from "decimal.js";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt } from "drizzle-orm";
 import { cart, cartItem, productVariant, runBatch, type Db } from "@/db";
 
 export interface CartRecord {
@@ -82,6 +82,8 @@ export interface CartRepository {
     toCartId: string,
     maxQuantity: number,
   ): Promise<void>;
+  /** Terk edilmiş sahipsiz (anonim) sepetleri ve satırlarını temizler. */
+  purgeAbandoned(olderThan: Date): Promise<number>;
 }
 
 const cartColumns = {
@@ -339,6 +341,30 @@ export class D1CartRepository implements CartRepository {
       ...ops,
       db.delete(cart).where(eq(cart.id, fromCartId)),
     ]);
+  }
+
+  async purgeAbandoned(olderThan: Date): Promise<number> {
+    const db = this.db();
+    const expiredCarts = await db
+      .select({ id: cart.id })
+      .from(cart)
+      .where(and(isNull(cart.userId), lt(cart.updatedAt, olderThan)));
+
+    if (expiredCarts.length === 0) {
+      return 0;
+    }
+
+    const ids = expiredCarts.map((r) => r.id);
+    const chunkSize = 100;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      await runBatch(db, [
+        db.delete(cartItem).where(inArray(cartItem.cartId, chunk)),
+        db.delete(cart).where(inArray(cart.id, chunk)),
+      ]);
+    }
+
+    return ids.length;
   }
 }
 

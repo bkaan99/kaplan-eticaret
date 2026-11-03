@@ -2,9 +2,9 @@ import type Decimal from "decimal.js";
 import type { CartIdentity, CartMutationResult } from "../cart/cart.types";
 import type { PriceResolver } from "../catalog/pricing";
 import type {
-  CustomizationPricer,
   CustomizationQuote,
-} from "../custom-pickle/custom-pickle.types";
+  ItemCustomizationHandler,
+} from "../cart/customization";
 import type { EventBus } from "@/shared/events/event-bus";
 import type {
   CouponUsageRepository,
@@ -104,8 +104,8 @@ export interface CheckoutDeps {
   priceResolver?: PriceResolver;
   dealers?: DealerTerms;
   events?: EventBus;
-  /** Kendi turşunu yap satırlarının ek ücretleri */
-  customizations?: CustomizationPricer;
+  /** Özelleştirilmiş satırların ek ücretleri ve doğrulaması */
+  customizations?: ItemCustomizationHandler;
   paymentStrategies?: CheckoutPaymentStrategyRegistry;
   now?: () => Date;
 }

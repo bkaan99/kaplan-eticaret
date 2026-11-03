@@ -18,7 +18,7 @@ export function getCheckoutService(): CheckoutService {
     priceResolver,
     checkout: new D1CheckoutRepository(getDb),
     orders: orderRepository,
-    shipping: new ConfiguredShippingRateCalculator(),
+    shipping: new ConfiguredShippingRateCalculator(siteConfig.shipping),
     settings: {
       guestCheckoutEnabled: features.guestCheckout,
       reservationMinutes: siteConfig.inventory.reservationMinutes,

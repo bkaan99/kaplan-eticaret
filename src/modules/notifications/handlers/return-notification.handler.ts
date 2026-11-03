@@ -1,4 +1,3 @@
-import { siteConfig } from "@/config/site.config";
 import type { ReturnNotifier } from "../../returns/return.service";
 import type { NotificationDispatcher } from "../notification-dispatcher";
 import type { EmailContext } from "../templates/order-emails";
@@ -28,7 +27,7 @@ export class ReturnNotificationHandler implements ReturnNotifier {
           orderNumber: info.orderNumber,
           approved: info.approved,
           amount: info.amount,
-          currency: this.deps.currency ?? siteConfig.currency,
+          currency: this.deps.currency ?? "TRY",
           note: info.note,
         },
         this.deps.context,

@@ -1,5 +1,4 @@
 import type Decimal from "decimal.js";
-import { siteConfig, type SiteConfig } from "@/config/site.config";
 import { roundMoney, toDecimal } from "@/shared/money";
 
 export interface ShippingContext {
@@ -14,11 +13,22 @@ export interface ShippingRateCalculator {
   calculate(context: ShippingContext): Decimal;
 }
 
-type ShippingConfig = SiteConfig["shipping"];
+export interface ShippingRateTier {
+  maxDesi: number;
+  price: number;
+}
+
+export interface ShippingConfig {
+  freeShippingThreshold: number;
+  flatRate: number;
+  desiTariff: readonly ShippingRateTier[];
+  extraDesiPrice: number;
+  taxRate?: number;
+}
 
 /** Ücretsiz kargo limiti → desi tarifesi → sabit ücret sırasıyla uygular. */
 export class ConfiguredShippingRateCalculator implements ShippingRateCalculator {
-  constructor(private readonly config: ShippingConfig = siteConfig.shipping) {}
+  constructor(private readonly config: ShippingConfig) {}
 
   calculate(context: ShippingContext): Decimal {
     if (context.subtotal.gte(this.config.freeShippingThreshold)) {

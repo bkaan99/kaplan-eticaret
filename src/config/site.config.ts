@@ -45,6 +45,10 @@ export interface SiteConfig {
   auditLog: {
     retentionDays: number;
   };
+  cart: {
+    /** Terk edilmiş sahipsiz (anonim) sepetlerin saklanacağı gün sayısı */
+    abandonedRetentionDays: number;
+  };
   b2b: {
     /** Vadeli ödemede varsayılan vade (gün) */
     deferredPaymentDays: number;
@@ -83,6 +87,9 @@ const defaultSiteConfig: SiteConfig = {
   auditLog: {
     retentionDays: 365,
   },
+  cart: {
+    abandonedRetentionDays: 30,
+  },
   b2b: {
     deferredPaymentDays: 30,
     bankTransferHoldHours: 72,
@@ -99,6 +106,7 @@ export const siteConfig: SiteConfig = {
   description: projectSite.description ?? defaultSiteConfig.description,
   salesMode: projectSite.salesMode ?? defaultSiteConfig.salesMode,
   contact: { ...defaultSiteConfig.contact, ...projectSite.contact },
+  cart: { ...defaultSiteConfig.cart, ...projectSite.cart },
   b2b: { ...defaultSiteConfig.b2b, ...projectSite.b2b },
 };
 

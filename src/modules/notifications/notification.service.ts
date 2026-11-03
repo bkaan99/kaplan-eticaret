@@ -1,4 +1,3 @@
-import { siteConfig } from "@/config/site.config";
 import type { JobQueue } from "@/shared/queue";
 import type { AccountMailer } from "../account/account.service";
 import type { DealerMailer } from "../b2b/dealer.service";
@@ -35,8 +34,9 @@ export class NotificationService
     orders: OrderLookupRepository,
     queueOrDispatcher: JobQueue | NotificationDispatcher,
     context: EmailContext,
-    adminEmail: string = siteConfig.contact.email,
-    bankAccounts: readonly BankAccountInfo[] = siteConfig.b2b.bankAccounts,
+    adminEmail: string,
+    bankAccounts: readonly BankAccountInfo[] = [],
+    currency?: string,
   ) {
     this.dispatcher =
       "dispatch" in queueOrDispatcher
@@ -65,6 +65,7 @@ export class NotificationService
     this.returnHandler = new ReturnNotificationHandler({
       dispatcher: this.dispatcher,
       context,
+      currency,
     });
   }
 
