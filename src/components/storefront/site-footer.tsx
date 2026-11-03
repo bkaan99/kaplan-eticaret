@@ -16,6 +16,7 @@ import {
   MapPinIcon,
   PhoneIcon,
   TruckIcon,
+  WhatsAppIcon,
 } from "./icons";
 import { Logo } from "./logo";
 
@@ -162,7 +163,7 @@ async function FooterContact() {
             rel="noopener noreferrer"
             className={contactRowClass}
           >
-            <PhoneIcon width={20} height={20} className={contactIconClass} />
+            <WhatsAppIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-[#25d366]" />
             <span>WhatsApp Destek</span>
           </a>
         </li>

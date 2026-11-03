@@ -17,11 +17,11 @@ export async function lookupOrderAction(
   _previous: LookupState,
   formData: FormData,
 ): Promise<LookupState> {
-  const orderNumber = String(formData.get("orderNumber") ?? "");
-  const email = String(formData.get("email") ?? "");
+  const orderNumber = String(formData.get("orderNumber") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
 
-  if (!orderNumber.trim() || !email.trim()) {
-    return { error: "Sipariş numarası ve e-posta gerekli." };
+  if (!orderNumber || !email) {
+    return { error: "Lütfen sipariş numaranızı ve e-posta adresinizi giriniz." };
   }
 
   try {
@@ -34,7 +34,10 @@ export async function lookupOrderAction(
     // redirect() özel bir hata fırlatır; uygulama hatası değilse yeniden fırlatılır.
     if (!isAppError(error)) throw error;
     if (error.code === "NOT_FOUND") {
-      return { error: "Bu bilgilerle eşleşen bir sipariş bulunamadı." };
+      return {
+        error:
+          "Bu sipariş numarası ve e-posta ile eşleşen bir sipariş bulunamadı. Lütfen bilgilerinizi kontrol ediniz.",
+      };
     }
     return { error: error.message };
   }
