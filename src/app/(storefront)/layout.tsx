@@ -3,6 +3,7 @@ import { isFeatureEnabled } from "@/config/features";
 import { MotionProvider } from "@/components/motion/motion";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { SiteHeader } from "@/components/storefront/site-header";
+import { WhatsAppButton } from "@/components/storefront/whatsapp-button";
 import { WishlistSync } from "@/components/wishlist/wishlist-sync";
 import { getCurrentUser } from "@/modules/auth/session";
 import { wishlistService } from "@/modules/wishlist/container";
@@ -22,11 +23,17 @@ async function WishlistBootstrap() {
 export default function StorefrontLayout({ children }: LayoutProps<"/">) {
   return (
     <MotionProvider>
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        {children}
-      </main>
-      <SiteFooter />
+      {/* `contents`: yerleşimi bozmadan vitrin yazı tipini uygular */}
+      <div className="contents font-storefront">
+        <SiteHeader />
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+          {children}
+        </main>
+        <SiteFooter />
+        <Suspense fallback={null}>
+          <WhatsAppButton />
+        </Suspense>
+      </div>
       <Suspense fallback={null}>
         <WishlistBootstrap />
       </Suspense>

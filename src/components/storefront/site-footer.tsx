@@ -25,8 +25,7 @@ async function CurrentYear() {
   return <>{new Date().getFullYear()}</>;
 }
 
-const linkClass =
-  "text-slate-600 transition-colors hover:text-primary";
+const linkClass = "text-slate-600 transition-colors hover:text-primary";
 
 const contactRowClass =
   "inline-flex w-full items-start gap-2.5 text-sm leading-snug text-slate-600 transition-colors hover:text-primary";
@@ -147,11 +146,7 @@ async function FooterContact() {
       {contact.email ? (
         <li>
           <a href={`mailto:${contact.email}`} className={contactRowClass}>
-            <MailIcon
-              width={20}
-              height={20}
-              className={contactIconClass}
-            />
+            <MailIcon width={20} height={20} className={contactIconClass} />
             <span>{contact.email}</span>
           </a>
         </li>
@@ -161,11 +156,7 @@ async function FooterContact() {
           href={`tel:${storefrontContact.phoneTel}`}
           className={contactRowClass}
         >
-          <PhoneIcon
-            width={20}
-            height={20}
-            className={contactIconClass}
-          />
+          <PhoneIcon width={20} height={20} className={contactIconClass} />
           <span>{storefrontContact.phone}</span>
         </a>
       </li>
@@ -177,11 +168,7 @@ async function FooterContact() {
             rel="noopener noreferrer"
             className={contactRowClass}
           >
-            <PhoneIcon
-              width={20}
-              height={20}
-              className={contactIconClass}
-            />
+            <PhoneIcon width={20} height={20} className={contactIconClass} />
             <span>WhatsApp Destek</span>
           </a>
         </li>
@@ -193,11 +180,7 @@ async function FooterContact() {
           rel="noopener noreferrer"
           className={contactRowClass}
         >
-          <MapPinIcon
-            width={20}
-            height={20}
-            className={contactIconClass}
-          />
+          <MapPinIcon width={20} height={20} className={contactIconClass} />
           <span>{address}</span>
         </a>
       </li>
@@ -208,11 +191,7 @@ async function FooterContact() {
           rel="noopener noreferrer"
           className={contactRowClass}
         >
-          <InstagramIcon
-            width={20}
-            height={20}
-            className={contactIconClass}
-          />
+          <InstagramIcon width={20} height={20} className={contactIconClass} />
           <span>Instagram</span>
         </a>
       </li>
@@ -223,21 +202,13 @@ async function FooterContact() {
           rel="noopener noreferrer"
           className={contactRowClass}
         >
-          <BagIcon
-            width={20}
-            height={20}
-            className={contactIconClass}
-          />
+          <BagIcon width={20} height={20} className={contactIconClass} />
           <span>Trendyol Mağazası</span>
         </a>
       </li>
       <li>
         <span className={`${contactRowClass} hover:text-slate-600`}>
-          <ClockIcon
-            width={20}
-            height={20}
-            className={contactIconClass}
-          />
+          <ClockIcon width={20} height={20} className={contactIconClass} />
           <span>{storefrontContact.workingHours}</span>
         </span>
       </li>
@@ -247,58 +218,58 @@ async function FooterContact() {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-slate-200 bg-slate-50 text-slate-700">
+    <footer id="iletisim" className="mt-20 scroll-mt-32 bg-slate-50 text-slate-700">
       {/* Üst Güvence Rozetleri */}
-      <div className="border-b border-slate-200/80">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-5 px-4 py-8 sm:grid-cols-4 sm:gap-6">
+      <div className="bg-primary">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-5 px-4 py-7 sm:grid-cols-4 sm:gap-6">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white text-primary shadow-2xs">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-amber-300">
               <LeafIcon width={18} height={18} />
             </span>
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-bold text-white sm:text-sm">
                 %100 Katkısız
               </span>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-white/70 sm:text-xs">
                 Doğal fermantasyon
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white text-primary shadow-2xs">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-amber-300">
               <JarIcon width={18} height={18} />
             </span>
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-bold text-white sm:text-sm">
                 Kırılmaz Ambalaj
               </span>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-white/70 sm:text-xs">
                 Özel hava yastıklı koli
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white text-primary shadow-2xs">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-amber-300">
               <TruckIcon width={18} height={18} />
             </span>
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-bold text-white sm:text-sm">
                 Hızlı Kargo
               </span>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-white/70 sm:text-xs">
                 48 saatte kapınızda
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white text-primary shadow-2xs">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-amber-300">
               <PhoneIcon width={18} height={18} />
             </span>
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-bold text-white sm:text-sm">
                 Müşteri Desteği
               </span>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-white/70 sm:text-xs">
                 {storefrontContact.workingHours}
               </span>
             </div>

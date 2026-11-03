@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { siteConfig } from "@/config/site.config";
 import { themeToCss } from "@/config/theme";
 import { getSiteUrl } from "@/shared/site-url";
@@ -12,6 +12,12 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin", "latin-ext"],
+});
+
+/** Vitrin gövde yazı tipi (yönetim paneli Geist kalır) */
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin", "latin-ext"],
 });
 
@@ -37,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang={siteConfig.locale}
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${montserrat.variable} h-full antialiased`}
     >
       <head>
         <style dangerouslySetInnerHTML={{ __html: themeToCss() }} />

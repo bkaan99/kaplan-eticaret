@@ -97,7 +97,7 @@ export function MobileNav({
         aria-label="Menüyü aç"
         aria-expanded={isOpen}
         aria-controls="mobile-nav-drawer"
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden"
+        className="ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-primary text-primary transition-colors hover:bg-primary/5 md:hidden"
       >
         <MenuIcon width={22} height={22} />
       </button>

@@ -39,6 +39,8 @@ export interface ProductCard {
   hasPriceRange: boolean;
   currency: string;
   inStock: boolean;
+  /** Tek seçenekli ve stokta ise karttan doğrudan sepete eklenecek varyant */
+  quickAddVariantId: string | null;
 }
 
 export interface FacetValue {

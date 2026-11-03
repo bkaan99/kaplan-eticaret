@@ -9,7 +9,7 @@ export async function AccountLink({ className = "" }: { className?: string }) {
     return (
       <Link href="/giris" className={className}>
         <UserIcon />
-        <span className="sr-only lg:not-sr-only">Giriş Yap</span>
+        <span className="sr-only">Giriş Yap</span>
       </Link>
     );
   }
@@ -45,7 +45,7 @@ export async function AccountLink({ className = "" }: { className?: string }) {
       <Link href="/hesabim" className={className} title={label}>
         <UserIcon />
         <span
-          className={`sr-only max-w-24 truncate ${isStaff ? "xl:not-sr-only" : "lg:not-sr-only"}`}
+          className="sr-only"
         >
           {label}
         </span>

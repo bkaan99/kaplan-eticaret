@@ -286,6 +286,13 @@ export class CatalogService {
     const max = prices.reduce((a, b) => (b.gt(a) ? b : a));
     const cheapest = record.variants[prices.findIndex((p) => p.eq(min))]!;
     const priceVisible = identity.pricesVisible !== false;
+    const inStock = record.variants.some((variant) =>
+      isInStock({
+        trackInventory: record.trackInventory,
+        stockQuantity: variant.stockQuantity,
+        reservedQuantity: variant.reservedQuantity,
+      }),
+    );
 
     return {
       id: record.id,
@@ -302,13 +309,11 @@ export class CatalogService {
           : null,
       hasPriceRange: priceVisible && !min.eq(max),
       currency: cheapest.currency,
-      inStock: record.variants.some((variant) =>
-        isInStock({
-          trackInventory: record.trackInventory,
-          stockQuantity: variant.stockQuantity,
-          reservedQuantity: variant.reservedQuantity,
-        }),
-      ),
+      inStock,
+      quickAddVariantId:
+        priceVisible && inStock && record.variants.length === 1
+          ? record.variants[0]!.id
+          : null,
     };
   }
 
