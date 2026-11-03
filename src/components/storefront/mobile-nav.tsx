@@ -11,7 +11,7 @@ import {
   ClockIcon,
   HeartIcon,
   InstagramIcon,
-  BidonIcon,
+  BidonThumb,
   MailIcon,
   MapPinIcon,
   MenuIcon,
@@ -162,8 +162,8 @@ export function MobileNav({
                       Özel Üretim
                     </span>
                     <span className="inline-flex items-center gap-2.5 text-base font-semibold">
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30">
-                        <BidonIcon width={22} height={22} strokeWidth={1.6} aria-hidden />
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-gold/15 ring-1 ring-brand-gold/30">
+                        <BidonThumb width={22} height={26} />
                       </span>
                       Kendi Turşunu Yap
                     </span>

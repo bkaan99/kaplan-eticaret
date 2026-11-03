@@ -138,6 +138,73 @@ export function BidonIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+/**
+ * Statik mini bidon — builder sayfasındaki tombik kavanoz + sarı vida kapak.
+ * Buton/CTA thumb için; animasyon/malzeme yok.
+ */
+export function BidonThumb({
+  className,
+  width = 22,
+  height = 26,
+  ...props
+}: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 48 58"
+      width={width}
+      height={height}
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <ellipse cx="24" cy="54" rx="15" ry="2.2" fill="#0b2318" opacity="0.14" />
+      {/* Gövde — şeffaf tombik kavanoz */}
+      <path
+        d="M15 16 C11 17 9 21 8 27 C7 35 7 42 9 47 C11 51 15 53 19 53 H29 C33 53 37 51 39 47 C41 42 41 35 40 27 C39 21 37 17 33 16 Z"
+        fill="#f3f6ef"
+      />
+      <path
+        d="M15 16 C11 17 9 21 8 27 C7 35 7 42 9 47 C11 51 15 53 19 53 H29 C33 53 37 51 39 47 C41 42 41 35 40 27 C39 21 37 17 33 16 Z"
+        fill="#e8eee0"
+        opacity="0.55"
+      />
+      {/* Sol yansıma */}
+      <path
+        d="M12.5 22 V 46"
+        stroke="#ffffff"
+        strokeOpacity="0.45"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M15 16 C11 17 9 21 8 27 C7 35 7 42 9 47 C11 51 15 53 19 53 H29 C33 53 37 51 39 47 C41 42 41 35 40 27 C39 21 37 17 33 16 Z"
+        fill="none"
+        stroke="#a3b492"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      {/* Boyun */}
+      <rect x="16" y="12" width="16" height="5" rx="1.5" fill="#e6ecdc" stroke="#9aab88" strokeWidth="0.8" />
+      {/* Kapak — sarı vida */}
+      <rect x="13" y="5" width="22" height="9" rx="2.2" fill="#d4b000" />
+      <rect x="13" y="5" width="22" height="3.5" rx="1.8" fill="#ffe566" />
+      <rect x="16.5" y="3.5" width="15" height="2.2" rx="1" fill="#ffe566" />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <rect
+          key={i}
+          x={15 + i * 3.6}
+          y="8.2"
+          width="1.6"
+          height="4.5"
+          rx="0.5"
+          fill="#b89600"
+          opacity="0.4"
+        />
+      ))}
+    </svg>
+  );
+}
+
 export function ClockIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

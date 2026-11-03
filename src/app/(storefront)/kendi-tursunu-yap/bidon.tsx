@@ -2,26 +2,52 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import type {
-  BrineOption,
-  SpiceOption,
+import {
+  MAX_INGREDIENTS,
+  type BrineOption,
+  type SpiceOption,
 } from "@/modules/custom-pickle/custom-pickle.types";
-import { FLY_TO_BIDON_MS } from "./fly-to-bidon";
+import { FLY_TO_BIDON_MS, PIECES_PER_KIND } from "./fly-to-bidon";
 
 /**
- * Malzemelerin bidon içindeki yerleri (seçim sırasına göre doldurulur).
- * Klasik tombik kavanoz: x≈50–270, salamura y≈210–388.
+ * Bidon içi slotlar (alttan üste). 8 çeşit × PIECES_PER_KIND = ağzına kadar dolu.
+ * Tombik kavanoz: x≈70–250, y≈200–355.
  */
 const SLOTS = [
-  { x: 108, y: 340, r: -12 },
-  { x: 160, y: 348, r: 8 },
-  { x: 212, y: 338, r: -8 },
-  { x: 124, y: 286, r: 14 },
-  { x: 192, y: 290, r: -14 },
-  { x: 100, y: 232, r: 6 },
-  { x: 160, y: 224, r: -10 },
-  { x: 220, y: 234, r: 10 },
+  // Katman 1 — taban
+  { x: 95, y: 350, r: -12 },
+  { x: 135, y: 354, r: 8 },
+  { x: 175, y: 352, r: -6 },
+  { x: 215, y: 348, r: 10 },
+  // Katman 2
+  { x: 88, y: 318, r: 10 },
+  { x: 125, y: 322, r: -10 },
+  { x: 162, y: 324, r: 6 },
+  { x: 200, y: 320, r: -8 },
+  // Katman 3
+  { x: 100, y: 288, r: -8 },
+  { x: 140, y: 292, r: 12 },
+  { x: 180, y: 290, r: -12 },
+  { x: 220, y: 286, r: 8 },
+  // Katman 4
+  { x: 92, y: 258, r: 8 },
+  { x: 132, y: 262, r: -10 },
+  { x: 172, y: 260, r: 6 },
+  { x: 212, y: 256, r: -6 },
+  // Katman 5
+  { x: 105, y: 228, r: -10 },
+  { x: 148, y: 232, r: 10 },
+  { x: 190, y: 230, r: -8 },
+  { x: 228, y: 226, r: 12 },
+  // Katman 6 — ağıza yakın (8. çeşitlerle dolunca)
+  { x: 118, y: 202, r: 6 },
+  { x: 160, y: 206, r: -10 },
+  { x: 200, y: 204, r: 8 },
+  { x: 238, y: 200, r: -6 },
 ];
+
+/** 8 çeşit × parça = tüm slotlar (ağzına kadar). */
+const JAR_CAPACITY = MAX_INGREDIENTS * PIECES_PER_KIND;
 
 /** Gövde iç alanı (clip + salamura) — y: 96 → 388 */
 const BODY_TOP = 96;
@@ -95,9 +121,10 @@ export function Bidon({
   const shadowId = `bidon-shadow-${uid}`;
   const capId = `bidon-cap-${uid}`;
 
-  // Malzeme eklendikçe salamura yükselir (uçuş sırasında da doluluk artar).
-  const level = Math.min(0.92, 0.2 + items.length * 0.09);
-  const liquidTop = BODY_BOTTOM - level * (BODY_BOTTOM - (BODY_TOP + 36));
+  // Salamura: 8 çeşitte ağzına kadar (eşit adımlarla yükselir).
+  const fillRatio = Math.min(1, items.length / MAX_INGREDIENTS);
+  const level = 0.14 + fillRatio * 0.8;
+  const liquidTop = BODY_BOTTOM - level * (BODY_BOTTOM - (BODY_TOP + 28));
   const liquidFill =
     brineColor ??
     BRINE_COLOR[brine as keyof typeof BRINE_COLOR] ??
@@ -134,11 +161,15 @@ export function Bidon({
 
     for (const id of added) {
       const index = itemIds.indexOf(id);
-      const slot = SLOTS[Math.min(Math.max(index, 0), SLOTS.length - 1)]!;
       const countAfter = index + 1;
-      const nextLevel = Math.min(0.92, 0.2 + countAfter * 0.09);
+      // Bu çeşidin eşit pay slotları (alttan üste dolum)
+      const bandStart = index * PIECES_PER_KIND;
+      const slot =
+        SLOTS[Math.min(bandStart + 1, SLOTS.length - 1)] ?? SLOTS[0]!;
+      const nextFill = Math.min(1, countAfter / MAX_INGREDIENTS);
+      const nextLevel = 0.14 + nextFill * 0.8;
       const surfaceY =
-        BODY_BOTTOM - nextLevel * (BODY_BOTTOM - (BODY_TOP + 36)) + 2;
+        BODY_BOTTOM - nextLevel * (BODY_BOTTOM - (BODY_TOP + 28)) + 2;
       const impactX = slot.x + (Math.random() - 0.5) * 18;
       const burstId = `splash-${id}-${Date.now()}`;
 
@@ -187,6 +218,26 @@ export function Bidon({
   }, []);
 
   const visibleItems = items.filter((item) => visibleIds.includes(item.id));
+
+  // Her çeşit eşit pay (PIECES_PER_KIND); 8 çeşitte JAR_CAPACITY = ağzına kadar.
+  const jarPieces = visibleItems.flatMap((item, kindIndex) =>
+    Array.from({ length: PIECES_PER_KIND }, (_, pieceIndex) => {
+      const slotIndex = kindIndex * PIECES_PER_KIND + pieceIndex;
+      if (slotIndex >= JAR_CAPACITY || slotIndex >= SLOTS.length) return null;
+      const slot = SLOTS[slotIndex]!;
+      return {
+        key: `${item.id}-${pieceIndex}`,
+        item,
+        slot: {
+          ...slot,
+          x: slot.x + ((pieceIndex * 5) % 7) - 3,
+          y: slot.y + ((pieceIndex * 3) % 5) - 2,
+          r: slot.r + (pieceIndex % 3) * 3 - 3,
+        },
+        size: 44 + (pieceIndex % 3) * 3,
+      };
+    }).filter((piece): piece is NonNullable<typeof piece> => piece !== null),
+  );
 
   return (
     <motion.svg
@@ -283,39 +334,45 @@ export function Bidon({
           />
         </motion.g>
 
-        {/* Malzemeler — uçuş bitince ağızdan kısa düşüş */}
+        {/* Malzemeler — her çeşitten çok parça (uçuş sonrası) */}
         <AnimatePresence>
-          {visibleItems.slice(0, SLOTS.length).map((item, index) => {
-            const slot = SLOTS[index]!;
+          {jarPieces.map((piece, index) => {
+            const { slot, item, size } = piece;
+            const half = size / 2;
             return (
               <motion.g
-                key={item.id}
+                key={piece.key}
                 initial={{
                   y: Math.min(0, 110 - slot.y),
                   opacity: 0.85,
                   rotate: slot.r - 25,
-                  scale: 0.7,
+                  scale: 0.55,
                 }}
                 animate={{ y: 0, opacity: 1, rotate: slot.r, scale: 1 }}
-                exit={{ y: -80, opacity: 0, transition: { duration: 0.3 } }}
-                transition={{ type: "spring", stiffness: 160, damping: 14 }}
+                exit={{ y: -80, opacity: 0, transition: { duration: 0.25 } }}
+                transition={{
+                  type: "spring",
+                  stiffness: 160,
+                  damping: 14,
+                  delay: (index % PIECES_PER_KIND) * 0.04,
+                }}
                 style={{ transformOrigin: `${slot.x}px ${slot.y}px` }}
               >
                 <motion.g
-                  animate={{ y: [0, -5, 0] }}
+                  animate={{ y: [0, -4, 0] }}
                   transition={{
-                    duration: 3 + (index % 3),
+                    duration: 2.8 + (index % 4) * 0.35,
                     repeat: Infinity,
                     ease: "easeInOut",
-                    delay: 0.8,
+                    delay: 0.5 + (index % 5) * 0.12,
                   }}
                 >
                   <image
                     href={item.imageUrl ?? "/placeholder.svg"}
-                    x={slot.x - 28}
-                    y={slot.y - 28}
-                    width="56"
-                    height="56"
+                    x={slot.x - half}
+                    y={slot.y - half}
+                    width={size}
+                    height={size}
                   />
                 </motion.g>
               </motion.g>

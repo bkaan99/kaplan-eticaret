@@ -11,7 +11,7 @@ import { formatMoney } from "@/shared/money";
 import { AccountLink } from "./account-link";
 import { CartBadge } from "./cart-badge";
 import { HeaderNav, MobileSearch } from "./header-nav";
-import { BidonIcon, HeartIcon, SearchIcon } from "./icons";
+import { BidonThumb, HeartIcon, SearchIcon } from "./icons";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
 
@@ -80,8 +80,8 @@ function BuilderLink({ className = "" }: { className?: string }) {
       href="/kendi-tursunu-yap"
       className={`group inline-flex h-10 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-full bg-gradient-to-b from-primary to-brand-dark py-1 pl-1 pr-4 text-sm font-semibold text-[#f6efe0] shadow-[0_4px_14px_-4px_rgba(11,35,24,0.45)] ring-1 ring-brand-gold/25 transition-all duration-200 hover:-translate-y-px hover:shadow-[0_8px_20px_-6px_rgba(11,35,24,0.55)] hover:ring-brand-gold/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${className}`}
     >
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30 transition-colors group-hover:bg-brand-gold/25">
-        <BidonIcon width={20} height={20} strokeWidth={1.6} aria-hidden />
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-gold/15 ring-1 ring-brand-gold/30 transition-colors group-hover:bg-brand-gold/25">
+        <BidonThumb width={18} height={22} />
       </span>
       Kendi Turşunu Yap
     </Link>
