@@ -194,3 +194,5 @@ Akış:
 ## Lisans
 
 Henüz belirlenmedi.
+
+<!-- merge graph denemesi -->
