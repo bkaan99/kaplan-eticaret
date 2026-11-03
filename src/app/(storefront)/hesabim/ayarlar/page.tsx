@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
+import {
+  accountSecondaryBtn,
+} from "@/components/storefront/account-ui";
 import { getProfileService } from "@/modules/account/container";
 import { requireUser } from "@/modules/auth/session";
 import { DeleteAccountForm, PasswordForm, ProfileForm } from "./settings-forms";
@@ -22,33 +24,37 @@ async function SettingsContent() {
 
   return (
     <div className="flex flex-col gap-10">
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Kişisel bilgiler</h2>
+      <section className="flex flex-col gap-4">
+        <h2 className="font-display text-xl font-semibold text-brand-dark">
+          Kişisel bilgiler
+        </h2>
         <ProfileForm {...profile} />
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Parola</h2>
+      <section className="flex flex-col gap-4 border-t border-slate-900/10 pt-10">
+        <h2 className="font-display text-xl font-semibold text-brand-dark">
+          Parola
+        </h2>
         <PasswordForm />
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Verilerim (KVKK)</h2>
-        <p className="text-sm text-muted-foreground">
+      <section className="flex flex-col gap-3 border-t border-slate-900/10 pt-10">
+        <h2 className="font-display text-xl font-semibold text-brand-dark">
+          Verilerim
+        </h2>
+        <p className="max-w-md text-sm text-slate-600">
           Hesabınızda tuttuğumuz kişisel verilerin bir kopyasını JSON olarak
           indirebilirsiniz.
         </p>
-        <a
-          href="/hesabim/verilerim"
-          download
-          className="w-fit rounded-theme border border-border px-4 py-2 text-sm"
-        >
+        <a href="/hesabim/verilerim" download className={accountSecondaryBtn}>
           Verilerimi indir
         </a>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-red-700">Hesabı sil</h2>
+      <section className="flex flex-col gap-4 border-t border-slate-900/10 pt-10">
+        <h2 className="font-display text-xl font-semibold text-brand-pepper">
+          Hesabı sil
+        </h2>
         <DeleteAccountForm />
       </section>
     </div>
@@ -58,14 +64,16 @@ async function SettingsContent() {
 export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Hesap ayarları</h1>
-        <Link href="/hesabim" className="text-sm underline">
-          Hesabıma dön
-        </Link>
+      <div className="border-b border-slate-900/10 pb-3">
+        <h2 className="font-display text-xl font-semibold text-brand-dark">
+          Hesap ayarları
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Profil, güvenlik ve gizlilik tercihleriniz.
+        </p>
       </div>
       <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
+        fallback={<p className="text-sm text-slate-500">Yükleniyor…</p>}
       >
         <SettingsContent />
       </Suspense>

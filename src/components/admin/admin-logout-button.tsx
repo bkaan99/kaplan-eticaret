@@ -24,9 +24,9 @@ export function AdminLogoutButton({
         type="button"
         onClick={handleLogout}
         disabled={isPending}
-        className={`inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-700 underline cursor-pointer disabled:opacity-60 ${className}`}
+        className={`inline-flex cursor-pointer items-center gap-1 text-sm text-red-600 hover:text-red-700 disabled:opacity-60 ${className}`}
       >
-        <span>{isPending ? "Çıkılıyor..." : "Çıkış Yap"}</span>
+        <span>{isPending ? "Çıkılıyor…" : "Çıkış yap"}</span>
       </button>
     );
   }

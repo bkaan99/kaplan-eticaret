@@ -2,12 +2,16 @@
 
 import { useState, useTransition } from "react";
 import {
+  accountDangerBtn,
+  accountField,
+  accountLabel,
+  accountPrimaryBtn,
+} from "@/components/storefront/account-ui";
+import {
   changePasswordAction,
   deleteAccountAction,
   updateProfileAction,
 } from "../actions";
-
-const input = "w-full rounded-theme border border-border px-3 py-2 text-sm";
 
 function useAction() {
   const [pending, startTransition] = useTransition();
@@ -45,7 +49,9 @@ function Message({
     <p
       role={message.error ? "alert" : "status"}
       className={
-        message.error ? "text-sm text-red-600" : "text-sm text-green-700"
+        message.error
+          ? "text-sm font-medium text-brand-pepper"
+          : "text-sm font-medium text-brand-leaf"
       }
     >
       {message.text}
@@ -69,54 +75,50 @@ export function ProfileForm({
 
   return (
     <form
-      className="flex max-w-md flex-col gap-3"
+      className="flex max-w-md flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
         run(() => updateProfileAction(values), "Bilgileriniz güncellendi");
       }}
     >
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={accountLabel}>
         E-posta
         <input
-          className={`${input} bg-muted`}
+          className={accountField}
           value={email}
           disabled
           readOnly
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-sm">
+        <label className={accountLabel}>
           Ad
           <input
-            className={input}
+            className={accountField}
             value={values.firstName}
             onChange={(e) =>
               setValues({ ...values, firstName: e.target.value })
             }
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className={accountLabel}>
           Soyad
           <input
-            className={input}
+            className={accountField}
             value={values.lastName}
             onChange={(e) => setValues({ ...values, lastName: e.target.value })}
           />
         </label>
       </div>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={accountLabel}>
         Cep telefonu
         <input
-          className={input}
+          className={accountField}
           value={values.phone}
           onChange={(e) => setValues({ ...values, phone: e.target.value })}
         />
       </label>
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-fit rounded-theme bg-primary px-5 py-2 text-primary-foreground disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className={accountPrimaryBtn}>
         Kaydet
       </button>
       <Message message={message} />
@@ -132,7 +134,7 @@ export function PasswordForm() {
 
   return (
     <form
-      className="flex max-w-md flex-col gap-3"
+      className="flex max-w-md flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
         if (next !== confirm) return;
@@ -147,45 +149,45 @@ export function PasswordForm() {
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={accountLabel}>
         Mevcut parola
         <input
           type="password"
           autoComplete="current-password"
-          className={input}
+          className={accountField}
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={accountLabel}>
         Yeni parola
         <input
           type="password"
           autoComplete="new-password"
-          className={input}
+          className={accountField}
           value={next}
           onChange={(e) => setNext(e.target.value)}
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={accountLabel}>
         Yeni parola (tekrar)
         <input
           type="password"
           autoComplete="new-password"
-          className={input}
+          className={accountField}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
         />
       </label>
       {next && confirm && next !== confirm ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm font-medium text-brand-pepper">
           Parolalar eşleşmiyor
         </p>
       ) : null}
       <button
         type="submit"
         disabled={pending || !current || !next || next !== confirm}
-        className="w-fit rounded-theme bg-primary px-5 py-2 text-primary-foreground disabled:opacity-60"
+        className={accountPrimaryBtn}
       >
         Parolayı değiştir
       </button>
@@ -200,7 +202,7 @@ export function DeleteAccountForm() {
 
   return (
     <form
-      className="flex max-w-md flex-col gap-3"
+      className="flex max-w-md flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
         if (
@@ -213,18 +215,18 @@ export function DeleteAccountForm() {
         run(() => deleteAccountAction(password), "Hesabınız silindi");
       }}
     >
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-slate-600">
         Hesabınız ve kişisel verileriniz (adresler, favoriler, bildirim
         kayıtları) silinir. Yasal saklama yükümlülüğü gereği sipariş ve fatura
         kayıtları saklanmaya devam eder. Tamamlanmamış siparişiniz varsa hesap
         silinemez.
       </p>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={accountLabel}>
         Onay için parolanız
         <input
           type="password"
           autoComplete="current-password"
-          className={input}
+          className={accountField}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -232,7 +234,7 @@ export function DeleteAccountForm() {
       <button
         type="submit"
         disabled={pending || !password}
-        className="w-fit rounded-theme bg-red-600 px-5 py-2 text-white disabled:opacity-60"
+        className={accountDangerBtn}
       >
         Hesabımı sil
       </button>

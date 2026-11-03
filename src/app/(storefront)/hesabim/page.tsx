@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { Price } from "@/components/storefront/price";
 import { features } from "@/config/features";
-import { getDealerService } from "@/modules/b2b/container";
 import { requireUser } from "@/modules/auth/session";
+import { getDealerService } from "@/modules/b2b/container";
 import { getOrderService } from "@/modules/orders/container";
 import { ORDER_STATUS_LABELS } from "@/modules/orders/order-labels";
 
@@ -22,66 +21,83 @@ async function AccountContent() {
     : null;
 
   return (
-    <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">Bilgilerim</h2>
-        <p>{user.name}</p>
-        <p className="text-muted-foreground">{user.email}</p>
-        <div className="flex items-center gap-4 pt-1 text-sm">
-          <Link href="/hesabim/adresler" className="underline">
-            Adreslerim
-          </Link>
-          <Link href="/hesabim/ayarlar" className="underline">
-            Hesap ayarları
-          </Link>
-          <AdminLogoutButton variant="minimal" />
-        </div>
-      </section>
-
+    <div className="flex flex-col gap-10">
       {features.b2b ? (
-        <section className="flex flex-col gap-1 text-sm">
-          <h2 className="text-lg font-semibold">Bayilik</h2>
+        <section className="border-l-2 border-brand-gold pl-4">
+          <h2 className="font-display text-xl font-semibold text-brand-dark">
+            Bayilik
+          </h2>
           {dealer?.status === "APPROVED" ? (
-            <p>
-              Onaylı bayi{dealer.groupName ? ` · ${dealer.groupName}` : ""}
+            <p className="mt-1 text-sm text-slate-600">
+              Onaylı bayi
+              {dealer.groupName ? ` · ${dealer.groupName}` : ""}
               {dealer.creditLimit
                 ? ` · Kredi limiti: ${dealer.creditLimit} TL`
                 : ""}
             </p>
           ) : dealer?.status === "PENDING" ? (
-            <p className="text-muted-foreground">Başvurunuz inceleniyor.</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Başvurunuz inceleniyor.
+            </p>
           ) : (
-            <Link href="/bayi-basvuru" className="underline">
+            <Link
+              href="/bayi-basvuru"
+              className="mt-2 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline"
+            >
               Bayi başvurusu yap
             </Link>
           )}
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Siparişlerim</h2>
+      <section>
+        <div className="flex items-end justify-between gap-4 border-b border-slate-900/10 pb-3">
+          <h2 className="font-display text-xl font-semibold text-brand-dark">
+            Siparişlerim
+          </h2>
+          {orders.length > 0 ? (
+            <span className="text-xs font-semibold tracking-wide text-slate-500">
+              {orders.length} sipariş
+            </span>
+          ) : null}
+        </div>
+
         {orders.length === 0 ? (
-          <p className="text-muted-foreground">Henüz siparişiniz yok.</p>
+          <div className="mt-8 max-w-sm">
+            <p className="text-sm text-slate-600">
+              Henüz siparişiniz yok. Kaplan ürünlerini keşfedin.
+            </p>
+            <Link
+              href="/ara"
+              className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-bold text-white transition hover:bg-brand-dark"
+            >
+              Alışverişe başla
+            </Link>
+          </div>
         ) : (
-          <ul className="flex flex-col divide-y divide-border">
+          <ul className="mt-2 divide-y divide-slate-900/10">
             {orders.map((order) => (
-              <li
-                key={order.id}
-                className="flex items-center justify-between gap-4 py-3 text-sm"
-              >
-                <div className="flex flex-col">
-                  <Link
-                    href={`/siparis/${order.orderNumber}`}
-                    className="font-medium underline"
-                  >
-                    {order.orderNumber}
-                  </Link>
-                  <span className="text-muted-foreground">
-                    {order.createdAt.toLocaleDateString("tr-TR")} ·{" "}
-                    {ORDER_STATUS_LABELS[order.status]}
-                  </span>
-                </div>
-                <Price value={order.grandTotal} currency={order.currency} />
+              <li key={order.id}>
+                <Link
+                  href={`/siparis/${order.orderNumber}`}
+                  className="group flex items-center justify-between gap-4 py-4 transition"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-brand-dark group-hover:text-primary">
+                      {order.orderNumber}
+                    </p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      {order.createdAt.toLocaleDateString("tr-TR")} ·{" "}
+                      {ORDER_STATUS_LABELS[order.status]}
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    <Price
+                      value={order.grandTotal}
+                      currency={order.currency}
+                    />
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
@@ -93,13 +109,10 @@ async function AccountContent() {
 
 export default function AccountPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Hesabım</h1>
-      <Suspense
-        fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
-      >
-        <AccountContent />
-      </Suspense>
-    </div>
+    <Suspense
+      fallback={<p className="text-sm text-slate-500">Yükleniyor…</p>}
+    >
+      <AccountContent />
+    </Suspense>
   );
 }

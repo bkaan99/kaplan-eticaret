@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import {
+  accountField,
+  accountLabel,
+  accountPrimaryBtn,
+  accountSecondaryBtn,
+  accountTextarea,
+} from "@/components/storefront/account-ui";
 import { districtsOf } from "@/shared/geo/turkey-districts";
 import { TURKEY_PROVINCES } from "@/shared/geo/turkey-provinces";
 import { deleteAddressAction, saveAddressAction } from "../actions";
@@ -65,8 +72,6 @@ const blank: FormState = {
   isDefaultBilling: false,
 };
 
-const input = "w-full rounded-theme border border-border px-3 py-2 text-sm";
-
 function toForm(address: AddressView): FormState {
   return {
     id: address.id,
@@ -129,35 +134,43 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {addresses.length === 0 && !open ? (
+        <p className="text-sm text-slate-600">Kayıtlı adresiniz yok.</p>
+      ) : null}
+
       <ul className="grid gap-4 sm:grid-cols-2">
         {addresses.map((address) => (
           <li
             key={address.id}
-            className="flex flex-col gap-2 rounded-theme border border-border p-4 text-sm"
+            className="flex flex-col gap-2 rounded-2xl border border-slate-900/10 bg-white p-5 text-sm"
           >
-            <div className="flex items-center justify-between">
-              <strong>{address.title}</strong>
-              <span className="text-xs text-muted-foreground">
-                {[
-                  address.isDefaultShipping && "Varsayılan teslimat",
-                  address.isDefaultBilling && "Varsayılan fatura",
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
+            <div className="flex items-start justify-between gap-3">
+              <strong className="font-display text-base font-semibold text-brand-dark">
+                {address.title}
+              </strong>
+              {(address.isDefaultShipping || address.isDefaultBilling) && (
+                <span className="text-[11px] font-semibold tracking-wide text-primary uppercase">
+                  {[
+                    address.isDefaultShipping && "Teslimat",
+                    address.isDefaultBilling && "Fatura",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              )}
             </div>
-            <p>
+            <p className="text-brand-dark">
               {address.firstName} {address.lastName} · {address.phone}
             </p>
-            <p className="text-muted-foreground">
+            <p className="text-slate-500">
               {address.addressLine}
               {address.neighborhood ? `, ${address.neighborhood}` : ""}{" "}
               {address.district}/{address.city}
             </p>
-            <div className="flex gap-3 pt-1">
+            <div className="flex gap-4 pt-2">
               <button
                 type="button"
-                className="underline"
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
                 onClick={() => {
                   setForm(toForm(address));
                   setOpen(true);
@@ -167,7 +180,7 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
               </button>
               <button
                 type="button"
-                className="text-red-600 underline"
+                className="text-sm font-semibold text-brand-pepper underline-offset-4 hover:underline"
                 disabled={pending}
                 onClick={() => remove(address.id)}
               >
@@ -182,7 +195,9 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
         <p
           role={message.error ? "alert" : "status"}
           className={
-            message.error ? "text-sm text-red-600" : "text-sm text-green-700"
+            message.error
+              ? "text-sm font-medium text-brand-pepper"
+              : "text-sm font-medium text-brand-leaf"
           }
         >
           {message.text}
@@ -190,47 +205,47 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
       ) : null}
 
       {open ? (
-        <section className="flex flex-col gap-4 rounded-theme border border-border p-5">
-          <h2 className="text-lg font-semibold">
+        <section className="flex flex-col gap-5 rounded-2xl border border-slate-900/10 bg-white p-5 sm:p-6">
+          <h3 className="font-display text-lg font-semibold text-brand-dark">
             {form.id ? "Adresi düzenle" : "Yeni adres"}
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className={`${accountLabel} sm:col-span-2`}>
               Adres başlığı (Ev, İş…)
               <input
-                className={input}
+                className={accountField}
                 value={form.title}
                 onChange={(e) => set("title", e.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className={accountLabel}>
               Ad
               <input
-                className={input}
+                className={accountField}
                 value={form.firstName}
                 onChange={(e) => set("firstName", e.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className={accountLabel}>
               Soyad
               <input
-                className={input}
+                className={accountField}
                 value={form.lastName}
                 onChange={(e) => set("lastName", e.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className={accountLabel}>
               Cep telefonu
               <input
-                className={input}
+                className={accountField}
                 value={form.phone}
                 onChange={(e) => set("phone", e.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className={accountLabel}>
               İl
               <select
-                className={input}
+                className={accountField}
                 value={form.city}
                 onChange={(e) =>
                   setForm((current) => ({
@@ -248,10 +263,10 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className={accountLabel}>
               İlçe
               <select
-                className={input}
+                className={accountField}
                 value={form.district}
                 disabled={!form.city}
                 onChange={(e) => set("district", e.target.value)}
@@ -266,35 +281,35 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className={accountLabel}>
               Mahalle
               <input
-                className={input}
+                className={accountField}
                 value={form.neighborhood}
                 onChange={(e) => set("neighborhood", e.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+            <label className={`${accountLabel} sm:col-span-2`}>
               Açık adres
               <textarea
-                className={input}
+                className={accountTextarea}
                 rows={3}
                 value={form.addressLine}
                 onChange={(e) => set("addressLine", e.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className={accountLabel}>
               Posta kodu
               <input
-                className={input}
+                className={accountField}
                 value={form.postalCode}
                 onChange={(e) => set("postalCode", e.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className={accountLabel}>
               Fatura tipi
               <select
-                className={input}
+                className={accountField}
                 value={form.invoiceType}
                 onChange={(e) =>
                   set("invoiceType", e.target.value as FormState["invoiceType"])
@@ -305,10 +320,10 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
               </select>
             </label>
             {form.invoiceType === "INDIVIDUAL" ? (
-              <label className="flex flex-col gap-1 text-sm">
+              <label className={accountLabel}>
                 T.C. kimlik no (isteğe bağlı)
                 <input
-                  className={input}
+                  className={accountField}
                   value={form.nationalId}
                   maxLength={11}
                   onChange={(e) => set("nationalId", e.target.value)}
@@ -316,27 +331,27 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
               </label>
             ) : (
               <>
-                <label className="flex flex-col gap-1 text-sm">
+                <label className={accountLabel}>
                   Firma unvanı
                   <input
-                    className={input}
+                    className={accountField}
                     value={form.companyName}
                     onChange={(e) => set("companyName", e.target.value)}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
+                <label className={accountLabel}>
                   Vergi numarası
                   <input
-                    className={input}
+                    className={accountField}
                     value={form.taxNumber}
                     maxLength={10}
                     onChange={(e) => set("taxNumber", e.target.value)}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
+                <label className={accountLabel}>
                   Vergi dairesi
                   <input
-                    className={input}
+                    className={accountField}
                     value={form.taxOffice}
                     onChange={(e) => set("taxOffice", e.target.value)}
                   />
@@ -344,7 +359,7 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
               </>
             )}
           </div>
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex flex-wrap gap-5 text-sm text-brand-dark">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -362,18 +377,18 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
               Varsayılan fatura adresi
             </label>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-3">
             <button
               type="button"
               disabled={pending}
               onClick={save}
-              className="rounded-theme bg-primary px-5 py-2 text-primary-foreground disabled:opacity-60"
+              className={accountPrimaryBtn}
             >
-              {pending ? "Kaydediliyor..." : "Kaydet"}
+              {pending ? "Kaydediliyor…" : "Kaydet"}
             </button>
             <button
               type="button"
-              className="rounded-theme border border-border px-5 py-2"
+              className={accountSecondaryBtn}
               onClick={() => {
                 setForm(blank);
                 setOpen(false);
@@ -386,7 +401,7 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
       ) : (
         <button
           type="button"
-          className="w-fit rounded-theme border border-border px-4 py-2 text-sm"
+          className={accountSecondaryBtn}
           onClick={() => {
             setForm(blank);
             setOpen(true);
