@@ -27,6 +27,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           email: user.email,
         }}
         siteName={siteConfig.name}
+        version={siteConfig.version}
       />
 
       {/* Sağ Ana İçerik Alanı */}

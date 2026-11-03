@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 
-const LINKS = [
+const LINKS: readonly { href: string; label: string; exact?: boolean }[] = [
   { href: "/hesabim", label: "Siparişlerim", exact: true },
   { href: "/hesabim/adresler", label: "Adreslerim" },
   { href: "/hesabim/ayarlar", label: "Hesap ayarları" },
-] as const;
+];
 
 export function AccountNav() {
   const pathname = usePathname();

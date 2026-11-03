@@ -1,3 +1,4 @@
+import packageJson from "../../package.json";
 import { features, type Features } from "./features";
 import { projectConfig } from "./project-config";
 
@@ -5,6 +6,7 @@ export type SalesMode = "retail" | "b2b" | "hybrid";
 
 export interface SiteConfig {
   name: string;
+  version: string;
   description: string;
   locale: "tr";
   currency: string;
@@ -55,6 +57,7 @@ export interface SiteConfig {
 
 const defaultSiteConfig: SiteConfig = {
   name: "E-Ticaret Şablonu",
+  version: packageJson.version,
   description: "Next.js tabanlı e-ticaret şablonu",
   locale: "tr",
   currency: "TRY",
@@ -91,6 +94,7 @@ const projectSite = projectConfig.site ?? {};
 
 export const siteConfig: SiteConfig = {
   ...defaultSiteConfig,
+  version: packageJson.version,
   name: projectSite.name ?? defaultSiteConfig.name,
   description: projectSite.description ?? defaultSiteConfig.description,
   salesMode: projectSite.salesMode ?? defaultSiteConfig.salesMode,
