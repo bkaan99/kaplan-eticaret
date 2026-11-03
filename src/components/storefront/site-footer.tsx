@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { connection } from "next/server";
 import { Suspense } from "react";
 import { siteConfig } from "@/config/site.config";
 import { storefrontContact } from "@/config/storefront-contact";
@@ -20,9 +19,7 @@ import {
 } from "./icons";
 import { Logo } from "./logo";
 
-/** Yıl istek anında hesaplanır; prerender sırasında sabitlenmez. */
-async function CurrentYear() {
-  await connection();
+function CurrentYear() {
   return <>{new Date().getFullYear()}</>;
 }
 
@@ -68,7 +65,6 @@ function FooterColumn({
 }
 
 async function ShopLinks() {
-  await connection();
   const tree = await getCategoryTree();
 
   return (
@@ -90,7 +86,6 @@ async function ShopLinks() {
 }
 
 async function FooterMenu() {
-  await connection();
   const [menuItems, legal] = await Promise.all([
     getCachedMenu("footer"),
     getCachedLegalLinks(),
@@ -132,7 +127,6 @@ async function FooterMenu() {
 }
 
 async function FooterContact() {
-  await connection();
   const contact = await getCachedContactSettings();
   const whatsappHref = contact.whatsapp
     ? `https://wa.me/${contact.whatsapp.replace(/\D/g, "")}`

@@ -5,6 +5,17 @@
  */
 export const storefrontContact = {
   address: "Barbaros, Karagöl Cd. no:129, 06760 Çubuk/Ankara",
+  postalAddress: {
+    streetAddress: "Barbaros, Karagöl Cd. no:129",
+    addressLocality: "Çubuk",
+    addressRegion: "Ankara",
+    postalCode: "06760",
+    addressCountry: "TR",
+  },
+  geo: {
+    latitude: 40.2509353,
+    longitude: 33.0235786,
+  },
   mapsUrl:
     "https://www.google.com/maps/place/%C3%87ubuk+Kaplan+Tur%C5%9Fular%C4%B1/@40.2509353,33.0210037,665m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4082152eca3f6467:0x9fdb82f10f86123a!8m2!3d40.2509353!4d33.0235786!16s%2Fg%2F11qnvkrr9l?entry=ttu&g_ep=EgoyMDI2MTAyOC4wIKXMDSoASAFQAw%3D%3D",
   phone: "0507 542 03 01",

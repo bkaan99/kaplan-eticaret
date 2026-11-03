@@ -166,6 +166,59 @@ async function ProductContent({
     ? "https://schema.org/InStock"
     : "https://schema.org/OutOfStock";
 
+  const nextYear = new Date();
+  nextYear.setFullYear(nextYear.getFullYear() + 1);
+  const priceValidUntil = nextYear.toISOString().split("T")[0];
+
+  const sharedOffer = {
+    priceValidUntil,
+    itemCondition: "https://schema.org/NewCondition",
+    url: absoluteUrl(`/urun/${product.slug}`),
+    seller: {
+      "@type": "Organization",
+      name: siteConfig.name,
+    },
+    hasMerchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: "TR",
+      returnPolicyCategory:
+        "https://schema.org/MerchantReturnFiniteReturnWindow",
+      merchantReturnDays: siteConfig.returns.withdrawalPeriodDays,
+      returnMethod: "https://schema.org/ReturnByMail",
+      returnFees: "https://schema.org/FreeReturn",
+    },
+    shippingDetails: {
+      "@type": "OfferShippingDetails",
+      shippingRate: {
+        "@type": "MonetaryAmount",
+        value:
+          lowPrice >= siteConfig.shipping.freeShippingThreshold
+            ? "0.00"
+            : siteConfig.shipping.flatRate.toFixed(2),
+        currency,
+      },
+      shippingDestination: {
+        "@type": "DefinedRegion",
+        addressCountry: "TR",
+      },
+      deliveryTime: {
+        "@type": "ShippingDeliveryTime",
+        handlingTime: {
+          "@type": "QuantitativeValue",
+          minValue: 1,
+          maxValue: 2,
+          unitCode: "DAY",
+        },
+        transitTime: {
+          "@type": "QuantitativeValue",
+          minValue: 1,
+          maxValue: 3,
+          unitCode: "DAY",
+        },
+      },
+    },
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <JsonLd
@@ -174,13 +227,14 @@ async function ProductContent({
           "@type": "Product",
           name: product.name,
           description: plainText(product.description, 500),
-          sku: product.variants[0]?.sku,
+          sku: product.variants[0]?.sku || product.slug,
           image: product.images.map((image) =>
             image.url.startsWith("http") ? image.url : absoluteUrl(image.url),
           ),
-          brand: product.brand
-            ? { "@type": "Brand", name: product.brand.name }
-            : undefined,
+          brand: {
+            "@type": "Brand",
+            name: product.brand?.name ?? siteConfig.name,
+          },
           offers: !product.priceVisible
             ? undefined
             : product.variants.length > 1 && lowPrice !== highPrice
@@ -191,14 +245,14 @@ async function ProductContent({
                   highPrice: highPrice.toFixed(2),
                   offerCount: product.variants.length,
                   availability,
-                  url: absoluteUrl(`/urun/${product.slug}`),
+                  ...sharedOffer,
                 }
               : {
                   "@type": "Offer",
                   priceCurrency: currency,
                   price: lowPrice.toFixed(2),
                   availability,
-                  url: absoluteUrl(`/urun/${product.slug}`),
+                  ...sharedOffer,
                 },
         }}
       />

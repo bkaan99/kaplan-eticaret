@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { connection } from "next/server";
 import { JsonLd } from "@/components/storefront/json-ld";
 import {
   ArrowRightIcon,
@@ -23,7 +22,6 @@ export const metadata: Metadata = {
 };
 
 export default async function ContactPage() {
-  await connection();
   const contact = await getCachedContactSettings();
   const siteUrl = getSiteUrl();
 

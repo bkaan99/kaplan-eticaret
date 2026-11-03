@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { connection } from "next/server";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -26,7 +25,6 @@ export const metadata: Metadata = {
 };
 
 async function FeaturedProducts() {
-  await connection();
   const products = await catalogService.getHomepageProducts(
     8,
     await getRequestPricing(),
@@ -35,7 +33,6 @@ async function FeaturedProducts() {
 }
 
 async function CategoryTiles() {
-  await connection();
   const tree = await getCategoryTree();
 
   return (
@@ -70,7 +67,6 @@ async function CategoryTiles() {
 }
 
 async function SiteJsonLd() {
-  await connection();
   const [url, contact] = await Promise.all([
     Promise.resolve(getSiteUrl()),
     getCachedContactSettings(),
@@ -81,12 +77,26 @@ async function SiteJsonLd() {
       <JsonLd
         data={{
           "@context": "https://schema.org",
-          "@type": "Organization",
+          "@type": ["Organization", "Store"],
           name: siteConfig.name,
           url,
+          logo: absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+          image: [
+            absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg"),
+            absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+          ],
+          description: siteConfig.description,
           email: contact.email,
           telephone: storefrontContact.phoneTel,
-          address: storefrontContact.address,
+          priceRange: "₺₺",
+          address: {
+            "@type": "PostalAddress",
+            ...storefrontContact.postalAddress,
+          },
+          geo: {
+            "@type": "GeoCoordinates",
+            ...storefrontContact.geo,
+          },
           hasMap: storefrontContact.mapsUrl,
           sameAs: [
             storefrontContact.instagramUrl,
@@ -154,7 +164,6 @@ const BUILDER_STEPS = [
 
 /** "Kendi Turşunu Yap" bandı: boyutlar ve malzeme sınırları gerçek ürün verisinden gelir. */
 async function BuilderBand() {
-  await connection();
   const pricing = await getRequestPricing();
   const data = await customPickleService.getBuilder({
     customerGroupId: pricing.customerGroupId,

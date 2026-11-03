@@ -3,8 +3,8 @@
 export const CACHE_PRIVATE =
   "private, no-store, no-cache, max-age=0, must-revalidate";
 
-/** Anonim ürün/kategori HTML — edge kısa TTL + SWR. */
-export const CACHE_CATALOG_HTML =
+/** Anonim vitrin HTML — edge kısa TTL + SWR. */
+export const CACHE_PUBLIC_HTML =
   "public, s-maxage=60, stale-while-revalidate=300";
 
 /** Public katalog API (varsa) — daha kısa edge TTL. */
@@ -34,9 +34,20 @@ const PRIVATE_PREFIXES = [
   "/api/auth",
   "/api/cron",
   "/api/payments",
+  "/api/storefront",
+  "/api/cart",
+  "/api/account",
+  "/api/wishlist",
 ] as const;
 
-const CATALOG_PREFIXES = ["/urun/", "/kategori/"] as const;
+/** Anonimken edge cache’lenebilir vitrin yolları. */
+const PUBLIC_HTML_PREFIXES = [
+  "/urun/",
+  "/kategori/",
+  "/sayfa/",
+] as const;
+
+const PUBLIC_HTML_EXACT = ["/", "/iletisim", "/ara"] as const;
 
 export function isPrivatePath(pathname: string): boolean {
   return PRIVATE_PREFIXES.some(
@@ -45,7 +56,14 @@ export function isPrivatePath(pathname: string): boolean {
 }
 
 export function isCatalogPath(pathname: string): boolean {
-  return CATALOG_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  return (
+    PUBLIC_HTML_EXACT.includes(pathname as (typeof PUBLIC_HTML_EXACT)[number]) ||
+    PUBLIC_HTML_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
+}
+
+export function isPublicHtmlPath(pathname: string): boolean {
+  return isCatalogPath(pathname);
 }
 
 export function isUploadPath(pathname: string): boolean {

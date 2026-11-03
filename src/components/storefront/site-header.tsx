@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import Link from "next/link";
 import { Suspense } from "react";
 import { isFeatureEnabled } from "@/config/features";
@@ -8,16 +7,14 @@ import { getCategoryTree } from "@/modules/catalog/cached";
 import { getCachedMenu } from "@/modules/content/cached";
 import { getCachedContactSettings } from "@/modules/settings/cached";
 import { formatMoney } from "@/shared/money";
-import { AccountLink } from "./account-link";
-import { CartBadge } from "./cart-badge";
 import { HeaderNav } from "./header-nav";
 import { BidonThumb, HeartIcon, TruckIcon } from "./icons";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
 import { SearchForm } from "./search-form";
+import { StorefrontShellActions } from "./storefront-shell";
 
 async function MobileNavContainer() {
-  await connection();
   const [tree, extra, contact] = await Promise.all([
     getCategoryTree(),
     getCachedMenu("header"),
@@ -40,7 +37,6 @@ async function MobileNavContainer() {
 }
 
 async function CategoryNav() {
-  await connection();
   const [tree, extra] = await Promise.all([
     getCategoryTree(),
     getCachedMenu("header"),
@@ -117,15 +113,10 @@ export function SiteHeader() {
                 <HeartIcon />
               </Link>
             ) : null}
-            {/* Dar ekranda hesap bağlantısı çekmecede */}
-            <div className="contents max-sm:hidden">
-              <Suspense fallback={<span className={iconLinkClass} />}>
-                <AccountLink className={iconLinkClass} />
-              </Suspense>
+            {/* Sepet/hesap istemci kabuğu — HTML edge cache için SSR kişiselleştirme yok */}
+            <div className="flex items-center gap-0.5 sm:gap-1 max-sm:[&>div:first-child]:hidden">
+              <StorefrontShellActions accountClassName={iconLinkClass} />
             </div>
-            <Suspense fallback={<span className="h-10 w-24" />}>
-              <CartBadge />
-            </Suspense>
             <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
               <MobileNavContainer />
             </Suspense>

@@ -499,7 +499,12 @@ async function seedLegalPages(db: Db): Promise<void> {
     await db
       .insert(page)
       // Mevcut (düzenlenmiş) içerik asla ezilmez.
-      .values({ ...template, isPublished: false })
+      .values({
+        title: template.title,
+        slug: template.slug,
+        content: template.content,
+        isPublished: true,
+      })
       .onConflictDoNothing({ target: page.slug });
   }
 }

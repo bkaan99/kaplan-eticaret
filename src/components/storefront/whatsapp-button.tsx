@@ -1,9 +1,7 @@
-import { connection } from "next/server";
 import { getCachedContactSettings } from "@/modules/settings/cached";
 
 /** Sabit WhatsApp düğmesi; yalnızca panelde WhatsApp numarası tanımlıysa görünür. */
 export async function WhatsAppButton() {
-  await connection();
   const { whatsapp } = await getCachedContactSettings();
   if (!whatsapp) return null;
 

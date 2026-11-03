@@ -19,7 +19,8 @@
     "enabled": true,
     "traces": {
       "enabled": true,
-      "head_sampling_rate": 1
+      // Prod maliyet/overhead: %5 örnekleme (staging’de geçici olarak 1 yapılabilir)
+      "head_sampling_rate": 0.05
     }
   },
   "workers_dev": true,

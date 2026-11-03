@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Price } from "@/components/storefront/price";
+import { refreshStorefrontShell } from "@/components/storefront/shell-events";
 import type { CartLine, CartView } from "@/modules/cart/cart.types";
 import { removeCartItemAction, updateCartQuantityAction } from "./actions";
 
@@ -31,12 +32,14 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
         line.lineKey,
       );
       setError(result.ok ? null : (result.error ?? "Güncellenemedi"));
+      if (result.ok) refreshStorefrontShell();
     });
   }
 
   function remove() {
     startTransition(async () => {
       await removeCartItemAction(line.variantId, line.lineKey);
+      refreshStorefrontShell();
     });
   }
 

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { addToCartAction } from "@/app/(storefront)/sepet/actions";
 import { trackEvent } from "@/shared/analytics/client";
 import { BagIcon } from "./icons";
+import { refreshStorefrontShell } from "./shell-events";
 
 /** Tek seçenekli ürünü ürün sayfasına gitmeden sepete ekler. */
 export function QuickAddButton({
@@ -23,6 +24,7 @@ export function QuickAddButton({
       const result = await addToCartAction(variantId, 1);
       setState(result.ok ? "added" : "error");
       if (result.ok) {
+        refreshStorefrontShell();
         const price = Number(product.price);
         trackEvent("add_to_cart", {
           currency: product.currency,
