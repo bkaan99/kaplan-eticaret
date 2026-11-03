@@ -8,7 +8,7 @@ export function Table({
   return (
     <div className="w-full overflow-x-auto">
       <table
-        className={cn("w-full border-collapse text-sm", className)}
+        className={cn("w-full border-collapse text-[13px]", className)}
         {...props}
       />
     </div>
@@ -18,7 +18,7 @@ export function Table({
 export function THead(props: HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <thead
-      className="border-b border-slate-200 bg-slate-50/80 text-left"
+      className="border-b border-slate-200 bg-slate-50/70 text-left"
       {...props}
     />
   );
@@ -34,7 +34,7 @@ export function TR({
 }: HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn("transition-colors hover:bg-slate-50/80", className)}
+      className={cn("transition-colors hover:bg-slate-50/70", className)}
       {...props}
     />
   );
@@ -47,7 +47,7 @@ export function TH({
   return (
     <th
       className={cn(
-        "px-4 py-3 text-xs font-bold tracking-wide text-slate-500 uppercase",
+        "px-3.5 py-2.5 text-[11px] font-semibold tracking-wide text-slate-500 uppercase",
         className,
       )}
       {...props}
@@ -60,6 +60,9 @@ export function TD({
   ...props
 }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn("px-4 py-3.5 align-middle text-slate-700", className)} {...props} />
+    <td
+      className={cn("px-3.5 py-2.5 align-middle text-slate-700", className)}
+      {...props}
+    />
   );
 }

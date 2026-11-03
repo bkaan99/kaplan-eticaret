@@ -212,7 +212,7 @@ export function SettingsForm({
                     value={form.phone}
                     onChange={(e) => update("phone", e.target.value)}
                     placeholder="+90 532 123 45 67 veya 0224 123 45 67"
-                    className="h-10 text-xs font-semibold bg-white"
+                    className="h-9 text-xs font-semibold bg-white"
                   />
                   <span className="text-[11px] text-slate-400">
                     Tıklandığında doğrudan telefon arama ekranını tetikler.
@@ -242,7 +242,7 @@ export function SettingsForm({
                     value={form.whatsapp ?? ""}
                     onChange={(e) => update("whatsapp", e.target.value)}
                     placeholder="+90 532 123 45 67"
-                    className="h-10 text-xs font-semibold bg-white"
+                    className="h-9 text-xs font-semibold bg-white"
                   />
                   <span className="text-[11px] text-slate-400">
                     Mobil ve masaüstünde tek tıkla WhatsApp sohbetini açar.
@@ -260,7 +260,7 @@ export function SettingsForm({
                     value={form.email}
                     onChange={(e) => update("email", e.target.value)}
                     placeholder="siparis@kaplangurme.com"
-                    className="h-10 text-xs font-semibold bg-white"
+                    className="h-9 text-xs font-semibold bg-white"
                   />
                   <span className="text-[11px] text-slate-400">
                     Müşteri bildirimlerinde ve iletişim sayfasında görünür.
@@ -277,7 +277,7 @@ export function SettingsForm({
                     value={form.workingHours ?? ""}
                     onChange={(e) => update("workingHours", e.target.value)}
                     placeholder="Hafta içi 08:30 - 18:00, Cmt 09:00 - 14:00"
-                    className="h-10 text-xs font-semibold bg-white"
+                    className="h-9 text-xs font-semibold bg-white"
                   />
                   <span className="text-[11px] text-slate-400">
                     Müşterilerin danışma saatlerini bilmesi için gösterilir.
@@ -379,7 +379,7 @@ export function SettingsForm({
                     value={form.instagramUrl ?? ""}
                     onChange={(e) => update("instagramUrl", e.target.value)}
                     placeholder="https://instagram.com/kaplantursulari"
-                    className="h-10 text-xs font-semibold bg-white"
+                    className="h-9 text-xs font-semibold bg-white"
                   />
                 </div>
 
@@ -405,7 +405,7 @@ export function SettingsForm({
                     value={form.facebookUrl ?? ""}
                     onChange={(e) => update("facebookUrl", e.target.value)}
                     placeholder="https://facebook.com/kaplantursulari"
-                    className="h-10 text-xs font-semibold bg-white"
+                    className="h-9 text-xs font-semibold bg-white"
                   />
                 </div>
               </div>
@@ -435,7 +435,7 @@ export function SettingsForm({
                   variant="outline"
                   onClick={handleReset}
                   disabled={pending}
-                  className="h-10 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  className="h-9 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                 >
                   Sıfırla
                 </Button>
@@ -444,7 +444,7 @@ export function SettingsForm({
               <Button
                 type="submit"
                 disabled={pending || !isDirty}
-                className="h-10 bg-emerald-700 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-800 disabled:opacity-50 cursor-pointer"
+                className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-50 cursor-pointer"
               >
                 {pending ? (
                   <div className="flex items-center gap-2">

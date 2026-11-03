@@ -253,7 +253,7 @@ function BannerModal({
                 placeholder="/images/banner/... veya dosya yükleyin"
                 className="rounded-xl flex-1 font-mono text-xs"
               />
-              <label className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-100 transition">
+              <label className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-100 transition">
                 <span>📁 {uploading ? "Yükleniyor..." : "Dosya Seç"}</span>
                 <input
                   type="file"
@@ -766,7 +766,7 @@ function PageSection({ pages }: { pages: PageRow[] }) {
                       value={form.slug}
                       onChange={(e) => set("slug", slugify(e.target.value))}
                       placeholder="hakkimizda"
-                      className="h-10 w-full bg-transparent pl-1 text-xs font-mono text-slate-900 outline-none"
+                      className="h-9 w-full bg-transparent pl-1 text-xs font-mono text-slate-900 outline-none"
                     />
                   </div>
                 </div>

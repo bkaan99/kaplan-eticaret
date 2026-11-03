@@ -9,7 +9,7 @@ import type {
 import { savePickleOptionsAction } from "./actions";
 
 const inputClass =
-  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-primary focus:ring-3 focus:ring-primary/10";
+  "h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10";
 
 export function PickleOptionsManager({
   initialOptions,
@@ -300,7 +300,7 @@ export function PickleOptionsManager({
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      className="h-10 w-12 cursor-pointer rounded-lg border border-slate-200 p-0.5"
+                      className="h-9 w-12 cursor-pointer rounded-lg border border-slate-200 p-0.5"
                       value={brineColor}
                       onChange={(e) => setBrineColor(e.target.value)}
                     />

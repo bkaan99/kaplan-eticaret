@@ -81,7 +81,7 @@ export function ProductBasicInfo({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Örn: Kaplan Gurme Çubuk Turşusu"
-              className="h-10 text-sm font-semibold"
+              className="h-9 text-sm font-semibold"
             />
           </Field>
         </div>

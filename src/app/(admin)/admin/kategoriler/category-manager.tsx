@@ -140,7 +140,7 @@ function CategoryModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
               {form.id ? "✏️" : "📁"}
             </span>
             <div>
@@ -194,7 +194,7 @@ function CategoryModal({
                 value={form.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Örn: Klasik Turşular"
-                className="h-10 text-xs font-semibold bg-white"
+                className="h-9 text-xs font-semibold bg-white"
               />
             </div>
 
@@ -227,7 +227,7 @@ function CategoryModal({
                     set("slug", e.target.value);
                   }}
                   placeholder="klasik-tursular"
-                  className="h-10 pl-20 font-mono text-xs text-slate-800 bg-white"
+                  className="h-9 pl-20 font-mono text-xs text-slate-800 bg-white"
                 />
               </div>
             </div>
@@ -242,7 +242,7 @@ function CategoryModal({
               <Select
                 value={form.parentId}
                 onChange={(e) => set("parentId", e.target.value)}
-                className="h-10 text-xs font-medium bg-white"
+                className="h-9 text-xs font-medium bg-white"
               >
                 <option value="">Ana Kategori (En Üst Seviye)</option>
                 {categories
@@ -266,7 +266,7 @@ function CategoryModal({
                   onChange={(e) => set("sortOrder", e.target.value)}
                   inputMode="numeric"
                   placeholder="0"
-                  className="h-10 text-xs font-mono bg-white"
+                  className="h-9 text-xs font-mono bg-white"
                 />
               </div>
 
@@ -274,7 +274,7 @@ function CategoryModal({
                 <button
                   type="button"
                   onClick={() => set("isActive", !form.isActive)}
-                  className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                  className={`flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
                     form.isActive
                       ? "border-emerald-300 bg-emerald-50 text-emerald-800"
                       : "border-slate-200 bg-slate-100 text-slate-500"
@@ -301,10 +301,10 @@ function CategoryModal({
                 value={form.imageUrl}
                 onChange={(e) => set("imageUrl", e.target.value)}
                 placeholder="/images/kategori/klasik.jpg veya https://..."
-                className="h-10 text-xs font-mono flex-1 bg-white"
+                className="h-9 text-xs font-mono flex-1 bg-white"
               />
               {form.imageUrl && (
-                <div className="relative h-10 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="relative h-9 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
                   <Image
                     src={form.imageUrl}
                     alt="Önizleme"
@@ -378,7 +378,7 @@ function CategoryModal({
             variant="outline"
             onClick={onClose}
             disabled={pending}
-            className="h-10 px-5 text-xs font-semibold text-slate-700 hover:bg-white cursor-pointer"
+            className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
           >
             Vazgeç
           </Button>
@@ -387,7 +387,7 @@ function CategoryModal({
             type="button"
             disabled={pending || !form.name.trim()}
             onClick={onSave}
-            className="h-10 bg-emerald-700 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
+            className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
           >
             {pending ? (
               <div className="flex items-center gap-2">

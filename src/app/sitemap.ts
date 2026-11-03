@@ -25,7 +25,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const allPages = [...pages, ...fallbackPages];
 
   return [
-    { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
+    {
+      url: absoluteUrl("/"),
+      changeFrequency: "daily",
+      priority: 1,
+      images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
+    },
     {
       url: absoluteUrl("/kendi-tursunu-yap"),
       changeFrequency: "weekly",
@@ -35,11 +40,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: absoluteUrl("/iletisim"),
       changeFrequency: "monthly",
       priority: 0.6,
+      images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
     },
     ...categories.map((category) => ({
       url: absoluteUrl(`/kategori/${category.slug}`),
       changeFrequency: "weekly" as const,
       priority: 0.7,
+      images: category.imageUrl
+        ? [
+            category.imageUrl.startsWith("http")
+              ? category.imageUrl
+              : absoluteUrl(category.imageUrl),
+          ]
+        : undefined,
     })),
     ...allPages.map((page) => ({
       url: absoluteUrl(`/sayfa/${page.slug}`),

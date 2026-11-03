@@ -32,15 +32,11 @@ export function NewProductButton({
 
   return (
     <>
-      <Button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="gap-2 shadow-sm"
-      >
+      <Button type="button" onClick={() => setOpen(true)}>
         <svg
           viewBox="0 0 24 24"
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           fill="none"
           stroke="currentColor"
           strokeWidth="2.25"

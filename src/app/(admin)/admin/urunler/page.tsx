@@ -173,10 +173,10 @@ async function ProductsContent({
                 defaultValue={search}
                 placeholder="Ürün adı veya SKU ara…"
                 aria-label="Ara"
-                className="h-10 border-slate-200/90 bg-slate-50/80 pl-9 focus:bg-white"
+                className="border-slate-200/90 bg-slate-50/80 pl-9 focus:bg-white"
               />
             </label>
-            <Button type="submit" variant="outline" className="h-10">
+            <Button type="submit" variant="outline">
               Ara
             </Button>
             {search || activeStatus ? (
@@ -184,7 +184,7 @@ async function ProductsContent({
                 href="/admin/urunler"
                 className={cn(
                   buttonVariants({ variant: "ghost", size: "sm" }),
-                  "h-10 text-slate-500",
+                  "text-slate-500",
                 )}
               >
                 Temizle

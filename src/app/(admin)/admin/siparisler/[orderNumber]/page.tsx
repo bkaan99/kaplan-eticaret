@@ -99,7 +99,7 @@ async function OrderDetail({
         actions={
           <Link
             href="/admin/siparisler"
-            className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50"
+            className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50"
           >
             ← Siparişler
           </Link>

@@ -126,7 +126,7 @@ function AttributeModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
               🏷️
             </span>
             <div>
@@ -173,7 +173,7 @@ function AttributeModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Örn: Acılık Seviyesi, Tuz Oranı, Fermantasyon Türü..."
-                className="h-10 text-xs font-semibold bg-white"
+                className="h-9 text-xs font-semibold bg-white"
               />
             </div>
 
@@ -205,14 +205,14 @@ function AttributeModal({
               variant="outline"
               onClick={onClose}
               disabled={pending}
-              className="h-10 px-5 text-xs font-semibold text-slate-700 hover:bg-white cursor-pointer"
+              className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
             >
               Vazgeç
             </Button>
             <Button
               type="submit"
               disabled={pending || !name.trim()}
-              className="h-10 bg-emerald-700 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
+              className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
             >
               {pending ? (
                 <div className="flex items-center gap-2">
@@ -301,7 +301,7 @@ function BrandModal({ isOpen, onClose, onSuccess }: BrandModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-amber-50/30 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100 text-lg shadow-2xs">
               🏢
             </span>
             <div>
@@ -348,7 +348,7 @@ function BrandModal({ isOpen, onClose, onSuccess }: BrandModalProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Örn: Kaplan Gurme, Çubuk Lezzetleri..."
-                className="h-10 text-xs font-semibold bg-white"
+                className="h-9 text-xs font-semibold bg-white"
               />
             </div>
           </div>
@@ -360,14 +360,14 @@ function BrandModal({ isOpen, onClose, onSuccess }: BrandModalProps) {
               variant="outline"
               onClick={onClose}
               disabled={pending}
-              className="h-10 px-5 text-xs font-semibold text-slate-700 hover:bg-white cursor-pointer"
+              className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
             >
               Vazgeç
             </Button>
             <Button
               type="submit"
               disabled={pending || !name.trim()}
-              className="h-10 bg-slate-900 px-6 text-xs font-bold text-white shadow-md hover:bg-slate-800 disabled:opacity-60 cursor-pointer"
+              className="h-9 bg-slate-900 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-slate-800 disabled:opacity-60 cursor-pointer"
             >
               {pending ? (
                 <div className="flex items-center gap-2">
@@ -458,7 +458,7 @@ function AttributeValueModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
               🔖
             </span>
             <div>
@@ -505,7 +505,7 @@ function AttributeValueModal({
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder="Örn: Az Acılı, Çok Acılı, Tatlı, 3 Litre..."
-                className="h-10 text-xs font-semibold bg-white"
+                className="h-9 text-xs font-semibold bg-white"
               />
             </div>
           </div>
@@ -517,14 +517,14 @@ function AttributeValueModal({
               variant="outline"
               onClick={onClose}
               disabled={pending}
-              className="h-10 px-5 text-xs font-semibold text-slate-700 hover:bg-white cursor-pointer"
+              className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
             >
               Vazgeç
             </Button>
             <Button
               type="submit"
               disabled={pending || !value.trim()}
-              className="h-10 bg-emerald-700 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
+              className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
             >
               {pending ? (
                 <div className="flex items-center gap-2">

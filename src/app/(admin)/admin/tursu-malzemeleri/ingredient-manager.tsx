@@ -62,7 +62,7 @@ function toPayload(form: FormState) {
 }
 
 const inputClass =
-  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-primary focus:ring-3 focus:ring-primary/10";
+  "h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10";
 
 /* -------------------------------------------------------------------------- */
 /*                              INGREDIENT MODAL                              */
@@ -129,7 +129,7 @@ function IngredientModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
               🥒
             </span>
             <div>
@@ -271,7 +271,7 @@ function IngredientModal({
                 aria-label="Görsel adresi"
               />
 
-              <label className="inline-flex h-10 shrink-0 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3.5 font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition">
+              <label className="inline-flex h-9 shrink-0 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3.5 font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition">
                 {uploading ? "Yükleniyor..." : "📁 Dosya Seç"}
                 <input
                   type="file"
@@ -317,7 +317,7 @@ function IngredientModal({
             variant="outline"
             onClick={onClose}
             disabled={pending || uploading}
-            className="h-10 px-5 text-xs font-semibold text-slate-700 hover:bg-white cursor-pointer"
+            className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
           >
             Vazgeç
           </Button>
@@ -325,7 +325,7 @@ function IngredientModal({
             type="button"
             onClick={onSave}
             disabled={pending || uploading || !form.name.trim()}
-            className="h-10 bg-emerald-700 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
+            className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
           >
             {pending ? (
               <div className="flex items-center gap-2">

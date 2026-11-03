@@ -233,7 +233,7 @@ function CouponModal({
               value={form.code}
               onChange={(e) => onChange("code", e.target.value.toUpperCase())}
               placeholder="Örn: KAPLAN20"
-              className="h-10 font-mono text-sm uppercase tracking-wider font-bold text-slate-900"
+              className="h-9 font-mono text-sm uppercase tracking-wider font-bold text-slate-900"
             />
           </div>
 
@@ -776,7 +776,7 @@ function CampaignModal({
               value={form.name}
               onChange={(e) => onChange("name", e.target.value)}
               placeholder="Örn: 500 TL Üzeri %10 Sepet İndirimi"
-              className="h-10 text-xs font-semibold"
+              className="h-9 text-xs font-semibold"
             />
           </div>
 
