@@ -161,6 +161,8 @@ export type SpiceOption = string;
 export interface StoredCustomization {
   kind: "custom-pickle";
   ingredientIds: string[];
+  /** Sebze oranları (%10 adım, toplam 100). Eski sepet satırlarında yoktur. */
+  shares?: Record<string, number>;
   brine: BrineOption;
   spice: SpiceOption;
   note: string | null;
@@ -169,7 +171,12 @@ export interface StoredCustomization {
 /** Siparişe yazılan kopya: malzeme değişse de sipariş içeriği korunur. */
 export interface CustomizationSnapshot {
   kind: "custom-pickle";
-  ingredients: { id: string; name: string; unitExtra: string }[];
+  ingredients: {
+    id: string;
+    name: string;
+    unitExtra: string;
+    share?: number;
+  }[];
   brine: string;
   spice: string;
   note: string | null;

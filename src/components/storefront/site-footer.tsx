@@ -42,12 +42,6 @@ const paymentBadges = [
     height: 24,
   },
   {
-    src: "/images/payment/ssl.svg",
-    alt: "256-Bit SSL",
-    width: 92,
-    height: 24,
-  },
-  {
     src: "/images/payment/paytr.svg",
     alt: "PayTR",
     width: 80,

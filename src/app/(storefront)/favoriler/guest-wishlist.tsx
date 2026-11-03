@@ -9,6 +9,7 @@ import {
 } from "@/components/wishlist/wishlist-store";
 import type { ProductCard } from "@/modules/catalog/catalog.types";
 import { getWishlistCardsAction } from "./actions";
+import { EmptyWishlist } from "./empty-wishlist";
 
 /** Misafir favorileri tarayıcıda tutulur; ürün kartları sunucudan çekilir. */
 export function GuestWishlist() {
@@ -32,15 +33,20 @@ export function GuestWishlist() {
   }, [key]);
 
   if (key !== "" && cards === null) {
-    return <p className="text-muted-foreground">Yükleniyor...</p>;
+    return (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-72 animate-pulse rounded-2xl bg-slate-100"
+          />
+        ))}
+      </div>
+    );
   }
 
   if (key === "" || cards === null || cards.length === 0) {
-    return (
-      <p className="py-12 text-center text-muted-foreground">
-        Henüz favori ürününüz yok.
-      </p>
-    );
+    return <EmptyWishlist />;
   }
 
   return <ProductGrid products={cards} />;

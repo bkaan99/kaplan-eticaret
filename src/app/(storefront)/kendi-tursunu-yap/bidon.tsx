@@ -109,6 +109,8 @@ export interface BidonItem {
   id: string;
   name: string;
   imageUrl: string | null;
+  /** Sebze payı (%); verilirse parça sayısı paya göre belirlenir */
+  share?: number;
 }
 
 export function Bidon({
@@ -120,6 +122,7 @@ export function Bidon({
   hasBubbles,
   sizeLabel,
   maxIngredients = MAX_INGREDIENTS,
+  fill,
   scale,
 }: {
   items: BidonItem[];
@@ -131,6 +134,8 @@ export function Bidon({
   sizeLabel: string;
   /** Seçili boyuttaki çeşit üst sınırı; salamura doluluk oranı buna göre. */
   maxIngredients?: number;
+  /** Doluluk (0–1); verilmezse çeşit sayısından hesaplanır */
+  fill?: number;
   /** Bidon boyutuna göre görsel ölçek (0.8–1) */
   scale: number;
 }) {
@@ -144,15 +149,14 @@ export function Bidon({
   const reduceMotion = useReducedMotion();
 
   // Salamura + parçalar: boyuttaki max çeşitte ağzına kadar dolu.
-  const fillRatio = Math.min(1, items.length / Math.max(1, maxIngredients));
+  const fillRatio =
+    fill ?? Math.min(1, items.length / Math.max(1, maxIngredients));
   const level = 0.12 + fillRatio * 0.88;
   const liquidTop = BODY_BOTTOM - level * (BODY_BOTTOM - (BODY_TOP + 28));
   /** Max çeşitte her çeşit için kaç slot (tüm jar dolsun). */
   const piecesPerKind = Math.max(1, Math.floor(SLOTS.length / maxIngredients));
   const liquidFill =
-    brineColor ??
-    BRINE_COLOR[brine as keyof typeof BRINE_COLOR] ??
-    "#d6e29a";
+    brineColor ?? BRINE_COLOR[brine as keyof typeof BRINE_COLOR] ?? "#d6e29a";
   const pepperOpacity =
     spiceTint !== undefined
       ? spiceTint
@@ -261,9 +265,18 @@ export function Bidon({
   const visibleItems = items.filter((item) => visibleIds.includes(item.id));
 
   // Alttan üste sabit katman: yeni çeşit önceki yığının üstüne biner (yeniden dağıtılmaz).
-  const jarPieces = visibleItems.flatMap((item, kindIndex) =>
-    Array.from({ length: piecesPerKind }, (_, pieceIndex) => {
-      const slotIndex = kindIndex * piecesPerKind + pieceIndex;
+  // Sebzeler bidondaki paylarıyla orantılı yer kaplar; aromalar birkaç parça.
+  const pieceCounts = visibleItems.map((item) =>
+    item.share !== undefined
+      ? Math.max(1, Math.round((item.share / 100) * SLOTS.length * 0.85))
+      : Math.min(2, piecesPerKind),
+  );
+  const jarPieces = visibleItems.flatMap((item, kindIndex) => {
+    const startSlot = pieceCounts
+      .slice(0, kindIndex)
+      .reduce((sum, count) => sum + count, 0);
+    return Array.from({ length: pieceCounts[kindIndex]! }, (_, pieceIndex) => {
+      const slotIndex = startSlot + pieceIndex;
       if (slotIndex >= SLOTS.length) return null;
       const slot = SLOTS[slotIndex]!;
       return {
@@ -279,8 +292,8 @@ export function Bidon({
         /** Ağız hizasından kendi katmanına düşüş mesafesi */
         dropFrom: BODY_TOP + 18 - slot.y,
       };
-    }).filter((piece): piece is NonNullable<typeof piece> => piece !== null),
-  );
+    }).filter((piece): piece is NonNullable<typeof piece> => piece !== null);
+  });
 
   return (
     <motion.svg

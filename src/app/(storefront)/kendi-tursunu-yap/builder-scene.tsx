@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import { AnimatePresence, motion } from "motion/react";
 import type { BuilderSize } from "@/modules/custom-pickle/custom-pickle.service";
 import type { CustomPickleBuilderState } from "./use-custom-pickle-builder";
 import { Bidon } from "./bidon";
@@ -13,90 +11,56 @@ export function BuilderScene({
   builder: CustomPickleBuilderState;
   sizes: BuilderSize[];
 }) {
-  const { chosen, brine, spice, size, sizeIndex, maxIngredients, toggle } =
-    builder;
-  const fillPct = Math.min(
-    100,
-    Math.round((chosen.length / maxIngredients) * 100),
-  );
+  const {
+    chosen,
+    vegetables,
+    aromas,
+    shares,
+    filled,
+    brine,
+    spice,
+    size,
+    sizeIndex,
+    maxIngredients,
+  } = builder;
 
   return (
-    <div className="lg:sticky lg:top-28 lg:self-start">
-      <div className="relative overflow-hidden rounded-[2rem] border border-border bg-gradient-to-b from-[#f6f8f2] via-[#e9efdf] to-[#dce5d0] px-2 pt-4 pb-5 sm:px-3 sm:pt-5">
-        {/* Atmosfer — yumuşak ışık halkası */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-2 top-6 aspect-square rounded-full bg-[radial-gradient(circle_at_50%_40%,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.35)_45%,transparent_70%)]"
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-b from-[#f7f8f3] to-[#e9efdf] p-4">
+      <div className="mx-auto w-full max-w-[15rem]">
+        <Bidon
+          items={chosen.map((item) => ({ ...item, share: shares[item.id] }))}
+          brine={brine}
+          spice={spice}
+          brineColor={builder.activeBrine?.color}
+          spiceTint={builder.activeSpice?.tint}
+          hasBubbles={builder.activeBrine?.hasBubbles}
+          sizeLabel={size?.label ?? ""}
+          maxIngredients={maxIngredients}
+          fill={chosen.length === 0 ? 0 : filled / 100}
+          scale={
+            sizes.length > 1
+              ? 0.86 + (0.08 * Math.max(0, sizeIndex)) / (sizes.length - 1)
+              : 0.92
+          }
         />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-8 bottom-24 h-24 rounded-[100%] bg-[#0b2318]/[0.04] blur-2xl"
-        />
-
-        <div className="relative mx-auto w-full max-w-[20rem] sm:max-w-[22rem]">
-          <Bidon
-            items={chosen}
-            brine={brine}
-            spice={spice}
-            brineColor={builder.activeBrine?.color}
-            spiceTint={builder.activeSpice?.tint}
-            hasBubbles={builder.activeBrine?.hasBubbles}
-            sizeLabel={size?.label ?? ""}
-            maxIngredients={maxIngredients}
-            scale={
-              sizes.length > 1
-                ? 0.86 + (0.08 * Math.max(0, sizeIndex)) / (sizes.length - 1)
-                : 0.92
-            }
-          />
-        </div>
-
-        <div className="relative mt-1 flex flex-col items-center gap-1 px-2 text-center">
-          <p className="font-display text-lg font-semibold text-brand-dark tabular-nums sm:text-xl">
-            %{fillPct} dolu
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              · {chosen.length}/{maxIngredients} malzeme
-            </span>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {size?.label
-              ? `${size.label} · malzeme seçtikçe bidonunuz dolacak`
-              : "Malzeme seçtikçe bidonunuz dolacak"}
-          </p>
-        </div>
-
-        <div className="relative mt-4 flex min-h-9 flex-wrap justify-center gap-2 px-1">
-          <AnimatePresence mode="popLayout">
-            {chosen.length === 0 ? null : (
-              chosen.map((item) => (
-                <motion.button
-                  layout
-                  key={item.id}
-                  type="button"
-                  onClick={() => toggle(item.id)}
-                  aria-label={`${item.name} malzemesini çıkar`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-white/95 py-1 pr-2.5 pl-1 text-xs font-medium text-primary shadow-sm backdrop-blur-sm"
-                  initial={{ opacity: 0, scale: 0.6 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.6 }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <Image
-                    src={item.imageUrl ?? "/placeholder.svg"}
-                    alt=""
-                    width={22}
-                    height={22}
-                  />
-                  {item.name}
-                  <span aria-hidden="true" className="text-muted-foreground">
-                    ×
-                  </span>
-                </motion.button>
-              ))
-            )}
-          </AnimatePresence>
-        </div>
       </div>
+      {vegetables.length > 0 ? (
+        <ul className="mt-2 flex flex-wrap justify-center gap-1.5">
+          {vegetables.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-primary shadow-xs"
+            >
+              {item.name} %{shares[item.id]}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {aromas.length > 0 ? (
+        <p className="mt-2 text-center text-xs text-slate-600">
+          Aromalar: {aromas.map((item) => item.name).join(", ")}
+        </p>
+      ) : null}
     </div>
   );
 }

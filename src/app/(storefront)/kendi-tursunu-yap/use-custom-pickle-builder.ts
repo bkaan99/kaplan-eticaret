@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
+  decreaseShare,
+  equalShares,
+  FULL_SHARE,
+  increaseShare,
+  totalShare,
+  type PickleShares,
+} from "@/modules/custom-pickle/custom-pickle.shares";
+import {
   DEFAULT_BRINE_CONFIG,
   DEFAULT_SPICE_CONFIG,
   maxIngredientsForSize,
@@ -15,19 +23,22 @@ import {
 import type { BuilderSize } from "@/modules/custom-pickle/custom-pickle.service";
 import { trackEvent } from "@/shared/analytics/client";
 import { addCustomPickleAction } from "./actions";
+import { flavorProfile, mixNote } from "./flavor-profile";
+import type { PicklePreset } from "./pickle-presets";
 
 export interface BuilderMessage {
   text: string;
   error: boolean;
 }
 
-/** Sunucudaki hesapla aynı: kg başı ücret × bidon kilosu, kuruşa yuvarlanır. */
+/** Sunucudaki hesapla aynı: kg başı ücret × bidon kilosu × pay, kuruşa yuvarlanır. */
 export function extraFor(
   ingredient: IngredientView,
   size: BuilderSize | undefined,
+  share: number = FULL_SHARE,
 ): number {
   const kg = size?.weightGram ? size.weightGram / 1000 : 1;
-  return Math.round(Number(ingredient.pricePerKg) * kg * 100) / 100;
+  return Math.round(Number(ingredient.pricePerKg) * kg * share) / FULL_SHARE;
 }
 
 export function useCustomPickleBuilder(
@@ -55,9 +66,8 @@ export function useCustomPickleBuilder(
     () => (sizes.find((size) => size.inStock) ?? sizes[0])!.variantId,
   );
   const [selected, setSelected] = useState<string[]>([]);
-  const [brine, setBrine] = useState<string>(
-    () => brines[0]?.key ?? "VINEGAR",
-  );
+  const [shares, setShares] = useState<PickleShares>({});
+  const [brine, setBrine] = useState<string>(() => brines[0]?.key ?? "VINEGAR");
   const [spice, setSpice] = useState<string>(
     () => spices[1]?.key ?? spices[0]?.key ?? "MEDIUM",
   );
@@ -72,6 +82,13 @@ export function useCustomPickleBuilder(
     const timer = setTimeout(() => setJustAdded(false), 2000);
     return () => clearTimeout(timer);
   }, [justAdded]);
+
+  // Bilgi mesajları kendiliğinden kapanır; hatalar kullanıcı değişiklik yapana kadar kalır.
+  useEffect(() => {
+    if (!message || message.error) return;
+    const timer = setTimeout(() => setMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   const size = sizes.find((item) => item.variantId === variantId);
   const sizeIndex = sizes.findIndex((item) => item.variantId === variantId);
@@ -95,19 +112,42 @@ export function useCustomPickleBuilder(
     return [...map.entries()];
   }, [ingredients]);
 
+  const vegetables = chosen.filter((item) => item.group === "VEGETABLE");
+  const aromas = chosen.filter((item) => item.group !== "VEGETABLE");
   const base = Number(size?.price ?? 0);
-  const extras = chosen.reduce((sum, item) => sum + extraFor(item, size), 0);
+  const extras = chosen.reduce(
+    (sum, item) => sum + extraFor(item, size, shares[item.id]),
+    0,
+  );
   const unit = Math.round((base + extras) * 100) / 100;
-  const hasVegetable = chosen.some((item) => item.group === "VEGETABLE");
+  const hasVegetable = vegetables.length > 0;
+  const filled = totalShare(shares);
+  const isFull = hasVegetable && filled === FULL_SHARE;
   const full = selected.length >= maxIngredients;
-  const canAdd = Boolean(size?.inStock) && hasVegetable && !pending;
+  const canAdd = Boolean(size?.inStock) && isFull && !pending;
+  const activeSpiceOption = spices.find((item) => item.key === spice);
+  const profile = flavorProfile(
+    vegetables,
+    shares,
+    activeSpiceOption?.peppers ?? 0,
+  );
+  const mixText = mixNote(vegetables, shares);
+
+  /** Seçimi uygular; sebze oranları verilmediyse eşit dağıtılır. */
+  function applySelection(ids: string[], nextShares?: PickleShares) {
+    setSelected(ids);
+    setShares(
+      nextShares ??
+        equalShares(ids.filter((id) => byId.get(id)?.group === "VEGETABLE")),
+    );
+  }
 
   function selectSize(nextVariantId: string) {
     const next = sizes.find((item) => item.variantId === nextVariantId);
     const limit = maxIngredientsForSize(next?.weightGram ?? null);
     setVariantId(nextVariantId);
     if (selected.length > limit) {
-      setSelected(selected.slice(0, limit));
+      applySelection(selected.slice(0, limit));
       setMessage({
         text: `Bu boyutta en fazla ${limit} malzeme seçilebilir; fazla seçimler kaldırıldı`,
         error: false,
@@ -119,13 +159,84 @@ export function useCustomPickleBuilder(
 
   function toggle(id: string) {
     setMessage(null);
-    setSelected((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : current.length >= maxIngredients
-          ? current
-          : [...current, id],
+    if (selected.includes(id)) {
+      applySelection(selected.filter((item) => item !== id));
+    } else if (!full) {
+      applySelection([...selected, id]);
+    }
+  }
+
+  function changeShare(id: string, direction: 1 | -1) {
+    setShares((current) =>
+      direction === 1 ? increaseShare(current, id) : decreaseShare(current, id),
     );
+  }
+
+  function balanceShares() {
+    setShares(equalShares(vegetables.map((item) => item.id)));
+  }
+
+  function clear() {
+    applySelection([]);
+    setMessage(null);
+  }
+
+  /** Karışıma sığan en küçük stoktaki boyutu seçer. */
+  function fitSize(count: number) {
+    const fitting =
+      sizes.find(
+        (item) =>
+          item.inStock && maxIngredientsForSize(item.weightGram) >= count,
+      ) ?? sizes.findLast((item) => item.inStock);
+    if (fitting) setVariantId(fitting.variantId);
+    return fitting;
+  }
+
+  function applyPreset(preset: PicklePreset) {
+    const found = preset.ingredients.flatMap((entry) => {
+      const item = ingredients.find((other) => other.slug === entry.slug);
+      return item ? [{ item, share: entry.share }] : [];
+    });
+    const fitting = fitSize(found.length);
+    const limit = maxIngredientsForSize(fitting?.weightGram ?? null);
+    const picked = found.slice(0, limit);
+    const veg = picked.filter((entry) => entry.item.group === "VEGETABLE");
+    const given = Object.fromEntries(
+      veg.map((entry) => [entry.item.id, entry.share ?? 0]),
+    );
+    const valid = totalShare(given) === FULL_SHARE && veg.every((e) => e.share);
+
+    applySelection(
+      picked.map((entry) => entry.item.id),
+      valid ? given : undefined,
+    );
+    if (preset.brine && brines.some((item) => item.key === preset.brine)) {
+      setBrine(preset.brine);
+    }
+    if (preset.spice && spices.some((item) => item.key === preset.spice)) {
+      setSpice(preset.spice);
+    }
+    setMessage({
+      text: `${preset.name} hazır · ${picked.length} malzeme, ${fitting?.label ?? "bidon"}. Dilediğinizi değiştirebilirsiniz.`,
+      error: false,
+    });
+  }
+
+  function applySurprise() {
+    const shuffle = <T>(items: T[]) =>
+      items
+        .map((item) => ({ item, key: Math.random() }))
+        .sort((a, b) => a.key - b.key)
+        .map(({ item }) => item);
+    const veg = ingredients.filter((item) => item.group === "VEGETABLE");
+    const rest = ingredients.filter((item) => item.group !== "VEGETABLE");
+    const picked = [...shuffle(veg).slice(0, 3), ...shuffle(rest).slice(0, 1)];
+    fitSize(picked.length);
+    applySelection(picked.map((item) => item.id));
+    setMessage({
+      text: `Sürpriz karışım hazır: ${picked.map((item) => item.name).join(", ")}.`,
+      error: false,
+    });
   }
 
   function addToCart() {
@@ -134,6 +245,7 @@ export function useCustomPickleBuilder(
       const result = await addCustomPickleAction({
         variantId,
         ingredientIds: selected,
+        shares,
         brine,
         spice,
         note,
@@ -160,17 +272,26 @@ export function useCustomPickleBuilder(
     });
   }
 
-  const activeBrine =
-    brines.find((item) => item.key === brine) ?? brines[0];
-  const activeSpice =
-    spices.find((item) => item.key === spice) ?? spices[0];
+  const activeBrine = brines.find((item) => item.key === brine) ?? brines[0];
+  const activeSpice = spices.find((item) => item.key === spice) ?? spices[0];
 
   return {
     variantId,
     setVariantId,
     selectSize,
     selected,
-    setSelected,
+    shares,
+    filled,
+    isFull,
+    vegetables,
+    aromas,
+    profile,
+    mixNote: mixText,
+    changeShare,
+    balanceShares,
+    clear,
+    applyPreset,
+    applySurprise,
     brines,
     spices,
     activeBrine,
@@ -204,4 +325,6 @@ export function useCustomPickleBuilder(
   };
 }
 
-export type CustomPickleBuilderState = ReturnType<typeof useCustomPickleBuilder>;
+export type CustomPickleBuilderState = ReturnType<
+  typeof useCustomPickleBuilder
+>;

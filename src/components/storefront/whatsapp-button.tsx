@@ -13,7 +13,7 @@ export async function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="WhatsApp ile yazın"
-      className="fixed right-4 bottom-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#25d366] text-white shadow-lg transition hover:scale-105"
+      className="fixed right-4 bottom-4 z-40 [body:has([data-builder-bar])_&]:bottom-28 flex h-14 w-14 items-center justify-center rounded-full bg-[#25d366] text-white shadow-lg transition hover:scale-105"
     >
       <svg
         aria-hidden="true"

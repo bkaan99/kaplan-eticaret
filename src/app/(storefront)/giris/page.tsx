@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Logo } from "@/components/storefront/logo";
+import { Reveal } from "@/components/motion/motion";
 import { TurnstileWidget } from "@/components/storefront/turnstile-widget";
+import { siteConfig } from "@/config/site.config";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
-  title: "Giriş Yap | Kaplan Gurme",
-  description: "Kaplan Gurme hesabınıza giriş yaparak siparişlerinizi takip edin ve avantajlı fiyatlardan yararlanın.",
+  title: "Giriş yap",
+  description: `${siteConfig.name} hesabınıza giriş yapın.`,
   robots: { index: false },
 };
 
@@ -21,31 +23,24 @@ async function LoginContent({
       : "/hesabim";
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-5">
       {params["kayit"] ? (
-        <div
+        <p
           role="status"
-          className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 animate-in fade-in"
+          className="border-l-2 border-brand-leaf pl-3 text-sm text-brand-dark"
         >
-          <span className="text-base">🎉</span>
-          <span>
-            Kaydınız başarıyla oluşturuldu! E-postanıza gönderilen doğrulama
-            bağlantısıyla hesabınızı aktifleştirebilirsiniz.
-          </span>
-        </div>
+          Kaydınız oluştu. E-postadaki doğrulama bağlantısıyla hesabınızı
+          etkinleştirin.
+        </p>
       ) : null}
 
       {params["sifre"] ? (
-        <div
+        <p
           role="status"
-          className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 animate-in fade-in"
+          className="border-l-2 border-brand-leaf pl-3 text-sm text-brand-dark"
         >
-          <span className="text-base">✓</span>
-          <span>
-            Parolanız başarıyla güncellendi. Yeni parolanızla şimdi giriş
-            yapabilirsiniz.
-          </span>
-        </div>
+          Parolanız güncellendi. Yeni parolanızla giriş yapabilirsiniz.
+        </p>
       ) : null}
 
       <LoginForm callbackUrl={callbackUrl} captcha={<TurnstileWidget />} />
@@ -55,121 +50,83 @@ async function LoginContent({
 
 export default function LoginPage({ searchParams }: PageProps<"/giris">) {
   return (
-    <div className="mx-auto my-6 flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl lg:my-10 lg:flex-row">
-      {/* Sol: Marka ve Güvenlik Vitrini (Koyu Yeşil Zemin) */}
-      <div className="relative flex flex-col justify-between overflow-hidden bg-linear-to-br from-emerald-950 via-slate-900 to-emerald-900 p-8 text-white sm:p-10 lg:w-5/12">
-        {/* Arka plan dekoratif desen */}
-        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl" />
-
-        <div className="relative z-10 space-y-6">
-          <div className="inline-block">
-            <Logo inverted />
-          </div>
-
-          <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-amber-400 backdrop-blur-xs">
-              <span>🌾</span>
-              <span>1985&apos;ten Beri Gedelek Geleneği</span>
-            </span>
-            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl leading-snug">
-              Doğal Fermantasyon, Güvenli Alışveriş
-            </h2>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Bursa Gedelek&apos;in meşhur pınar sularıyla hazırlanan eşsiz
-              lezzetler sofranıza güvenle ulaşıyor.
+    <section className="full-bleed -mt-6">
+      <div className="relative grid min-h-[calc(100dvh-8rem)] bg-primary lg:grid-cols-2">
+        {/* Ürün görseli — kenardan kenara, kart yok */}
+        <div className="relative min-h-52 overflow-hidden sm:min-h-72 lg:min-h-full">
+          <Image
+            src="/images/hero/hero-tursu-kavanozlar.jpg"
+            alt=""
+            fill
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="animate-login-pan object-cover object-[center_40%]"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-linear-to-t from-brand-dark/80 via-brand-dark/25 to-transparent lg:bg-linear-to-r lg:from-transparent lg:via-brand-dark/20 lg:to-brand-dark/55"
+          />
+          <Reveal className="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-8 lg:p-10">
+            <p className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              Kaplan
             </p>
-          </div>
-
-          {/* Avantaj Maddeleri */}
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center gap-2.5 text-xs text-slate-200">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-                ✓
-              </span>
-              <span>Anlık kargo takibi ve sipariş geçmişi</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-xs text-slate-200">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-                ✓
-              </span>
-              <span>Kişiselleştirilmiş indirim kuponları ve hediye setleri</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-xs text-slate-200">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-                ✓
-              </span>
-              <span>Kurumsal bayiler ve toptan alıcılar için özel iskonto</span>
-            </div>
-          </div>
+            <p className="mt-1 text-[11px] font-bold tracking-[0.28em] text-brand-gold uppercase">
+              Gurme Turşu
+            </p>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/80">
+              {siteConfig.description}
+            </p>
+          </Reveal>
         </div>
 
-        {/* Alt Güvenlik Rozetleri */}
-        <div className="relative z-10 mt-8 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-slate-400">
-          <span className="flex items-center gap-1.5">
-            <span>🔒</span>
-            <span>256-Bit SSL Şifreleme</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span>🛡️</span>
-            <span>KVKK Korumalı</span>
-          </span>
-        </div>
-      </div>
+        {/* Form paneli — hero’daki yeşil panel dili */}
+        <div className="relative flex flex-col justify-center bg-[#f3f4ef] px-6 py-10 text-brand-dark sm:px-10 lg:px-14 lg:py-14">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 hidden w-px bg-brand-gold/70 lg:block"
+          />
 
-      {/* Sağ: Giriş Formu */}
-      <div className="flex flex-1 flex-col justify-center p-8 sm:p-10 lg:w-7/12">
-        <div className="mb-6 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-sm">
-              👋
-            </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-              Kullanıcı Oturumu
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Tekrar Hoş Geldiniz
-          </h1>
-          <p className="text-xs text-slate-500">
-            Hesabınıza erişmek için e-posta ve parolanızı girin.
-          </p>
-        </div>
+          <Reveal y={16} className="mx-auto w-full max-w-md">
+            <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              Giriş yap
+            </h1>
+            <p className="mt-2 text-sm text-slate-600">
+              Siparişlerinizi ve hesabınızı yönetmek için devam edin.
+            </p>
 
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12 text-xs font-medium text-slate-400">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent mr-2" />
-              <span>Yükleniyor...</span>
+            <div className="mt-8">
+              <Suspense
+                fallback={
+                  <p className="py-8 text-sm text-slate-500">Yükleniyor…</p>
+                }
+              >
+                <LoginContent searchParams={searchParams} />
+              </Suspense>
             </div>
-          }
-        >
-          <LoginContent searchParams={searchParams} />
-        </Suspense>
 
-        {/* Alt Bağlantılar */}
-        <div className="mt-6 flex flex-col gap-3.5 border-t border-slate-100 pt-5 text-center text-xs text-slate-500">
-          <p>
-            Hesabınız yok mu?{" "}
-            <Link
-              href="/kayit"
-              className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline transition-colors"
-            >
-              Hemen Ücretsiz Kayıt Olun →
-            </Link>
-          </p>
-
-          <p className="border-t border-slate-100/80 pt-3 text-[11px] text-slate-400">
-            Toptan alım veya kurumsal işletme misiniz?{" "}
-            <Link
-              href="/bayi-basvuru"
-              className="font-semibold text-slate-700 hover:text-slate-900 hover:underline transition-colors"
-            >
-              Bayilik Başvurusu Yapın ↗
-            </Link>
-          </p>
+            <div className="mt-8 space-y-3 border-t border-slate-300/60 pt-6 text-sm text-slate-600">
+              <p>
+                Hesabınız yok mu?{" "}
+                <Link
+                  href="/kayit"
+                  className="font-semibold text-primary underline-offset-4 hover:underline"
+                >
+                  Kayıt olun
+                </Link>
+              </p>
+              <p>
+                Toptan alım için{" "}
+                <Link
+                  href="/bayi-basvuru"
+                  className="font-semibold text-primary underline-offset-4 hover:underline"
+                >
+                  bayilik başvurusu
+                </Link>
+              </p>
+            </div>
+          </Reveal>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

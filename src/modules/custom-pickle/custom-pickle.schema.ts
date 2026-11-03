@@ -9,6 +9,7 @@ export const customPickleInputSchema = z.object({
     .min(1, "En az bir malzeme seçin")
     .max(MAX_INGREDIENTS, `En fazla ${MAX_INGREDIENTS} malzeme seçebilirsiniz`)
     .transform((ids) => [...new Set(ids)].sort()),
+  shares: z.record(z.string(), z.number().int()).optional(),
   brine: z.string().trim().min(1, "Salamura türü seçin"),
   spice: z.string().trim().min(1, "Acılık seçin"),
   note: z

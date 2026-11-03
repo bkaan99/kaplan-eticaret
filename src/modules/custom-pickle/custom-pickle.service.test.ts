@@ -191,6 +191,24 @@ describe("CustomPickleService.prepare", () => {
     expect(prepared.key).toHaveLength(24);
   });
 
+  it("oran gönderilmezse sebzeleri eşit dağıtır, aromaya oran vermez", async () => {
+    const prepared = await service(new FakeRepository(ingredients)).prepare({
+      ...VALID_INPUT,
+      ingredientIds: ["salatalik", "sarimsak"],
+    });
+    expect(prepared.customization.shares).toEqual({ salatalik: 100 });
+  });
+
+  it("bidonu tam doldurmayan oranı reddeder", async () => {
+    await expect(
+      service(new FakeRepository(ingredients)).prepare({
+        ...VALID_INPUT,
+        ingredientIds: ["salatalik"],
+        shares: { salatalik: 80 },
+      }),
+    ).rejects.toThrow(/toplam %100/);
+  });
+
   it("en az bir sebze ister", async () => {
     await expect(
       service(new FakeRepository(ingredients)).prepare({
@@ -251,6 +269,37 @@ describe("CustomPickleService.prepare", () => {
         ingredientIds: Array.from({ length: 7 }, (_, i) => `m${i}`),
       }),
     ).rejects.toThrow(/en fazla 6 malzeme/i);
+  });
+});
+
+describe("ingredientExtra (oranlı)", () => {
+  it("malzeme ücretini bidondaki payı kadar hesaplar", () => {
+    expect(ingredientExtra("10", 5000, 30).toFixed(2)).toBe("15.00");
+    expect(ingredientExtra("10", 5000).toFixed(2)).toBe("50.00");
+  });
+});
+
+describe("customizationKey (oranlı)", () => {
+  const base: StoredCustomization = {
+    kind: "custom-pickle",
+    ingredientIds: ["a", "b"],
+    brine: "VINEGAR",
+    spice: "MILD",
+    note: null,
+  };
+
+  it("oran değişince anahtar değişir, oran sırası etkilemez", () => {
+    const first = customizationKey({ ...base, shares: { a: 60, b: 40 } });
+    expect(customizationKey({ ...base, shares: { b: 40, a: 60 } })).toBe(first);
+    expect(customizationKey({ ...base, shares: { a: 50, b: 50 } })).not.toBe(
+      first,
+    );
+  });
+
+  it("oransız eski satırların anahtarı oranlıdan farklı kalır", () => {
+    expect(customizationKey(base)).not.toBe(
+      customizationKey({ ...base, shares: { a: 50, b: 50 } }),
+    );
   });
 });
 
@@ -372,7 +421,9 @@ describe("CustomPickleService.quote", () => {
         weightGram: 5000,
       },
     ]);
-    expect(quote!.summary).toBe("Salatalık · Elma Sirkeli · Çok Acılı (Atom)");
+    expect(quote!.summary).toBe(
+      "Salatalık %100 · Elma Sirkeli · Çok Acılı (Atom)",
+    );
     expect(quote!.snapshot.brine).toBe("Elma Sirkeli");
     expect(quote!.snapshot.spice).toBe("Çok Acılı (Atom)");
   });

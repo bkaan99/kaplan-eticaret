@@ -1,3 +1,8 @@
+import {
+  equalShares,
+  FULL_SHARE,
+  sharesAreValid,
+} from "./custom-pickle.shares";
 import { createHash } from "node:crypto";
 import type Decimal from "decimal.js";
 import type { Actor, AuditLogger } from "@/shared/audit";
@@ -42,11 +47,18 @@ export function bidonKg(weightGram: number | null): Decimal {
 }
 
 /** Malzemenin bu bidondaki ek ücreti: kg başı ücret × bidon kilosu. */
+/** Malzemenin bidondaki payı kadar ücreti; pay verilmezse bidonun tamamı üzerinden hesaplanır. */
 export function ingredientExtra(
   pricePerKg: Decimal.Value,
   weightGram: number | null,
+  share: number = FULL_SHARE,
 ): Decimal {
-  return roundMoney(toDecimal(pricePerKg).times(bidonKg(weightGram)));
+  return roundMoney(
+    toDecimal(pricePerKg)
+      .times(bidonKg(weightGram))
+      .times(share)
+      .dividedBy(FULL_SHARE),
+  );
 }
 
 /** Aynı seçim aynı anahtarı üretir; sepette aynı bidon tek satırda toplanır. */
@@ -56,6 +68,14 @@ export function customizationKey(customization: StoredCustomization): string {
     customization.brine,
     customization.spice,
     customization.note ?? "",
+    // Oransız eski satırların anahtarı değişmesin.
+    ...(customization.shares
+      ? [
+          Object.entries(customization.shares).sort(([a], [b]) =>
+            a.localeCompare(b),
+          ),
+        ]
+      : []),
   ]);
   return createHash("sha256").update(canonical).digest("hex").slice(0, 24);
 }
@@ -76,10 +96,19 @@ export function readStoredCustomization(
     ingredientIds: raw.ingredientIds.filter(
       (id): id is string => typeof id === "string",
     ),
+    ...(readShares(raw.shares) ? { shares: readShares(raw.shares) } : {}),
     brine: raw.brine,
     spice: raw.spice,
     note: typeof raw.note === "string" ? raw.note : null,
   };
+}
+
+function readShares(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, number] => typeof entry[1] === "number",
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function toView(record: IngredientRecord): IngredientView {
@@ -231,6 +260,17 @@ export class CustomPickleService implements CustomizationPricer {
       throw new ValidationError("Bidona en az bir sebze eklemelisiniz");
     }
 
+    const vegetableIds = active
+      .filter((item) => item.group === "VEGETABLE")
+      .map((item) => item.id);
+    // Oran gönderilmediyse sebzeler eşit dağıtılır; gönderildiyse bidonu tam doldurmalı.
+    const shares = input.shares ?? equalShares(vegetableIds);
+    if (!sharesAreValid(shares, vegetableIds)) {
+      throw new ValidationError(
+        "Sebze oranları %10'luk adımlarla toplam %100 olmalıdır",
+      );
+    }
+
     const options = await this.getOptions();
     const activeBrines = new Set(
       options.brines.filter((item) => item.isActive).map((item) => item.key),
@@ -256,6 +296,7 @@ export class CustomPickleService implements CustomizationPricer {
     const customization: StoredCustomization = {
       kind: "custom-pickle",
       ingredientIds: input.ingredientIds,
+      shares,
       brine: input.brine,
       spice: input.spice,
       note: input.note,
@@ -300,11 +341,15 @@ export class CustomPickleService implements CustomizationPricer {
         found.length === customization.ingredientIds.length &&
         found.every((item) => item.isActive);
 
-      const priced = found.map((item) => ({
-        id: item.id,
-        name: item.name,
-        extra: ingredientExtra(item.pricePerKg, weightGram),
-      }));
+      const priced = found.map((item) => {
+        const share = customization.shares?.[item.id];
+        return {
+          id: item.id,
+          name: item.name,
+          share,
+          extra: ingredientExtra(item.pricePerKg, weightGram, share),
+        };
+      });
       const extra = priced.reduce(
         (sum, item) => sum.plus(item.extra),
         toDecimal(0),
@@ -318,7 +363,17 @@ export class CustomPickleService implements CustomizationPricer {
         spiceLabels.get(customization.spice) ??
         SPICE_OPTIONS[customization.spice] ??
         customization.spice;
-      const parts = [priced.map((item) => item.name).join(", "), brine, spice];
+      const parts = [
+        priced
+          .map((item) =>
+            item.share === undefined
+              ? item.name
+              : `${item.name} %${item.share}`,
+          )
+          .join(", "),
+        brine,
+        spice,
+      ];
       if (customization.note) parts.push(`Not: ${customization.note}`);
 
       return {
@@ -331,6 +386,7 @@ export class CustomPickleService implements CustomizationPricer {
             id: item.id,
             name: item.name,
             unitExtra: item.extra.toFixed(2),
+            ...(item.share === undefined ? {} : { share: item.share }),
           })),
           brine,
           spice,

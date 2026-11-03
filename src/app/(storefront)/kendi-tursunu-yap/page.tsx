@@ -3,8 +3,6 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/storefront/breadcrumbs";
-import { HeroTitle } from "@/components/storefront/hero-scene";
-import { Reveal } from "@/components/motion/motion";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { customPickleService } from "@/modules/custom-pickle/container";
 import { absoluteUrl } from "@/shared/site-url";
@@ -63,34 +61,25 @@ async function BuilderContent() {
 
 export default function CustomPicklePage() {
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-6">
       <Breadcrumbs
         items={[
           { name: "Ana sayfa", href: "/" },
           { name: "Kendi Turşunu Yap" },
         ]}
       />
-      <header className="flex max-w-2xl flex-col gap-4">
-        <Reveal>
-          <span className="text-xs font-semibold tracking-[0.25em] text-brand-leaf uppercase">
-            Senin tarifin
-          </span>
-        </Reveal>
-        <HeroTitle
-          className="font-display text-5xl leading-[1.05] font-semibold tracking-tight text-brand-dark sm:text-6xl"
-          words={[
-            { text: "Kendi" },
-            { text: "turşunu", accent: true },
-            { text: "yap" },
-          ]}
-        />
-        <Reveal delay={0.3}>
-          <p className="text-lg leading-relaxed text-muted-foreground">
-            Bidon boyutunu seç, sevdiğin malzemeleri ekle; salamura ve acılık
-            senin kararın. Kaplan ustaları senin tarifinle hazırlayıp kapına
-            göndersin.
-          </p>
-        </Reveal>
+      <header className="flex max-w-2xl flex-col gap-2">
+        <span className="text-xs font-bold tracking-[0.14em] text-brand-leaf uppercase">
+          Senin tarifin
+        </span>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+          Kendi turşunu yap
+        </h1>
+        <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
+          Bidon boyutunu seç, sevdiğin malzemeleri ekle, oranlarını ayarla;
+          salamura ve acılık senin kararın. Kaplan ustaları senin tarifinle
+          hazırlayıp kapına göndersin.
+        </p>
       </header>
       <Suspense
         fallback={<p className="text-muted-foreground">Yükleniyor...</p>}

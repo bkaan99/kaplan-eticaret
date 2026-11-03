@@ -157,7 +157,7 @@ async function OrderContent({
             const custom = item.customization as
               | {
                   kind?: string;
-                  ingredients?: { name: string; unitExtra?: string }[];
+                  ingredients?: { name: string; unitExtra?: string; share?: number }[];
                   brine?: string;
                   spice?: string;
                   note?: string | null;
@@ -189,7 +189,10 @@ async function OrderContent({
                     </p>
                     <p className="mt-0.5">
                       <strong>Malzemeler:</strong>{" "}
-                      {custom.ingredients?.map((i) => i.name).join(", ") || "-"}
+                      {custom.ingredients
+                        ?.map((i) =>
+                          i.share === undefined ? i.name : `${i.name} %${i.share}`,
+                        ).join(", ") || "-"}
                     </p>
                     <p>
                       <strong>Salamura:</strong> {custom.brine || "-"} ·{" "}
