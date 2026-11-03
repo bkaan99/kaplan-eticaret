@@ -75,35 +75,149 @@ function PepperIcons({ count }: { count: number }) {
   );
 }
 
-function SizeThumb({ active }: { active: boolean }) {
+function SizeThumb({
+  active,
+  label = "",
+  index = 0,
+  total = 3,
+}: {
+  active: boolean;
+  label?: string;
+  index?: number;
+  total?: number;
+}) {
+  const shortLabel = label.replace(/\s*Bidon\s*/i, "").trim();
+  // Boyut indeksine göre (örn. 1 kg -> küçük, 3 kg -> orta, 5 kg -> büyük)
+  const scale =
+    total > 1 ? 0.86 + (0.24 * Math.max(0, index)) / (total - 1) : 1;
+  const width = Math.round(40 * scale);
+  const height = Math.round(48 * scale);
+
   return (
-    <svg
-      viewBox="0 0 48 58"
-      className={`h-12 w-10 shrink-0 transition-opacity ${active ? "opacity-100" : "opacity-70"}`}
-      aria-hidden="true"
-    >
-      <ellipse cx="24" cy="54" rx="16" ry="2.5" fill="#0b2318" opacity="0.12" />
-      <path
-        d="M15 16 C11 17 9 21 8 27 C7 35 7 42 9 47 C11 51 15 53 19 53 H29 C33 53 37 51 39 47 C41 42 41 35 40 27 C39 21 37 17 33 16 Z"
-        fill="#f4f7f0"
-        stroke="#8fa07a"
-        strokeWidth="1.4"
-      />
-      <rect x="15" y="6" width="18" height="11" rx="2.5" fill="#f0c800" />
-      <rect x="17" y="4" width="14" height="3" rx="1" fill="#ffe566" />
-      {[0, 1, 2, 3].map((i) => (
-        <rect
-          key={i}
-          x={17.5 + i * 3.4}
-          y="10"
-          width="1.5"
-          height="5"
-          rx="0.5"
-          fill="#b89600"
-          opacity="0.4"
+    <div className="flex h-13 w-12 items-end justify-center">
+      <svg
+        viewBox="0 0 48 58"
+        width={width}
+        height={height}
+        className={`shrink-0 transition-all duration-200 ${
+          active ? "opacity-100 drop-shadow-xs" : "opacity-75 hover:opacity-95"
+        }`}
+        aria-hidden="true"
+      >
+        {/* Taban gölgesi */}
+        <ellipse
+          cx="24"
+          cy="54"
+          rx="16"
+          ry="2.4"
+          fill="#0b2318"
+          opacity={active ? 0.2 : 0.12}
         />
-      ))}
-    </svg>
+
+        {/* Gövde — köşeli omuzlu sekizgen şeffaf bidon */}
+        <path
+          d="M17 15 H31 L39 23 V46 L35 51 H13 L9 46 V23 Z"
+          fill={active ? "#f8faf5" : "#f4f6f2"}
+        />
+
+        {/* Dikiş çizgileri */}
+        <path
+          d="M17.5 24 V45 M30.5 24 V45"
+          stroke="#c3cabd"
+          strokeWidth="0.9"
+        />
+
+        {/* Sol yan yansıma parıltısı */}
+        <path
+          d="M11.8 25 V44"
+          stroke="#ffffff"
+          strokeOpacity="0.85"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+
+        {/* Ön Etiket (yeşil kenarlıklı krem zemin) */}
+        <rect
+          x="13.5"
+          y="28.5"
+          width="21"
+          height="12"
+          rx="1.5"
+          fill="#f8f7ee"
+          stroke="#1f5a27"
+          strokeWidth="0.9"
+        />
+
+        {/* Etiket içi boyut yazısı */}
+        <text
+          x="24"
+          y="36.5"
+          textAnchor="middle"
+          fontSize="5.5"
+          fontWeight="800"
+          fill="#1a4a22"
+          letterSpacing="-0.2"
+        >
+          {shortLabel || "BİDON"}
+        </text>
+
+        {/* Etiket altı mini yeşil çizgi */}
+        <line
+          x1="16.5"
+          y1="38.5"
+          x2="31.5"
+          y2="38.5"
+          stroke="#2a6e33"
+          strokeWidth="0.6"
+          strokeLinecap="round"
+        />
+
+        {/* Gövde dış konturu */}
+        <path
+          d="M17 15 H31 L39 23 V46 L35 51 H13 L9 46 V23 Z"
+          fill="none"
+          stroke={active ? "#154734" : "#aeb6a9"}
+          strokeWidth={active ? "1.6" : "1.3"}
+          strokeLinejoin="round"
+        />
+
+        {/* Boyun */}
+        <rect
+          x="16"
+          y="12.5"
+          width="16"
+          height="3"
+          rx="0.6"
+          fill="#eceee9"
+          stroke="#b4bbae"
+          strokeWidth="0.6"
+        />
+
+        {/* Kapak — yeşil vidalı kapak */}
+        <path
+          d="M14.5 13 V7 Q14.5 5 16.5 5 H31.5 Q33.5 5 33.5 7 V13 Z"
+          fill={active ? "#154734" : "#1d5524"}
+        />
+        {/* Kapak üst pah / parlaklık */}
+        <path
+          d="M14.5 8 V7 Q14.5 5 16.5 5 H31.5 Q33.5 5 33.5 7 V8 Z"
+          fill="#3f8a48"
+        />
+        {/* Kapak dişleri */}
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <rect
+            key={i}
+            x={16.2 + i * 2.9}
+            y="8.8"
+            width="0.9"
+            height="3.6"
+            rx="0.4"
+            fill="#0b2a10"
+            opacity="0.35"
+          />
+        ))}
+      </svg>
+    </div>
   );
 }
 
@@ -122,7 +236,7 @@ export function SizeStep({
         Seçili boyutta en fazla {maxIngredients} malzeme ekleyebilirsiniz.
       </p>
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        {sizes.map((item) => {
+        {sizes.map((item, index) => {
           const active = item.variantId === variantId;
           const itemMax = maxIngredientsForSize(item.weightGram);
           return (
@@ -147,7 +261,12 @@ export function SizeStep({
                 />
               ) : null}
               <span className="relative">
-                <SizeThumb active={active} />
+                <SizeThumb
+                  active={active}
+                  label={item.label}
+                  index={index}
+                  total={sizes.length}
+                />
               </span>
               <span className="relative flex min-w-0 flex-col gap-0.5">
                 <span className="text-sm font-bold text-primary sm:text-base">

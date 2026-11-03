@@ -214,7 +214,7 @@ export function AdminSidebar({ nav, user, siteName }: AdminSidebarProps) {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               Sistem Aktif
             </span>
-            <span className="text-[10px] text-slate-400">v1.0.0</span>
+            <span className="text-[10px] text-slate-400">v1.0.1</span>
           </div>
         </div>
 
