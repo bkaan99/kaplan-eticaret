@@ -119,6 +119,17 @@ class FakeCartRepository implements CartRepository {
     }
     await this.delete(from);
   }
+  async purgeAbandoned(olderThan: Date) {
+    let count = 0;
+    for (const [id, cart] of this.carts) {
+      if (!cart.userId) {
+        this.carts.delete(id);
+        this.items.delete(id);
+        count++;
+      }
+    }
+    return count;
+  }
 }
 
 const guest = (token: string | null = null) => ({
@@ -356,6 +367,22 @@ describe("CartService", () => {
           1,
         ),
       ).rejects.toThrow("Bu ürün özelleştirilemez");
+    });
+
+    it("terk edilmiş anonim sepetleri temizler, üye sepetlerine dokunmaz", async () => {
+      const guestCart = await service.addItem(guest(), "a", 1);
+      const userCart = await service.addItem(
+        { userId: "u-1", sessionToken: null },
+        "a",
+        1,
+      );
+
+      expect(repo.carts.size).toBe(2);
+
+      const removed = await service.purgeAbandoned(new Date());
+      expect(removed).toBe(1);
+      expect(repo.carts.has(guestCart.cart.id)).toBe(false);
+      expect(repo.carts.has(userCart.cart.id)).toBe(true);
     });
   });
 });
