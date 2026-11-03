@@ -14,62 +14,62 @@ const LID_CLOSE_AFTER_LAND_MS = 160;
 
 /**
  * Bidon içi slotlar (alttan üste). Max çeşitte hepsi dolu görünür.
- * Tombik kavanoz: x≈70–250, y≈150–355.
+ * Köşeli omuzlu bidon: x≈60–260, y≈150–380.
  */
 const SLOTS = [
   // Katman 1 — taban
-  { x: 90, y: 352, r: -12 },
-  { x: 128, y: 356, r: 8 },
-  { x: 166, y: 354, r: -6 },
-  { x: 204, y: 350, r: 10 },
-  { x: 238, y: 348, r: -8 },
+  { x: 74, y: 374, r: -12 },
+  { x: 117, y: 378, r: 8 },
+  { x: 161, y: 376, r: -6 },
+  { x: 205, y: 371, r: 10 },
+  { x: 244, y: 369, r: -8 },
   // Katman 2
-  { x: 82, y: 324, r: 10 },
-  { x: 118, y: 328, r: -10 },
-  { x: 156, y: 330, r: 6 },
-  { x: 194, y: 326, r: -8 },
-  { x: 232, y: 322, r: 12 },
+  { x: 65, y: 340, r: 10 },
+  { x: 106, y: 345, r: -10 },
+  { x: 150, y: 348, r: 6 },
+  { x: 193, y: 343, r: -8 },
+  { x: 237, y: 338, r: 12 },
   // Katman 3
-  { x: 88, y: 298, r: -8 },
-  { x: 126, y: 302, r: 12 },
-  { x: 164, y: 300, r: -12 },
-  { x: 202, y: 296, r: 8 },
-  { x: 238, y: 294, r: -6 },
+  { x: 71, y: 309, r: -8 },
+  { x: 115, y: 314, r: 12 },
+  { x: 159, y: 312, r: -12 },
+  { x: 203, y: 307, r: 8 },
+  { x: 244, y: 305, r: -6 },
   // Katman 4
-  { x: 84, y: 272, r: 8 },
-  { x: 122, y: 276, r: -10 },
-  { x: 160, y: 274, r: 6 },
-  { x: 198, y: 270, r: -6 },
-  { x: 234, y: 268, r: 10 },
+  { x: 67, y: 279, r: 8 },
+  { x: 111, y: 283, r: -10 },
+  { x: 154, y: 281, r: 6 },
+  { x: 198, y: 276, r: -6 },
+  { x: 239, y: 274, r: 10 },
   // Katman 5
-  { x: 92, y: 246, r: -10 },
-  { x: 130, y: 250, r: 10 },
-  { x: 168, y: 248, r: -8 },
-  { x: 206, y: 244, r: 12 },
-  { x: 240, y: 242, r: -4 },
+  { x: 76, y: 248, r: -10 },
+  { x: 120, y: 252, r: 10 },
+  { x: 163, y: 250, r: -8 },
+  { x: 207, y: 245, r: 12 },
+  { x: 246, y: 243, r: -4 },
   // Katman 6
-  { x: 96, y: 220, r: 6 },
-  { x: 134, y: 224, r: -10 },
-  { x: 172, y: 222, r: 8 },
-  { x: 210, y: 218, r: -6 },
-  { x: 244, y: 216, r: 10 },
+  { x: 81, y: 217, r: 6 },
+  { x: 124, y: 221, r: -10 },
+  { x: 168, y: 219, r: 8 },
+  { x: 212, y: 214, r: -6 },
+  { x: 251, y: 212, r: 10 },
   // Katman 7
-  { x: 102, y: 194, r: -8 },
-  { x: 140, y: 198, r: 10 },
-  { x: 178, y: 196, r: -12 },
-  { x: 214, y: 192, r: 6 },
-  { x: 246, y: 190, r: -8 },
+  { x: 88, y: 186, r: -8 },
+  { x: 131, y: 190, r: 10 },
+  { x: 175, y: 188, r: -12 },
+  { x: 216, y: 183, r: 6 },
+  { x: 253, y: 181, r: -8 },
   // Katman 8 — ağıza yakın (8. çeşit)
-  { x: 110, y: 168, r: 8 },
-  { x: 148, y: 172, r: -10 },
-  { x: 184, y: 170, r: 6 },
-  { x: 218, y: 166, r: -6 },
-  { x: 248, y: 164, r: 10 },
+  { x: 97, y: 155, r: 8 },
+  { x: 140, y: 160, r: -10 },
+  { x: 182, y: 157, r: 6 },
+  { x: 221, y: 152, r: -6 },
+  { x: 255, y: 150, r: 10 },
 ];
 
-/** Gövde iç alanı (clip + salamura) — y: 96 → 388 */
-const BODY_TOP = 96;
-const BODY_BOTTOM = 388;
+/** Gövde iç alanı (clip + salamura) — y: 66 → 398 */
+const BODY_TOP = 66;
+const BODY_BOTTOM = 398;
 
 /** Malzeme düşünce oluşan su sıçraması damlacıkları */
 type SplashDrop = {
@@ -90,10 +90,14 @@ type SplashBurst = {
 };
 
 /**
- * Düz tombik kavanoz: geniş gövde, yumuşak omuz/taban, çizgisiz, tutamacsız.
+ * Köşeli omuzlu plastik bidon: dar boyun, eğik omuz, düz yan duvarlar,
+ * pahlı taban köşeleri (sekizgen silüet).
  */
 const BODY =
-  "M112 96 C84 98 62 116 56 148 C50 180 50 230 54 290 C58 345 88 386 128 388 H192 C232 386 262 345 266 290 C270 230 270 180 264 148 C258 116 236 98 208 96 Z";
+  "M96 66 H224 Q230 66 234 70 L272 108 Q276 112 276 118 V360 Q276 366 272 371 L254 393 Q250 398 244 398 H76 Q70 398 66 393 L48 371 Q44 366 44 360 V118 Q44 112 48 108 L86 70 Q90 66 96 66 Z";
+
+/** Etiket üstündeki marka satırı */
+const BRAND_LINE = "TARİHİ KEMERBURGAZ TURŞUCUSU · 1948";
 
 const BRINE_COLOR: Record<BrineOption, string> = {
   VINEGAR: "#d6e29a",
@@ -309,11 +313,12 @@ export function Bidon({
         <clipPath id={clipId}>
           <path d={BODY} />
         </clipPath>
-        <linearGradient id={plasticId} x1="0" y1="0" x2="1" y2="0.12">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.92" />
-          <stop offset="22%" stopColor="#f4f7f0" stopOpacity="0.28" />
-          <stop offset="55%" stopColor="#e8eee0" stopOpacity="0.38" />
-          <stop offset="100%" stopColor="#cfd9c0" stopOpacity="0.55" />
+        <linearGradient id={plasticId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#dfe4dc" stopOpacity="0.9" />
+          <stop offset="10%" stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="50%" stopColor="#f2f4f0" stopOpacity="0.25" />
+          <stop offset="90%" stopColor="#ffffff" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#d9dfd5" stopOpacity="0.9" />
         </linearGradient>
         <linearGradient id={liquidId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.45" />
@@ -326,13 +331,14 @@ export function Bidon({
           <stop offset="100%" stopColor="#0b2318" stopOpacity="0.05" />
         </linearGradient>
         <linearGradient id={capId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffe566" />
-          <stop offset="40%" stopColor="#f5d000" />
-          <stop offset="100%" stopColor="#d4b000" />
+          <stop offset="0%" stopColor="#3f8a48" />
+          <stop offset="45%" stopColor="#2a6e33" />
+          <stop offset="100%" stopColor="#1f5a27" />
         </linearGradient>
         <linearGradient id={`${capId}-side`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f0c800" />
-          <stop offset="100%" stopColor="#c9a600" />
+          <stop offset="0%" stopColor="#24632c" />
+          <stop offset="55%" stopColor="#1d5524" />
+          <stop offset="100%" stopColor="#123d18" />
         </linearGradient>
         <radialGradient id={shadowId} cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#0b2318" stopOpacity="0.2" />
@@ -342,10 +348,10 @@ export function Bidon({
       </defs>
 
       {/* Zemin gölgesi */}
-      <ellipse cx="160" cy="406" rx="128" ry="12" fill={`url(#${shadowId})`} />
+      <ellipse cx="160" cy="408" rx="138" ry="11" fill={`url(#${shadowId})`} />
 
       {/* Gövde — şeffaf plastik */}
-      <path d={BODY} fill="#f3f6ef" />
+      <path d={BODY} fill="#f4f6f2" />
       <path d={BODY} fill={`url(#${plasticId})`} />
 
       <g clipPath={`url(#${clipId})`}>
@@ -530,18 +536,52 @@ export function Bidon({
             ))
           : null}
 
-        {/* Sol yansıma — hafif plastik parıltı */}
+        {/* Kalıp dikiş çizgileri — omuz ve taban hizası + iki dikey panel */}
         <path
-          d="M82 145 V 335"
+          d="M46 120 H274 M46 360 H274"
+          stroke="#c9d0c4"
+          strokeOpacity="0.7"
+          strokeWidth="1.2"
+        />
+        <path
+          d="M102 122 V358 M218 122 V358"
+          stroke="#c3cabd"
+          strokeOpacity="0.85"
+          strokeWidth="1.6"
+        />
+        <path
+          d="M103.5 124 V356 M219.5 124 V356"
           stroke="#ffffff"
-          strokeOpacity="0.42"
-          strokeWidth="12"
+          strokeOpacity="0.6"
+          strokeWidth="0.8"
+        />
+
+        {/* Yan parıltılar */}
+        <path
+          d="M60 134 V346"
+          stroke="#ffffff"
+          strokeOpacity="0.75"
+          strokeWidth="6"
           strokeLinecap="round"
         />
         <path
-          d="M98 155 V 315"
+          d="M70 142 V330"
           stroke="#ffffff"
-          strokeOpacity="0.14"
+          strokeOpacity="0.25"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M258 142 V338"
+          stroke="#ffffff"
+          strokeOpacity="0.55"
+          strokeWidth="4"
+          strokeLinecap="round"
+        />
+        <path
+          d="M56 112 L88 80"
+          stroke="#ffffff"
+          strokeOpacity="0.55"
           strokeWidth="4"
           strokeLinecap="round"
         />
@@ -552,35 +592,115 @@ export function Bidon({
       <path
         d={BODY}
         fill="none"
-        stroke="#a3b492"
-        strokeWidth="2"
+        stroke="#aeb6a9"
+        strokeWidth="2.2"
         strokeLinejoin="round"
       />
+
+      {/* Etiket */}
+      <g>
+        <rect
+          x="84"
+          y="240"
+          width="152"
+          height="52"
+          rx="5"
+          fill="#0b2318"
+          opacity="0.08"
+          transform="translate(0 2)"
+        />
+        <rect
+          x="84"
+          y="240"
+          width="152"
+          height="52"
+          rx="5"
+          fill="#f8f7ee"
+          stroke="#1f5a27"
+          strokeWidth="1.6"
+        />
+        <text
+          x="160"
+          y="273"
+          textAnchor="middle"
+          fontSize="22"
+          fontWeight="800"
+          fill="#1a4a22"
+        >
+          {sizeLabel || "Bidon"}
+        </text>
+        <text
+          x="160"
+          y="285"
+          textAnchor="middle"
+          fontSize="6.2"
+          fontWeight="700"
+          fill="#2a6e33"
+          textLength="140"
+          lengthAdjust="spacingAndGlyphs"
+        >
+          {BRAND_LINE}
+        </text>
+      </g>
+
+      {/* Boş bidon ipucu */}
+      <AnimatePresence>
+        {items.length === 0 ? (
+          <motion.g
+            key="empty-hint"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.25 }}
+          >
+            <rect
+              x="102"
+              y="222"
+              width="116"
+              height="32"
+              rx="16"
+              fill="#ffffff"
+              fillOpacity="0.94"
+            />
+            <text
+              x="160"
+              y="243"
+              textAnchor="middle"
+              fontSize="14"
+              fontWeight="700"
+              fill="#0b2318"
+            >
+              Çeşit seçin
+            </text>
+          </motion.g>
+        ) : null}
+      </AnimatePresence>
 
       {/* Uçuş hedefi */}
       <circle
         data-bidon-mouth
         cx="160"
-        cy="78"
+        cy="62"
         r="8"
         fill="transparent"
         aria-hidden="true"
       />
 
-      {/* Boyun */}
-      <rect x="112" y="72" width="96" height="28" rx="6" fill="#e6ecdc" />
+      {/* Boyun halkası */}
+      <rect x="86" y="56" width="148" height="12" rx="2" fill="#eceee9" />
       <rect
-        x="112"
-        y="72"
-        width="96"
-        height="28"
-        rx="6"
+        x="86"
+        y="56"
+        width="148"
+        height="12"
+        rx="2"
         fill="none"
-        stroke="#9aab88"
-        strokeWidth="1.5"
+        stroke="#b4bbae"
+        strokeWidth="1.2"
       />
+      <path d="M88 63 H232" stroke="#d3d8cf" strokeWidth="1" />
 
-      {/* Kapak — açılınca sola kayar, azıcık havaya kalkar */}
+      {/* Kapak — yeşil vidalı; açılınca sola kayar, azıcık havaya kalkar */}
       <motion.g
         initial={false}
         animate={{
@@ -596,41 +716,38 @@ export function Bidon({
               : { type: "spring", stiffness: 240, damping: 24 }
         }
       >
-        <rect
-          x="98"
-          y="28"
-          width="124"
-          height="48"
-          rx="8"
+        <path
+          d="M80 60 V32 Q80 24 88 24 H232 Q240 24 240 32 V60 Z"
           fill={`url(#${capId}-side)`}
         />
-        <rect
-          x="98"
-          y="28"
-          width="124"
-          height="18"
-          rx="7"
+        <path
+          d="M80 36 V32 Q80 24 88 24 H232 Q240 24 240 32 V36 Z"
           fill={`url(#${capId})`}
         />
-        <rect x="118" y="22" width="84" height="10" rx="4" fill="#ffe566" />
-        {Array.from({ length: 14 }, (_, index) => (
+        {Array.from({ length: 26 }, (_, index) => (
           <rect
             key={index}
-            x={104 + index * 8.2}
-            y="42"
-            width="3.6"
-            height="28"
-            rx="1.2"
-            fill="#b89600"
-            opacity="0.4"
+            x={85 + index * 5.9}
+            y="38"
+            width="2.2"
+            height="20"
+            rx="1"
+            fill="#0b2a10"
+            opacity="0.22"
           />
         ))}
         <path
-          d="M110 36 H210"
+          d="M88 27 H232"
           stroke="#ffffff"
-          strokeOpacity="0.35"
-          strokeWidth="2"
+          strokeOpacity="0.28"
+          strokeWidth="1.5"
           strokeLinecap="round"
+        />
+        <path
+          d="M80 59 H240"
+          stroke="#0b2a10"
+          strokeOpacity="0.35"
+          strokeWidth="1.5"
         />
       </motion.g>
     </motion.svg>

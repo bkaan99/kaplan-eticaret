@@ -157,48 +157,72 @@ export function BidonThumb({
       aria-hidden="true"
       {...props}
     >
-      <ellipse cx="24" cy="54" rx="15" ry="2.2" fill="#0b2318" opacity="0.14" />
-      {/* Gövde — şeffaf tombik kavanoz */}
+      <ellipse cx="24" cy="54" rx="16" ry="2.2" fill="#0b2318" opacity="0.14" />
+      {/* Gövde — köşeli omuzlu şeffaf bidon */}
+      <path d="M17 15 H31 L39 23 V46 L35 51 H13 L9 46 V23 Z" fill="#f4f6f2" />
+      {/* Dikiş çizgileri + yansıma */}
+      <path d="M17.5 24 V45 M30.5 24 V45" stroke="#c3cabd" strokeWidth="0.9" />
       <path
-        d="M15 16 C11 17 9 21 8 27 C7 35 7 42 9 47 C11 51 15 53 19 53 H29 C33 53 37 51 39 47 C41 42 41 35 40 27 C39 21 37 17 33 16 Z"
-        fill="#f3f6ef"
-      />
-      <path
-        d="M15 16 C11 17 9 21 8 27 C7 35 7 42 9 47 C11 51 15 53 19 53 H29 C33 53 37 51 39 47 C41 42 41 35 40 27 C39 21 37 17 33 16 Z"
-        fill="#e8eee0"
-        opacity="0.55"
-      />
-      {/* Sol yansıma */}
-      <path
-        d="M12.5 22 V 46"
+        d="M11.8 25 V44"
         stroke="#ffffff"
-        strokeOpacity="0.45"
-        strokeWidth="2.2"
+        strokeOpacity="0.8"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      {/* Etiket */}
+      <rect
+        x="14"
+        y="31"
+        width="20"
+        height="8"
+        rx="1"
+        fill="#f8f7ee"
+        stroke="#1f5a27"
+        strokeWidth="0.9"
+      />
+      <path
+        d="M18 34.5 H30 M20 36.8 H28"
+        stroke="#1f5a27"
+        strokeWidth="0.9"
         strokeLinecap="round"
       />
       <path
-        d="M15 16 C11 17 9 21 8 27 C7 35 7 42 9 47 C11 51 15 53 19 53 H29 C33 53 37 51 39 47 C41 42 41 35 40 27 C39 21 37 17 33 16 Z"
+        d="M17 15 H31 L39 23 V46 L35 51 H13 L9 46 V23 Z"
         fill="none"
-        stroke="#a3b492"
+        stroke="#aeb6a9"
         strokeWidth="1.3"
         strokeLinejoin="round"
       />
       {/* Boyun */}
-      <rect x="16" y="12" width="16" height="5" rx="1.5" fill="#e6ecdc" stroke="#9aab88" strokeWidth="0.8" />
-      {/* Kapak — sarı vida */}
-      <rect x="13" y="5" width="22" height="9" rx="2.2" fill="#d4b000" />
-      <rect x="13" y="5" width="22" height="3.5" rx="1.8" fill="#ffe566" />
-      <rect x="16.5" y="3.5" width="15" height="2.2" rx="1" fill="#ffe566" />
-      {[0, 1, 2, 3, 4].map((i) => (
+      <rect
+        x="16"
+        y="12.5"
+        width="16"
+        height="3"
+        rx="0.6"
+        fill="#eceee9"
+        stroke="#b4bbae"
+        strokeWidth="0.6"
+      />
+      {/* Kapak — yeşil vida */}
+      <path
+        d="M14.5 13 V7 Q14.5 5 16.5 5 H31.5 Q33.5 5 33.5 7 V13 Z"
+        fill="#1d5524"
+      />
+      <path
+        d="M14.5 8 V7 Q14.5 5 16.5 5 H31.5 Q33.5 5 33.5 7 V8 Z"
+        fill="#3f8a48"
+      />
+      {[0, 1, 2, 3, 4, 5].map((i) => (
         <rect
           key={i}
-          x={15 + i * 3.6}
-          y="8.2"
-          width="1.6"
-          height="4.5"
-          rx="0.5"
-          fill="#b89600"
-          opacity="0.4"
+          x={16.2 + i * 2.9}
+          y="8.8"
+          width="0.9"
+          height="3.6"
+          rx="0.4"
+          fill="#0b2a10"
+          opacity="0.3"
         />
       ))}
     </svg>
