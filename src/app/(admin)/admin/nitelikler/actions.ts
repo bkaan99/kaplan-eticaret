@@ -42,6 +42,18 @@ export async function addAttributeValueAction(
   );
 }
 
+export async function updateAttributeValueAction(
+  valueId: string,
+  value: string,
+): Promise<AdminActionResult> {
+  return runAdminAction(
+    perm,
+    (actor) =>
+      getTaxonomyService().updateAttributeValue(valueId, { value }, actor),
+    PATHS,
+  );
+}
+
 export async function deleteAttributeValueAction(
   valueId: string,
 ): Promise<AdminActionResult> {
@@ -52,16 +64,24 @@ export async function deleteAttributeValueAction(
   );
 }
 
-export async function createBrandAction(
+export async function saveBrandAction(
+  id: string | null,
   name: string,
 ): Promise<AdminActionResult> {
   return runAdminAction(
     perm,
     async (actor) => {
-      await getTaxonomyService().createBrand({ name }, actor);
+      await getTaxonomyService().saveBrand(id, { name }, actor);
     },
     PATHS,
   );
+}
+
+/** @deprecated Yerine `saveBrandAction(null, name)` kullanın. */
+export async function createBrandAction(
+  name: string,
+): Promise<AdminActionResult> {
+  return saveBrandAction(null, name);
 }
 
 export async function deleteBrandAction(

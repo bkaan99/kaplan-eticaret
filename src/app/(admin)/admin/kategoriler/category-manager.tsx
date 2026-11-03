@@ -635,6 +635,11 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
             <ul className="divide-y divide-slate-100 text-sm">
               {filteredCategories.map((category) => {
                 const isRoot = category.depth === 0;
+                const childCount = categories.filter(
+                  (row) => row.parentId === category.id,
+                ).length;
+                const deleteBlocked =
+                  category.productCount > 0 || childCount > 0;
 
                 return (
                   <li
@@ -722,10 +727,16 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={pending}
+                        disabled={pending || deleteBlocked}
                         onClick={() => remove(category.id, category.name)}
-                        className="h-7.5 w-7.5 p-0 text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
-                        title="Kategoriyi Sil"
+                        className="h-7.5 w-7.5 p-0 text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
+                        title={
+                          category.productCount > 0
+                            ? "Ürünü olan kategori silinemez"
+                            : childCount > 0
+                              ? "Alt kategorisi olan kategori silinemez"
+                              : "Kategoriyi sil"
+                        }
                       >
                         ✕
                       </Button>

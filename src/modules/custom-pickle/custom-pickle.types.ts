@@ -1,4 +1,9 @@
 import type Decimal from "decimal.js";
+import type {
+  CustomizationQuote as BaseCustomizationQuote,
+  CustomizationLineItem,
+  ItemCustomizationHandler,
+} from "../cart/customization";
 
 /** "Kendi turşunu yap" bidonlarının katalogdaki ürünü; boyutlar bu ürünün varyantlarıdır. */
 export const CUSTOM_PICKLE_PRODUCT_SLUG = "kendi-tursunu-yap";
@@ -194,8 +199,8 @@ export interface IngredientView {
   sortOrder: number;
 }
 
-/** Bir özelleştirmenin fiyatlandırılmış hâli (sepet/checkout). */
-export interface CustomizationQuote {
+/** Bir turşu özelleştirmesinin fiyatlandırılmış hâli (sepet/checkout). */
+export interface CustomizationQuote extends BaseCustomizationQuote {
   /** Bidon başına ek ücret (KDV dahil) */
   extra: Decimal;
   /** Malzemelerden biri satıştan kalktıysa false */
@@ -205,9 +210,5 @@ export interface CustomizationQuote {
   snapshot: CustomizationSnapshot;
 }
 
-/** Sepet ve checkout'un özelleştirmeden yalnızca ihtiyaç duyduğu parça. */
-export interface CustomizationPricer {
-  quote(
-    lines: { customization: StoredCustomization; weightGram: number | null }[],
-  ): Promise<CustomizationQuote[]>;
-}
+/** Geriye dönük uyumluluk için özelleştirme işleyicisi tipi. */
+export type CustomizationPricer = ItemCustomizationHandler;

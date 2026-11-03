@@ -359,9 +359,14 @@ export function GroupManager({
                   <Button
                     size="sm"
                     variant="ghost"
-                    disabled={pending}
+                    disabled={pending || group.customerCount > 0}
                     onClick={() => remove(group.id)}
-                    className="h-7.5 px-2 text-xs text-red-600 hover:bg-red-50 cursor-pointer"
+                    className="h-7.5 px-2 text-xs text-red-600 hover:bg-red-50 cursor-pointer disabled:opacity-40"
+                    title={
+                      group.customerCount > 0
+                        ? "Bayisi olan grup silinemez; önce bayileri başka gruba taşıyın"
+                        : "Grubu sil"
+                    }
                   >
                     Sil
                   </Button>

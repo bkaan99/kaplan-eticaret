@@ -136,27 +136,64 @@ export class TaxonomyService {
     });
   }
 
-  async createBrand(raw: unknown, actor: Actor): Promise<string> {
+  async saveBrand(
+    id: string | null,
+    raw: unknown,
+    actor: Actor,
+  ): Promise<string> {
     const parsed = brandInputSchema.safeParse(raw);
     if (!parsed.success) throw new ValidationError(firstIssue(parsed.error));
+
+    if (id) {
+      const before = await this.repository.findBrand(id);
+      if (!before) throw new NotFoundError("Marka");
+
+      const slug = await uniqueSlug(parsed.data.name, (candidate) =>
+        this.repository.brandSlugTaken(candidate, id),
+      );
+      await this.repository.updateBrand(id, parsed.data, slug);
+      await this.audit.log({
+        actorId: actor.userId,
+        ip: actor.ip,
+        action: "brand.update",
+        entityType: "Brand",
+        entityId: id,
+        before: { name: before.name },
+        after: { name: parsed.data.name },
+      });
+      return id;
+    }
 
     const slug = await uniqueSlug(parsed.data.name, (s) =>
       this.repository.brandSlugTaken(s),
     );
-    const id = await this.repository.createBrand(parsed.data, slug);
+    const created = await this.repository.createBrand(parsed.data, slug);
 
     await this.audit.log({
       actorId: actor.userId,
       ip: actor.ip,
       action: "brand.create",
       entityType: "Brand",
-      entityId: id,
+      entityId: created,
       after: { name: parsed.data.name },
     });
-    return id;
+    return created;
+  }
+
+  /** @deprecated Yerine `saveBrand(null, …)` kullanın. */
+  createBrand(raw: unknown, actor: Actor): Promise<string> {
+    return this.saveBrand(null, raw, actor);
   }
 
   async deleteBrand(id: string, actor: Actor): Promise<void> {
+    const brand = await this.repository.findBrand(id);
+    if (!brand) throw new NotFoundError("Marka");
+    if ((await this.repository.countBrandProducts(id)) > 0) {
+      throw new ConflictError(
+        "Ürünü olan marka silinemez; önce ürünlerden markayı kaldırın",
+      );
+    }
+
     await this.repository.deleteBrand(id);
     await this.audit.log({
       actorId: actor.userId,
@@ -164,6 +201,7 @@ export class TaxonomyService {
       action: "brand.delete",
       entityType: "Brand",
       entityId: id,
+      before: { name: brand.name },
     });
   }
 
@@ -204,6 +242,14 @@ export class TaxonomyService {
   }
 
   async deleteAttribute(id: string, actor: Actor): Promise<void> {
+    const attr = await this.repository.findAttribute(id);
+    if (!attr) throw new NotFoundError("Nitelik");
+    if ((await this.repository.countAttributeProducts(id)) > 0) {
+      throw new ConflictError(
+        "Ürünlerde kullanılan nitelik silinemez; önce değerleri ürünlerden kaldırın",
+      );
+    }
+
     await this.repository.deleteAttribute(id);
     await this.audit.log({
       actorId: actor.userId,
@@ -211,6 +257,7 @@ export class TaxonomyService {
       action: "attribute.delete",
       entityType: "Attribute",
       entityId: id,
+      before: { name: attr.name },
     });
   }
 
@@ -239,6 +286,45 @@ export class TaxonomyService {
       action: "attribute.value.add",
       entityType: "Attribute",
       entityId: attributeId,
+      after: { value: parsed.data.value },
+    });
+  }
+
+  async updateAttributeValue(
+    valueId: string,
+    raw: unknown,
+    actor: Actor,
+  ): Promise<void> {
+    const parsed = attributeValueSchema.safeParse(raw);
+    if (!parsed.success) throw new ValidationError(firstIssue(parsed.error));
+
+    const before = await this.repository.findAttributeValue(valueId);
+    if (!before) throw new NotFoundError("Nitelik değeri");
+
+    const slug = slugify(parsed.data.value);
+    if (!slug) throw new ValidationError("Geçerli bir değer girin");
+    if (
+      await this.repository.attributeValueSlugTaken(
+        before.attributeId,
+        slug,
+        valueId,
+      )
+    ) {
+      throw new ConflictError("Bu değer zaten var");
+    }
+
+    await this.repository.updateAttributeValue(
+      valueId,
+      parsed.data.value,
+      slug,
+    );
+    await this.audit.log({
+      actorId: actor.userId,
+      ip: actor.ip,
+      action: "attribute.value.update",
+      entityType: "AttributeValue",
+      entityId: valueId,
+      before: { value: before.value },
       after: { value: parsed.data.value },
     });
   }

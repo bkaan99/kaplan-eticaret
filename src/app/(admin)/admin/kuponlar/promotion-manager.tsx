@@ -583,14 +583,18 @@ function CouponSection({ coupons }: { coupons: CouponRow[] }) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={pending}
+                        disabled={pending || coupon.usedCount > 0}
                         onClick={() => {
                           if (window.confirm(`"${coupon.code}" kuponunu silmek istediğinize emin misiniz?`)) {
                             run(() => deleteCouponAction(coupon.id));
                           }
                         }}
-                        className="h-8 px-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
-                        title="Kuponu Sil"
+                        className="h-8 px-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
+                        title={
+                          coupon.usedCount > 0
+                            ? "Kullanılmış kupon silinemez; pasife alın"
+                            : "Kuponu sil"
+                        }
                       >
                         ✕ Sil
                       </Button>

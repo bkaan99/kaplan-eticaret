@@ -61,21 +61,38 @@ export interface TaxonomyRepository {
   addRedirect(fromPath: string, toPath: string): Promise<void>;
 
   listBrands(): Promise<BrandRecord[]>;
-  brandSlugTaken(slug: string): Promise<boolean>;
+  findBrand(id: string): Promise<BrandRecord | null>;
+  brandSlugTaken(slug: string, excludeId?: string): Promise<boolean>;
   createBrand(input: BrandInput, slug: string): Promise<string>;
+  updateBrand(id: string, input: BrandInput, slug: string): Promise<void>;
+  countBrandProducts(id: string): Promise<number>;
   deleteBrand(id: string): Promise<void>;
 
   listAttributes(): Promise<AttributeRecord[]>;
+  findAttribute(id: string): Promise<AttributeRecord | null>;
   attributeSlugTaken(slug: string): Promise<boolean>;
   createAttribute(input: AttributeInput, slug: string): Promise<string>;
   updateAttribute(id: string, input: AttributeInput): Promise<void>;
+  countAttributeProducts(id: string): Promise<number>;
   deleteAttribute(id: string): Promise<void>;
   addAttributeValue(
     attributeId: string,
     value: string,
     slug: string,
   ): Promise<void>;
-  attributeValueSlugTaken(attributeId: string, slug: string): Promise<boolean>;
+  findAttributeValue(
+    valueId: string,
+  ): Promise<{ id: string; attributeId: string; value: string; slug: string } | null>;
+  attributeValueSlugTaken(
+    attributeId: string,
+    slug: string,
+    excludeId?: string,
+  ): Promise<boolean>;
+  updateAttributeValue(
+    valueId: string,
+    value: string,
+    slug: string,
+  ): Promise<void>;
   countAttributeValueProducts(valueId: string): Promise<number>;
   deleteAttributeValue(valueId: string): Promise<void>;
 }
@@ -180,8 +197,29 @@ export class D1TaxonomyRepository implements TaxonomyRepository {
       .orderBy(asc(brand.name));
   }
 
-  async brandSlugTaken(slug: string): Promise<boolean> {
-    return (await countWhere(this.db(), brand, eq(brand.slug, slug))) > 0;
+  async findBrand(id: string): Promise<BrandRecord | null> {
+    const [row] = await this.db()
+      .select({
+        id: brand.id,
+        name: brand.name,
+        slug: brand.slug,
+        logoUrl: brand.logoUrl,
+        productCount: sql<number>`(SELECT count(*) FROM "Product" WHERE "Product"."brandId" = ${brand.id})`,
+      })
+      .from(brand)
+      .where(eq(brand.id, id))
+      .limit(1);
+    return row ?? null;
+  }
+
+  async brandSlugTaken(slug: string, excludeId?: string): Promise<boolean> {
+    return (
+      (await countWhere(
+        this.db(),
+        brand,
+        and(eq(brand.slug, slug), excludeId ? ne(brand.id, excludeId) : undefined),
+      )) > 0
+    );
   }
 
   async createBrand(input: BrandInput, slug: string): Promise<string> {
@@ -190,6 +228,17 @@ export class D1TaxonomyRepository implements TaxonomyRepository {
       .values({ name: input.name, logoUrl: input.logoUrl, slug })
       .returning({ id: brand.id });
     return created!.id;
+  }
+
+  async updateBrand(id: string, input: BrandInput, slug: string): Promise<void> {
+    await this.db()
+      .update(brand)
+      .set({ name: input.name, logoUrl: input.logoUrl, slug })
+      .where(eq(brand.id, id));
+  }
+
+  countBrandProducts(id: string): Promise<number> {
+    return countWhere(this.db(), product, eq(product.brandId, id));
   }
 
   async deleteBrand(id: string): Promise<void> {
@@ -233,6 +282,10 @@ export class D1TaxonomyRepository implements TaxonomyRepository {
     }));
   }
 
+  async findAttribute(id: string): Promise<AttributeRecord | null> {
+    return (await this.listAttributes()).find((row) => row.id === id) ?? null;
+  }
+
   async attributeSlugTaken(slug: string): Promise<boolean> {
     return (
       (await countWhere(this.db(), attribute, eq(attribute.slug, slug))) > 0
@@ -249,6 +302,12 @@ export class D1TaxonomyRepository implements TaxonomyRepository {
 
   async updateAttribute(id: string, input: AttributeInput): Promise<void> {
     await this.db().update(attribute).set(input).where(eq(attribute.id, id));
+  }
+
+  async countAttributeProducts(id: string): Promise<number> {
+    const attr = await this.findAttribute(id);
+    if (!attr) return 0;
+    return attr.values.reduce((sum, value) => sum + value.productCount, 0);
   }
 
   async deleteAttribute(id: string): Promise<void> {
@@ -271,9 +330,26 @@ export class D1TaxonomyRepository implements TaxonomyRepository {
       .values({ id: newId(), attributeId, value, slug, position });
   }
 
+  async findAttributeValue(
+    valueId: string,
+  ): Promise<{ id: string; attributeId: string; value: string; slug: string } | null> {
+    const [row] = await this.db()
+      .select({
+        id: attributeValue.id,
+        attributeId: attributeValue.attributeId,
+        value: attributeValue.value,
+        slug: attributeValue.slug,
+      })
+      .from(attributeValue)
+      .where(eq(attributeValue.id, valueId))
+      .limit(1);
+    return row ?? null;
+  }
+
   async attributeValueSlugTaken(
     attributeId: string,
     slug: string,
+    excludeId?: string,
   ): Promise<boolean> {
     return (
       (await countWhere(
@@ -282,9 +358,21 @@ export class D1TaxonomyRepository implements TaxonomyRepository {
         and(
           eq(attributeValue.attributeId, attributeId),
           eq(attributeValue.slug, slug),
+          excludeId ? ne(attributeValue.id, excludeId) : undefined,
         ),
       )) > 0
     );
+  }
+
+  async updateAttributeValue(
+    valueId: string,
+    value: string,
+    slug: string,
+  ): Promise<void> {
+    await this.db()
+      .update(attributeValue)
+      .set({ value, slug })
+      .where(eq(attributeValue.id, valueId));
   }
 
   countAttributeValueProducts(valueId: string): Promise<number> {

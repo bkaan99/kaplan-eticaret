@@ -28,6 +28,33 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
           "/ara?*",
         ],
       },
+      {
+        userAgent: [
+          "GPTBot",
+          "OAI-SearchBot",
+          "PerplexityBot",
+          "ClaudeBot",
+          "Applebot-Extended",
+        ],
+        allow: [
+          "/",
+          "/llms.txt",
+          "/kategori/",
+          "/urun/",
+          "/sayfa/",
+          "/iletisim",
+          "/kendi-tursunu-yap",
+        ],
+        disallow: [
+          "/admin",
+          "/api/",
+          "/sepet",
+          "/odeme",
+          "/hesabim",
+          "/siparis",
+          "/kayit",
+        ],
+      },
     ],
     sitemap: absoluteUrl("/sitemap.xml"),
   };

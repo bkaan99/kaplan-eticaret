@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   addAttributeValueAction,
-  createBrandAction,
   deleteAttributeAction,
   deleteAttributeValueAction,
   deleteBrandAction,
   saveAttributeAction,
+  saveBrandAction,
+  updateAttributeValueAction,
 } from "./actions";
 
 export interface AttributeView {
@@ -244,17 +245,23 @@ function AttributeModal({
 interface BrandModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editingBrand: BrandView | null;
   onSuccess?: () => void;
 }
 
-function BrandModal({ isOpen, onClose, onSuccess }: BrandModalProps) {
+function BrandModal({
+  isOpen,
+  onClose,
+  editingBrand,
+  onSuccess,
+}: BrandModalProps) {
   const { pending, error, run, setError } = useRunner();
   const [name, setName] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
-    setName("");
+    setName(editingBrand?.name ?? "");
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -268,7 +275,7 @@ function BrandModal({ isOpen, onClose, onSuccess }: BrandModalProps) {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose, setError]);
+  }, [isOpen, onClose, setError, editingBrand]);
 
   if (!isOpen) return null;
 
@@ -277,7 +284,7 @@ function BrandModal({ isOpen, onClose, onSuccess }: BrandModalProps) {
     if (!name.trim()) return;
 
     run(
-      () => createBrandAction(name.trim()),
+      () => saveBrandAction(editingBrand?.id ?? null, name.trim()),
       () => {
         onSuccess?.();
         onClose();
@@ -309,10 +316,14 @@ function BrandModal({ isOpen, onClose, onSuccess }: BrandModalProps) {
                 id="brand-modal-title"
                 className="text-base font-bold text-slate-900"
               >
-                Yeni Marka / Üretici Ekle
+                {editingBrand
+                  ? "Markayı Düzenle"
+                  : "Yeni Marka / Üretici Ekle"}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Katalog ürünleri için marka kaydı açın
+                {editingBrand
+                  ? `"${editingBrand.name}" marka kaydını güncelliyorsunuz`
+                  : "Katalog ürünleri için marka kaydı açın"}
               </p>
             </div>
           </div>
@@ -377,7 +388,7 @@ function BrandModal({ isOpen, onClose, onSuccess }: BrandModalProps) {
               ) : (
                 <div className="flex items-center gap-1.5">
                   <span>🏢</span>
-                  <span>Markayı Kaydet</span>
+                  <span>{editingBrand ? "Güncelle" : "Markayı Kaydet"}</span>
                 </div>
               )}
             </Button>
@@ -396,6 +407,7 @@ interface ValueModalProps {
   isOpen: boolean;
   onClose: () => void;
   attribute: AttributeView | null;
+  editingValue: { id: string; value: string } | null;
   onSuccess?: () => void;
 }
 
@@ -403,6 +415,7 @@ function AttributeValueModal({
   isOpen,
   onClose,
   attribute,
+  editingValue,
   onSuccess,
 }: ValueModalProps) {
   const { pending, error, run, setError } = useRunner();
@@ -411,7 +424,7 @@ function AttributeValueModal({
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
-    setValue("");
+    setValue(editingValue?.value ?? "");
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -425,7 +438,7 @@ function AttributeValueModal({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose, setError]);
+  }, [isOpen, onClose, setError, editingValue]);
 
   if (!isOpen || !attribute) return null;
 
@@ -434,7 +447,10 @@ function AttributeValueModal({
     if (!value.trim() || !attribute) return;
 
     run(
-      () => addAttributeValueAction(attribute.id, value.trim()),
+      () =>
+        editingValue
+          ? updateAttributeValueAction(editingValue.id, value.trim())
+          : addAttributeValueAction(attribute.id, value.trim()),
       () => {
         onSuccess?.();
         onClose();
@@ -466,10 +482,11 @@ function AttributeValueModal({
                 id="value-modal-title"
                 className="text-base font-bold text-slate-900"
               >
-                Yeni Değer Ekle
+                {editingValue ? "Değeri Düzenle" : "Yeni Değer Ekle"}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                &ldquo;{attribute.name}&rdquo; niteliği için yeni seçenek
+                &ldquo;{attribute.name}&rdquo; niteliği için{" "}
+                {editingValue ? "değeri güncelleyin" : "yeni seçenek"}
               </p>
             </div>
           </div>
@@ -533,8 +550,8 @@ function AttributeValueModal({
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <span>+</span>
-                  <span>Değeri Ekle</span>
+                  <span>{editingValue ? "✓" : "+"}</span>
+                  <span>{editingValue ? "Güncelle" : "Değeri Ekle"}</span>
                 </div>
               )}
             </Button>
@@ -553,12 +570,18 @@ function AttributeCard({
   attribute,
   onEdit,
   onAddValue,
+  onEditValue,
 }: {
   attribute: AttributeView;
   onEdit: (attribute: AttributeView) => void;
   onAddValue: (attribute: AttributeView) => void;
+  onEditValue: (
+    attribute: AttributeView,
+    value: { id: string; value: string },
+  ) => void;
 }) {
   const { pending, error, run } = useRunner();
+  const inUse = attribute.values.some((value) => value.productCount > 0);
 
   return (
     <Card className="transition-all hover:border-slate-300/80 shadow-2xs border-slate-200/80 overflow-hidden">
@@ -597,7 +620,7 @@ function AttributeCard({
           <Button
             size="sm"
             variant="ghost"
-            disabled={pending}
+            disabled={pending || inUse}
             onClick={() => {
               if (
                 window.confirm(
@@ -607,8 +630,12 @@ function AttributeCard({
                 run(() => deleteAttributeAction(attribute.id));
               }
             }}
-            className="h-8 px-2.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
-            title="Niteliği Sil"
+            className="h-8 px-2.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
+            title={
+              inUse
+                ? "Ürünlerde kullanılan nitelik silinemez"
+                : "Niteliği sil"
+            }
           >
             Sil
           </Button>
@@ -638,17 +665,30 @@ function AttributeCard({
                 key={item.id}
                 className="group inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1 text-xs font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white"
               >
-                <span>{item.value}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onEditValue(attribute, { id: item.id, value: item.value })
+                  }
+                  className="hover:text-emerald-800 cursor-pointer"
+                  title="Değeri düzenle"
+                >
+                  {item.value}
+                </button>
                 <span className="rounded-md bg-white px-1.5 py-0.2 text-[10px] font-bold text-slate-500 border border-slate-200">
                   {item.productCount}
                 </span>
                 <button
                   type="button"
                   aria-label={`${item.value} değerini sil`}
-                  disabled={pending}
+                  disabled={pending || item.productCount > 0}
                   onClick={() => run(() => deleteAttributeValueAction(item.id))}
-                  className="ml-0.5 text-slate-400 hover:text-red-600 transition cursor-pointer"
-                  title="Değeri Kaldır"
+                  className="ml-0.5 text-slate-400 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
+                  title={
+                    item.productCount > 0
+                      ? "Ürünlerde kullanılan değer silinemez"
+                      : "Değeri kaldır"
+                  }
                 >
                   ✕
                 </button>
@@ -695,10 +735,15 @@ export function AttributeManager({
   } | null>(null);
 
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<BrandView | null>(null);
 
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
   const [selectedAttributeForValue, setSelectedAttributeForValue] =
     useState<AttributeView | null>(null);
+  const [editingValue, setEditingValue] = useState<{
+    id: string;
+    value: string;
+  } | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "attributes" | "brands">("all");
@@ -746,7 +791,27 @@ export function AttributeManager({
 
   function handleOpenValueModal(attr: AttributeView) {
     setSelectedAttributeForValue(attr);
+    setEditingValue(null);
     setIsValueModalOpen(true);
+  }
+
+  function handleEditValue(
+    attr: AttributeView,
+    value: { id: string; value: string },
+  ) {
+    setSelectedAttributeForValue(attr);
+    setEditingValue(value);
+    setIsValueModalOpen(true);
+  }
+
+  function handleCreateBrand() {
+    setEditingBrand(null);
+    setIsBrandModalOpen(true);
+  }
+
+  function handleEditBrand(brand: BrandView) {
+    setEditingBrand(brand);
+    setIsBrandModalOpen(true);
   }
 
   return (
@@ -760,13 +825,21 @@ export function AttributeManager({
 
       <BrandModal
         isOpen={isBrandModalOpen}
-        onClose={() => setIsBrandModalOpen(false)}
+        onClose={() => {
+          setIsBrandModalOpen(false);
+          setEditingBrand(null);
+        }}
+        editingBrand={editingBrand}
       />
 
       <AttributeValueModal
         isOpen={isValueModalOpen}
-        onClose={() => setIsValueModalOpen(false)}
+        onClose={() => {
+          setIsValueModalOpen(false);
+          setEditingValue(null);
+        }}
         attribute={selectedAttributeForValue}
+        editingValue={editingValue}
       />
 
       {/* Üst İstatistik Kartları */}
@@ -897,7 +970,7 @@ export function AttributeManager({
           {(activeTab === "all" || activeTab === "brands") && (
             <Button
               type="button"
-              onClick={() => setIsBrandModalOpen(true)}
+              onClick={handleCreateBrand}
               className="h-9 bg-slate-900 px-4 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 cursor-pointer"
             >
               + Yeni Marka Ekle
@@ -930,6 +1003,7 @@ export function AttributeManager({
                   attribute={attribute}
                   onEdit={handleEditAttribute}
                   onAddValue={handleOpenValueModal}
+                  onEditValue={handleEditValue}
                 />
               ))}
 
@@ -979,7 +1053,7 @@ export function AttributeManager({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setIsBrandModalOpen(true)}
+                  onClick={handleCreateBrand}
                   className="h-8 px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
                 >
                   + Marka Ekle
@@ -1008,23 +1082,37 @@ export function AttributeManager({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        disabled={brandRunner.pending}
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `"${brand.name}" markasını silmek istediğinize emin misiniz?`,
-                            )
-                          ) {
-                            brandRunner.run(() => deleteBrandAction(brand.id));
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleEditBrand(brand)}
+                          className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                          title="Markayı düzenle"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          disabled={brandRunner.pending || brand.productCount > 0}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `"${brand.name}" markasını silmek istediğinize emin misiniz?`,
+                              )
+                            ) {
+                              brandRunner.run(() => deleteBrandAction(brand.id));
+                            }
+                          }}
+                          className="rounded-lg p-1.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
+                          title={
+                            brand.productCount > 0
+                              ? "Ürünü olan marka silinemez"
+                              : "Markayı sil"
                           }
-                        }}
-                        className="rounded-lg p-1.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
-                        title="Markayı Sil"
-                      >
-                        ✕ Sil
-                      </button>
+                        >
+                          ✕ Sil
+                        </button>
+                      </div>
                     </div>
                   ))}
 
@@ -1041,7 +1129,7 @@ export function AttributeManager({
                       </p>
                       <Button
                         type="button"
-                        onClick={() => setIsBrandModalOpen(true)}
+                        onClick={handleCreateBrand}
                         className="mt-3 bg-slate-900 text-xs font-semibold text-white hover:bg-slate-800"
                       >
                         + Marka Ekle
