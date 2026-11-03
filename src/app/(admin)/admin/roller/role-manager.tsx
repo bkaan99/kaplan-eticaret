@@ -32,6 +32,7 @@ interface RoleModalProps {
   isOpen: boolean;
   onClose: () => void;
   editingId: string | null;
+  nameLocked: boolean;
   name: string;
   setName: (v: string) => void;
   description: string;
@@ -48,6 +49,7 @@ function RoleModal({
   isOpen,
   onClose,
   editingId,
+  nameLocked,
   name,
   setName,
   description,
@@ -130,7 +132,9 @@ function RoleModal({
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 {editingId
-                  ? `"${name}" rolünün izin ve açıklamalarını güncelliyorsunuz`
+                  ? nameLocked
+                    ? `"${name}" sistem rolü — ad sabit, yetkiler ve açıklama güncellenebilir`
+                    : `"${name}" rolünün izin ve açıklamalarını güncelliyorsunuz`
                   : "Personellerin yönetim panelindeki erişim sınırlarını belirleyin"}
               </p>
             </div>
@@ -168,14 +172,20 @@ function RoleModal({
                 Rol Adı <span className="text-red-500">*</span>
               </Label>
               <Input
-                autoFocus
+                autoFocus={!nameLocked}
                 id="role-name"
                 value={name}
                 maxLength={40}
+                disabled={nameLocked}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="Örn: Sipariş ve Kargo Sorumlusu"
-                className="h-9 text-xs font-semibold bg-white"
+                className="h-9 text-xs font-semibold bg-white disabled:bg-slate-50 disabled:text-slate-500"
               />
+              {nameLocked ? (
+                <p className="text-[11px] text-slate-400">
+                  Sistem rollerinin adı değiştirilemez.
+                </p>
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -338,6 +348,7 @@ export function RoleManager({
 }) {
   const [pending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingIsSystem, setEditingIsSystem] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -360,6 +371,7 @@ export function RoleManager({
 
   function reset() {
     setEditingId(null);
+    setEditingIsSystem(false);
     setName("");
     setDescription("");
     setSelected([]);
@@ -373,6 +385,7 @@ export function RoleManager({
 
   function handleEdit(role: RoleView) {
     setEditingId(role.id);
+    setEditingIsSystem(role.isSystem);
     setName(role.name);
     setDescription(role.description ?? "");
     setSelected(role.permissions);
@@ -458,6 +471,7 @@ export function RoleManager({
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         editingId={editingId}
+        nameLocked={editingIsSystem}
         name={name}
         setName={setName}
         description={description}
@@ -654,36 +668,30 @@ export function RoleManager({
                   </div>
                 </div>
 
-                {!role.isSystem ? (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(role)}
-                      className="h-7.5 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                    >
-                      Düzenle
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={pending || role.userCount > 0}
-                      onClick={() => remove(role.id, role.name)}
-                      className="h-7.5 px-2 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40 cursor-pointer"
-                      title={
-                        role.userCount > 0
-                          ? "Personele atanmış roller silinemez"
-                          : "Rolü Sil"
-                      }
-                    >
-                      Sil
-                    </Button>
-                  </div>
-                ) : (
-                  <span className="text-[11px] text-slate-400 font-medium italic">
-                    🔒 Korumalı
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEdit(role)}
+                    className="h-7.5 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Düzenle
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={pending || role.userCount > 0}
+                    onClick={() => remove(role.id, role.name)}
+                    className="h-7.5 px-2 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40 cursor-pointer"
+                    title={
+                      role.userCount > 0
+                        ? "Personele atanmış roller silinemez; önce personelden rolü kaldırın"
+                        : "Rolü sil"
+                    }
+                  >
+                    Sil
+                  </Button>
+                </div>
               </CardHeader>
 
               {/* Kart Açıklaması & Yetki Matrisi */}
