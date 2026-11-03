@@ -12,10 +12,10 @@ export const FLY_TO_BIDON_MS = 520;
  * Her çeşit için bidonda / uçuşta eşit parça sayısı.
  * 8 çeşit × bu değer = ağzına kadar dolu kapasite.
  */
-export const PIECES_PER_KIND = 3;
+export const PIECES_PER_KIND = 5;
 
 /** Uçuşta biraz daha fazla yağmur hissi (görsel); bidonda yine PIECES_PER_KIND. */
-const FLY_BURST_COUNT = PIECES_PER_KIND + 2;
+const FLY_BURST_COUNT = PIECES_PER_KIND + 3;
 
 type FlyShot = {
   key: string;
@@ -80,15 +80,16 @@ export function FlyToBidonOverlay() {
       const next: FlyShot[] = [];
 
       for (let i = 0; i < FLY_BURST_COUNT; i++) {
-        const delay = i * 0.05;
-        const duration = FLY_TO_BIDON_MS / 1000 + 0.06 + Math.random() * 0.1;
-        const fromX = baseFromX + (Math.random() - 0.5) * 36;
-        const fromY = baseFromY + (Math.random() - 0.5) * 28;
-        const toX = baseToX + (Math.random() - 0.5) * 42;
-        const toY = baseToY + (Math.random() - 0.5) * 18;
-        const midX = (fromX + toX) / 2 + (Math.random() - 0.5) * 60;
-        const midY = Math.min(fromY, toY) - (70 + Math.random() * 70);
-        const size = baseSize * (0.72 + Math.random() * 0.4);
+        const delay = i * 0.028;
+        const duration = FLY_TO_BIDON_MS / 1000 + 0.04 + Math.random() * 0.08;
+        const fromX = baseFromX + (Math.random() - 0.5) * 42;
+        const fromY = baseFromY + (Math.random() - 0.5) * 32;
+        const toX = baseToX + (Math.random() - 0.5) * 36;
+        // Ağızdan içeri doğru kaybolsun; ağızda asılı kalmasın.
+        const toY = baseToY + 28 + Math.random() * 36;
+        const midX = (fromX + toX) / 2 + (Math.random() - 0.5) * 70;
+        const midY = Math.min(fromY, baseToY) - (60 + Math.random() * 60);
+        const size = baseSize * (0.62 + Math.random() * 0.32);
         const spin =
           (Math.random() < 0.5 ? -1 : 1) * (180 + Math.random() * 280);
         const key = `fly-${batch}-${i}`;
@@ -107,16 +108,12 @@ export function FlyToBidonOverlay() {
           delay,
           duration,
         });
-
-        window.setTimeout(
-          () => {
-            setShots((current) => current.filter((s) => s.key !== key));
-          },
-          (delay + duration) * 1000 + 60,
-        );
       }
 
-      setShots((current) => [...current.slice(-MAX_INGREDIENTS * 4), ...next]);
+      setShots((current) => [
+        ...current.slice(-MAX_INGREDIENTS * FLY_BURST_COUNT),
+        ...next,
+      ]);
     }
 
     window.addEventListener(EVENT, onFly);
@@ -153,16 +150,20 @@ export function FlyToBidonOverlay() {
             animate={{
               x: [shot.fromX, shot.midX, shot.toX],
               y: [shot.fromY, shot.midY, shot.toY],
-              scale: [1.05, 0.95, 0.5],
+              scale: [1.05, 0.85, 0.25],
               rotate: [0, shot.spin * 0.5, shot.spin],
-              opacity: [0, 1, 0.9],
+              // Ağıza varınca tamamen kaybol — overlay ağızda kalmasın.
+              opacity: [0, 1, 1, 0],
             }}
-            exit={{ opacity: 0, scale: 0.3 }}
+            exit={{ opacity: 0, scale: 0.15 }}
             transition={{
               duration: shot.duration,
               delay: shot.delay,
               ease: [0.22, 0.61, 0.36, 1],
-              times: [0, 0.5, 1],
+              times: [0, 0.35, 0.72, 1],
+            }}
+            onAnimationComplete={() => {
+              setShots((current) => current.filter((s) => s.key !== shot.key));
             }}
           />
         ))}

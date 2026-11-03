@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   MAX_INGREDIENTS,
   type BrineOption,
@@ -9,45 +9,64 @@ import {
 } from "@/modules/custom-pickle/custom-pickle.types";
 import { FLY_TO_BIDON_MS, PIECES_PER_KIND } from "./fly-to-bidon";
 
+/** Parçalar indikten sonra kapağın kapanma gecikmesi. */
+const LID_CLOSE_AFTER_LAND_MS = 160;
+
 /**
- * Bidon içi slotlar (alttan üste). 8 çeşit × PIECES_PER_KIND = ağzına kadar dolu.
- * Tombik kavanoz: x≈70–250, y≈200–355.
+ * Bidon içi slotlar (alttan üste).
+ * En az MAX_INGREDIENTS × PIECES_PER_KIND kadar olmalı; yoksa sonraki çeşitler görünmez.
+ * Tombik kavanoz: x≈70–250, y≈150–355.
  */
 const SLOTS = [
   // Katman 1 — taban
-  { x: 95, y: 350, r: -12 },
-  { x: 135, y: 354, r: 8 },
-  { x: 175, y: 352, r: -6 },
-  { x: 215, y: 348, r: 10 },
+  { x: 90, y: 352, r: -12 },
+  { x: 128, y: 356, r: 8 },
+  { x: 166, y: 354, r: -6 },
+  { x: 204, y: 350, r: 10 },
+  { x: 238, y: 348, r: -8 },
   // Katman 2
-  { x: 88, y: 318, r: 10 },
-  { x: 125, y: 322, r: -10 },
-  { x: 162, y: 324, r: 6 },
-  { x: 200, y: 320, r: -8 },
+  { x: 82, y: 324, r: 10 },
+  { x: 118, y: 328, r: -10 },
+  { x: 156, y: 330, r: 6 },
+  { x: 194, y: 326, r: -8 },
+  { x: 232, y: 322, r: 12 },
   // Katman 3
-  { x: 100, y: 288, r: -8 },
-  { x: 140, y: 292, r: 12 },
-  { x: 180, y: 290, r: -12 },
-  { x: 220, y: 286, r: 8 },
+  { x: 88, y: 298, r: -8 },
+  { x: 126, y: 302, r: 12 },
+  { x: 164, y: 300, r: -12 },
+  { x: 202, y: 296, r: 8 },
+  { x: 238, y: 294, r: -6 },
   // Katman 4
-  { x: 92, y: 258, r: 8 },
-  { x: 132, y: 262, r: -10 },
-  { x: 172, y: 260, r: 6 },
-  { x: 212, y: 256, r: -6 },
+  { x: 84, y: 272, r: 8 },
+  { x: 122, y: 276, r: -10 },
+  { x: 160, y: 274, r: 6 },
+  { x: 198, y: 270, r: -6 },
+  { x: 234, y: 268, r: 10 },
   // Katman 5
-  { x: 105, y: 228, r: -10 },
-  { x: 148, y: 232, r: 10 },
-  { x: 190, y: 230, r: -8 },
-  { x: 228, y: 226, r: 12 },
-  // Katman 6 — ağıza yakın (8. çeşitlerle dolunca)
-  { x: 118, y: 202, r: 6 },
-  { x: 160, y: 206, r: -10 },
-  { x: 200, y: 204, r: 8 },
-  { x: 238, y: 200, r: -6 },
+  { x: 92, y: 246, r: -10 },
+  { x: 130, y: 250, r: 10 },
+  { x: 168, y: 248, r: -8 },
+  { x: 206, y: 244, r: 12 },
+  { x: 240, y: 242, r: -4 },
+  // Katman 6
+  { x: 96, y: 220, r: 6 },
+  { x: 134, y: 224, r: -10 },
+  { x: 172, y: 222, r: 8 },
+  { x: 210, y: 218, r: -6 },
+  { x: 244, y: 216, r: 10 },
+  // Katman 7
+  { x: 102, y: 194, r: -8 },
+  { x: 140, y: 198, r: 10 },
+  { x: 178, y: 196, r: -12 },
+  { x: 214, y: 192, r: 6 },
+  { x: 246, y: 190, r: -8 },
+  // Katman 8 — ağıza yakın (8. çeşit)
+  { x: 110, y: 168, r: 8 },
+  { x: 148, y: 172, r: -10 },
+  { x: 184, y: 170, r: 6 },
+  { x: 218, y: 166, r: -6 },
+  { x: 248, y: 164, r: 10 },
 ];
-
-/** 8 çeşit × parça = tüm slotlar (ağzına kadar). */
-const JAR_CAPACITY = MAX_INGREDIENTS * PIECES_PER_KIND;
 
 /** Gövde iç alanı (clip + salamura) — y: 96 → 388 */
 const BODY_TOP = 96;
@@ -120,6 +139,7 @@ export function Bidon({
   const glossId = `bidon-gloss-${uid}`;
   const shadowId = `bidon-shadow-${uid}`;
   const capId = `bidon-cap-${uid}`;
+  const reduceMotion = useReducedMotion();
 
   // Salamura: 8 çeşitte ağzına kadar (eşit adımlarla yükselir).
   const fillRatio = Math.min(1, items.length / MAX_INGREDIENTS);
@@ -138,14 +158,16 @@ export function Bidon({
 
   const prevIdsRef = useRef<string[]>([]);
   const pendingTimersRef = useRef<number[]>([]);
+  const lidCloseTimerRef = useRef<number | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>(() =>
     items.map((item) => item.id),
   );
   const [splashes, setSplashes] = useState<SplashBurst[]>([]);
   const [waveBoost, setWaveBoost] = useState(0);
+  const [lidOpen, setLidOpen] = useState(false);
   const itemKey = items.map((item) => item.id).join("|");
 
-  // Karttan uçuş bitsin → bidonda görünsün + sıçrama.
+  // Karttan uçuş bitsin → bidonda görünsün + sıçrama; kapak aç/kapa.
   useEffect(() => {
     const itemIds = itemKey ? itemKey.split("|") : [];
     const prev = prevIdsRef.current;
@@ -158,6 +180,20 @@ export function Bidon({
 
     const added = itemIds.filter((id) => !prev.includes(id));
     if (!added.length) return;
+
+    // Her eklemede kapak hemen açılır; son inişten sonra kapanır.
+    setLidOpen(true);
+    if (lidCloseTimerRef.current !== null) {
+      window.clearTimeout(lidCloseTimerRef.current);
+      lidCloseTimerRef.current = null;
+    }
+    const closeAt = FLY_TO_BIDON_MS + LID_CLOSE_AFTER_LAND_MS;
+    const closeTimer = window.setTimeout(() => {
+      setLidOpen(false);
+      lidCloseTimerRef.current = null;
+    }, closeAt);
+    lidCloseTimerRef.current = closeTimer;
+    pendingTimersRef.current.push(closeTimer);
 
     for (const id of added) {
       const index = itemIds.indexOf(id);
@@ -214,6 +250,7 @@ export function Bidon({
     return () => {
       for (const timer of pendingTimersRef.current) window.clearTimeout(timer);
       pendingTimersRef.current = [];
+      lidCloseTimerRef.current = null;
     };
   }, []);
 
@@ -222,8 +259,10 @@ export function Bidon({
   // Her çeşit eşit pay (PIECES_PER_KIND); 8 çeşitte JAR_CAPACITY = ağzına kadar.
   const jarPieces = visibleItems.flatMap((item, kindIndex) =>
     Array.from({ length: PIECES_PER_KIND }, (_, pieceIndex) => {
-      const slotIndex = kindIndex * PIECES_PER_KIND + pieceIndex;
-      if (slotIndex >= JAR_CAPACITY || slotIndex >= SLOTS.length) return null;
+      const slotIndex = Math.min(
+        kindIndex * PIECES_PER_KIND + pieceIndex,
+        SLOTS.length - 1,
+      );
       const slot = SLOTS[slotIndex]!;
       return {
         key: `${item.id}-${pieceIndex}`,
@@ -234,9 +273,9 @@ export function Bidon({
           y: slot.y + ((pieceIndex * 3) % 5) - 2,
           r: slot.r + (pieceIndex % 3) * 3 - 3,
         },
-        size: 44 + (pieceIndex % 3) * 3,
+        size: 40 + (pieceIndex % 3) * 2,
       };
-    }).filter((piece): piece is NonNullable<typeof piece> => piece !== null),
+    }),
   );
 
   return (
@@ -518,36 +557,59 @@ export function Bidon({
         strokeWidth="1.5"
       />
 
-      {/* Kapak — sarı vida, tırtıklı kenar */}
-      <rect
-        x="98"
-        y="28"
-        width="124"
-        height="48"
-        rx="8"
-        fill={`url(#${capId}-side)`}
-      />
-      <rect x="98" y="28" width="124" height="18" rx="7" fill={`url(#${capId})`} />
-      <rect x="118" y="22" width="84" height="10" rx="4" fill="#ffe566" />
-      {Array.from({ length: 14 }, (_, index) => (
+      {/* Kapak — açılınca sola kayar, azıcık havaya kalkar */}
+      <motion.g
+        initial={false}
+        animate={{
+          x: lidOpen ? (reduceMotion ? -36 : -88) : 0,
+          y: lidOpen ? (reduceMotion ? -6 : -16) : 0,
+          rotate: lidOpen ? (reduceMotion ? -6 : -10) : 0,
+        }}
+        transition={
+          reduceMotion
+            ? { duration: 0.01 }
+            : lidOpen
+              ? { type: "spring", stiffness: 280, damping: 22 }
+              : { type: "spring", stiffness: 240, damping: 24 }
+        }
+      >
         <rect
-          key={index}
-          x={104 + index * 8.2}
-          y="42"
-          width="3.6"
-          height="28"
-          rx="1.2"
-          fill="#b89600"
-          opacity="0.4"
+          x="98"
+          y="28"
+          width="124"
+          height="48"
+          rx="8"
+          fill={`url(#${capId}-side)`}
         />
-      ))}
-      <path
-        d="M110 36 H210"
-        stroke="#ffffff"
-        strokeOpacity="0.35"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+        <rect
+          x="98"
+          y="28"
+          width="124"
+          height="18"
+          rx="7"
+          fill={`url(#${capId})`}
+        />
+        <rect x="118" y="22" width="84" height="10" rx="4" fill="#ffe566" />
+        {Array.from({ length: 14 }, (_, index) => (
+          <rect
+            key={index}
+            x={104 + index * 8.2}
+            y="42"
+            width="3.6"
+            height="28"
+            rx="1.2"
+            fill="#b89600"
+            opacity="0.4"
+          />
+        ))}
+        <path
+          d="M110 36 H210"
+          stroke="#ffffff"
+          strokeOpacity="0.35"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </motion.g>
     </motion.svg>
   );
 }
