@@ -16,6 +16,7 @@ import {
   bidonWeightGram,
   DEFAULT_BRINE_CONFIG,
   DEFAULT_SPICE_CONFIG,
+  maxIngredientsForSize,
   type CustomPickleConfig,
   type StoredCustomization,
 } from "./custom-pickle.types";
@@ -120,6 +121,15 @@ describe("bidonWeightGram", () => {
   });
 });
 
+describe("maxIngredientsForSize", () => {
+  it("3/5/10 kg bidonlara göre 4/6/8 çeşit limiti döner", () => {
+    expect(maxIngredientsForSize(3000)).toBe(4);
+    expect(maxIngredientsForSize(5000)).toBe(6);
+    expect(maxIngredientsForSize(10000)).toBe(8);
+    expect(maxIngredientsForSize(null)).toBe(4);
+  });
+});
+
 describe("ingredientExtra", () => {
   it("kg başı ücreti bidon kilosuyla çarpar, ağırlık yoksa 1 kg sayar", () => {
     expect(ingredientExtra("4", 5000).toFixed(2)).toBe("20.00");
@@ -210,6 +220,37 @@ describe("CustomPickleService.prepare", () => {
         ingredientIds: Array.from({ length: 9 }, (_, i) => `m${i}`),
       }),
     ).rejects.toThrow(/En fazla 8/);
+  });
+
+  it("bidon boyutuna göre çeşit üst sınırını uygular", async () => {
+    const threeKg: BuilderProductRecord = {
+      ...PRODUCT,
+      variants: [
+        {
+          ...PRODUCT.variants[0]!,
+          id: "v3",
+          label: "3 kg bidon",
+          weightGram: 3000,
+        },
+      ],
+    };
+    const pickle = service(new FakeRepository(ingredients, threeKg));
+    await expect(
+      pickle.prepare({
+        ...VALID_INPUT,
+        variantId: "v3",
+        ingredientIds: Array.from({ length: 5 }, (_, i) => `m${i}`),
+      }),
+    ).rejects.toThrow(/en fazla 4 malzeme/i);
+
+    // 5 kg (etiketten) → en fazla 6
+    const fiveKgPickle = service(new FakeRepository(ingredients));
+    await expect(
+      fiveKgPickle.prepare({
+        ...VALID_INPUT,
+        ingredientIds: Array.from({ length: 7 }, (_, i) => `m${i}`),
+      }),
+    ).rejects.toThrow(/en fazla 6 malzeme/i);
   });
 });
 

@@ -7,14 +7,13 @@ import {
   type BrineOption,
   type SpiceOption,
 } from "@/modules/custom-pickle/custom-pickle.types";
-import { FLY_TO_BIDON_MS, PIECES_PER_KIND } from "./fly-to-bidon";
+import { FLY_TO_BIDON_MS } from "./fly-to-bidon";
 
 /** Parçalar indikten sonra kapağın kapanma gecikmesi. */
 const LID_CLOSE_AFTER_LAND_MS = 160;
 
 /**
- * Bidon içi slotlar (alttan üste).
- * En az MAX_INGREDIENTS × PIECES_PER_KIND kadar olmalı; yoksa sonraki çeşitler görünmez.
+ * Bidon içi slotlar (alttan üste). Max çeşitte hepsi dolu görünür.
  * Tombik kavanoz: x≈70–250, y≈150–355.
  */
 const SLOTS = [
@@ -120,6 +119,7 @@ export function Bidon({
   spiceTint,
   hasBubbles,
   sizeLabel,
+  maxIngredients = MAX_INGREDIENTS,
   scale,
 }: {
   items: BidonItem[];
@@ -129,6 +129,8 @@ export function Bidon({
   spiceTint?: number;
   hasBubbles?: boolean;
   sizeLabel: string;
+  /** Seçili boyuttaki çeşit üst sınırı; salamura doluluk oranı buna göre. */
+  maxIngredients?: number;
   /** Bidon boyutuna göre görsel ölçek (0.8–1) */
   scale: number;
 }) {
@@ -141,10 +143,12 @@ export function Bidon({
   const capId = `bidon-cap-${uid}`;
   const reduceMotion = useReducedMotion();
 
-  // Salamura: 8 çeşitte ağzına kadar (eşit adımlarla yükselir).
-  const fillRatio = Math.min(1, items.length / MAX_INGREDIENTS);
-  const level = 0.14 + fillRatio * 0.8;
+  // Salamura + parçalar: boyuttaki max çeşitte ağzına kadar dolu.
+  const fillRatio = Math.min(1, items.length / Math.max(1, maxIngredients));
+  const level = 0.12 + fillRatio * 0.88;
   const liquidTop = BODY_BOTTOM - level * (BODY_BOTTOM - (BODY_TOP + 28));
+  /** Max çeşitte her çeşit için kaç slot (tüm jar dolsun). */
+  const piecesPerKind = Math.max(1, Math.floor(SLOTS.length / maxIngredients));
   const liquidFill =
     brineColor ??
     BRINE_COLOR[brine as keyof typeof BRINE_COLOR] ??
@@ -199,11 +203,11 @@ export function Bidon({
       const index = itemIds.indexOf(id);
       const countAfter = index + 1;
       // Bu çeşidin eşit pay slotları (alttan üste dolum)
-      const bandStart = index * PIECES_PER_KIND;
+      const bandStart = index * piecesPerKind;
       const slot =
         SLOTS[Math.min(bandStart + 1, SLOTS.length - 1)] ?? SLOTS[0]!;
-      const nextFill = Math.min(1, countAfter / MAX_INGREDIENTS);
-      const nextLevel = 0.14 + nextFill * 0.8;
+      const nextFill = Math.min(1, countAfter / Math.max(1, maxIngredients));
+      const nextLevel = 0.12 + nextFill * 0.88;
       const surfaceY =
         BODY_BOTTOM - nextLevel * (BODY_BOTTOM - (BODY_TOP + 28)) + 2;
       const impactX = slot.x + (Math.random() - 0.5) * 18;
@@ -244,7 +248,7 @@ export function Bidon({
 
       pendingTimersRef.current.push(landTimer);
     }
-  }, [itemKey]);
+  }, [itemKey, maxIngredients, piecesPerKind]);
 
   useEffect(() => {
     return () => {
@@ -256,13 +260,11 @@ export function Bidon({
 
   const visibleItems = items.filter((item) => visibleIds.includes(item.id));
 
-  // Her çeşit eşit pay (PIECES_PER_KIND); 8 çeşitte JAR_CAPACITY = ağzına kadar.
+  // Alttan üste sabit katman: yeni çeşit önceki yığının üstüne biner (yeniden dağıtılmaz).
   const jarPieces = visibleItems.flatMap((item, kindIndex) =>
-    Array.from({ length: PIECES_PER_KIND }, (_, pieceIndex) => {
-      const slotIndex = Math.min(
-        kindIndex * PIECES_PER_KIND + pieceIndex,
-        SLOTS.length - 1,
-      );
+    Array.from({ length: piecesPerKind }, (_, pieceIndex) => {
+      const slotIndex = kindIndex * piecesPerKind + pieceIndex;
+      if (slotIndex >= SLOTS.length) return null;
       const slot = SLOTS[slotIndex]!;
       return {
         key: `${item.id}-${pieceIndex}`,
@@ -274,8 +276,10 @@ export function Bidon({
           r: slot.r + (pieceIndex % 3) * 3 - 3,
         },
         size: 40 + (pieceIndex % 3) * 2,
+        /** Ağız hizasından kendi katmanına düşüş mesafesi */
+        dropFrom: BODY_TOP + 18 - slot.y,
       };
-    }),
+    }).filter((piece): piece is NonNullable<typeof piece> => piece !== null),
   );
 
   return (
@@ -373,37 +377,43 @@ export function Bidon({
           />
         </motion.g>
 
-        {/* Malzemeler — her çeşitten çok parça (uçuş sonrası) */}
+        {/* Malzemeler — ağızdan kendi katmanına düşüp üst üste yığılır */}
         <AnimatePresence>
           {jarPieces.map((piece, index) => {
-            const { slot, item, size } = piece;
+            const { slot, item, size, dropFrom } = piece;
             const half = size / 2;
+            const stagger = (index % piecesPerKind) * 0.05;
             return (
               <motion.g
                 key={piece.key}
                 initial={{
-                  y: Math.min(0, 110 - slot.y),
-                  opacity: 0.85,
-                  rotate: slot.r - 25,
-                  scale: 0.55,
+                  y: dropFrom,
+                  opacity: 0.9,
+                  rotate: slot.r - 18,
+                  scale: 0.5,
                 }}
                 animate={{ y: 0, opacity: 1, rotate: slot.r, scale: 1 }}
-                exit={{ y: -80, opacity: 0, transition: { duration: 0.25 } }}
+                exit={{
+                  y: 40,
+                  opacity: 0,
+                  scale: 0.6,
+                  transition: { duration: 0.22 },
+                }}
                 transition={{
                   type: "spring",
-                  stiffness: 160,
-                  damping: 14,
-                  delay: (index % PIECES_PER_KIND) * 0.04,
+                  stiffness: 200,
+                  damping: 18,
+                  delay: stagger,
                 }}
                 style={{ transformOrigin: `${slot.x}px ${slot.y}px` }}
               >
                 <motion.g
-                  animate={{ y: [0, -4, 0] }}
+                  animate={{ y: [0, -3, 0] }}
                   transition={{
-                    duration: 2.8 + (index % 4) * 0.35,
+                    duration: 3 + (index % 4) * 0.35,
                     repeat: Infinity,
                     ease: "easeInOut",
-                    delay: 0.5 + (index % 5) * 0.12,
+                    delay: 0.6 + stagger,
                   }}
                 >
                   <image

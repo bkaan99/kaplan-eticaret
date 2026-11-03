@@ -19,6 +19,7 @@ import {
   bidonWeightGram,
   BRINE_OPTIONS,
   CUSTOM_PICKLE_PRODUCT_SLUG,
+  maxIngredientsForSize,
   SPICE_OPTIONS,
   type CustomPickleConfig,
   type CustomizationPricer,
@@ -207,6 +208,14 @@ export class CustomPickleService implements CustomizationPricer {
     );
     if (!product || product.status !== "ACTIVE" || !variant?.isActive) {
       throw new NotFoundError("Bidon boyutu");
+    }
+
+    const weightGram = bidonWeightGram(variant.weightGram, variant.label);
+    const maxIngredients = maxIngredientsForSize(weightGram);
+    if (input.ingredientIds.length > maxIngredients) {
+      throw new ValidationError(
+        `Bu bidon boyutunda en fazla ${maxIngredients} malzeme seçebilirsiniz`,
+      );
     }
 
     const ingredients = await this.repository.findIngredients(

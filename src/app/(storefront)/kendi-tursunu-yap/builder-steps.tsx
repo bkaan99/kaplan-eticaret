@@ -7,7 +7,7 @@ import { EASE_OUT } from "@/components/motion/motion";
 import {
   BRINE_OPTIONS,
   INGREDIENT_GROUP_LABELS,
-  MAX_INGREDIENTS,
+  maxIngredientsForSize,
   MAX_NOTE_LENGTH,
   SPICE_OPTIONS,
   type BrineOption,
@@ -134,27 +134,25 @@ export function SizeStep({
   sizes: BuilderSize[];
   builder: CustomPickleBuilderState;
 }) {
-  const { variantId, setVariantId, setMessage } = builder;
+  const { variantId, selectSize, maxIngredients } = builder;
 
   return (
     <Step index={1} title="Bidon boyutu">
       <p className="-mt-2 text-sm text-muted-foreground">
-        Boyutu seçin; malzemeler seçtiğiniz bidona göre fiyatlanır. En fazla{" "}
-        {MAX_INGREDIENTS} malzeme ekleyebilirsiniz.
+        Boyutu seçin; malzemeler seçtiğiniz bidona göre fiyatlanır. Seçili
+        boyutta en fazla {maxIngredients} malzeme ekleyebilirsiniz.
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {sizes.map((item) => {
           const active = item.variantId === variantId;
+          const itemMax = maxIngredientsForSize(item.weightGram);
           return (
             <button
               key={item.variantId}
               type="button"
               aria-pressed={active}
               disabled={!item.inStock}
-              onClick={() => {
-                setVariantId(item.variantId);
-                setMessage(null);
-              }}
+              onClick={() => selectSize(item.variantId)}
               className="relative flex items-center gap-3 rounded-2xl border-2 border-border bg-white p-4 text-left transition-colors hover:border-primary/40 disabled:opacity-40 sm:flex-col sm:items-start sm:gap-2"
             >
               {active ? (
@@ -182,7 +180,7 @@ export function SizeStep({
                     : "Tükendi"}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  En fazla {MAX_INGREDIENTS} malzeme
+                  En fazla {itemMax} malzeme
                 </span>
               </span>
             </button>
@@ -198,7 +196,8 @@ export function IngredientsStep({
 }: {
   builder: CustomPickleBuilderState;
 }) {
-  const { selected, full, groups, size, currency, toggle } = builder;
+  const { selected, full, groups, size, currency, maxIngredients, toggle } =
+    builder;
 
   return (
     <Step
@@ -206,7 +205,7 @@ export function IngredientsStep({
       title="Malzemeler"
       hint={
         <span className={full ? "font-semibold text-brand-pepper" : ""}>
-          {selected.length}/{MAX_INGREDIENTS} seçildi
+          {selected.length}/{maxIngredients} seçildi
         </span>
       }
     >

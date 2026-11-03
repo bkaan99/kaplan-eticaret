@@ -84,11 +84,12 @@ export function FlyToBidonOverlay() {
         const duration = FLY_TO_BIDON_MS / 1000 + 0.04 + Math.random() * 0.08;
         const fromX = baseFromX + (Math.random() - 0.5) * 42;
         const fromY = baseFromY + (Math.random() - 0.5) * 32;
-        const toX = baseToX + (Math.random() - 0.5) * 36;
-        // Ağızdan içeri doğru kaybolsun; ağızda asılı kalmasın.
-        const toY = baseToY + 28 + Math.random() * 36;
-        const midX = (fromX + toX) / 2 + (Math.random() - 0.5) * 70;
-        const midY = Math.min(fromY, baseToY) - (60 + Math.random() * 60);
+        const toX = baseToX + (Math.random() - 0.5) * 28;
+        // Ağızdan içeri, yığının üstüne düşer gibi (ortada asılı kalmaz).
+        const toY = baseToY + 48 + Math.random() * 42;
+        const midX = (fromX + toX) / 2 + (Math.random() - 0.5) * 48;
+        // Hafif yay — yukarı fırlayıp geri yükselme hissi vermesin.
+        const midY = (fromY + toY) / 2 - (24 + Math.random() * 28);
         const size = baseSize * (0.62 + Math.random() * 0.32);
         const spin =
           (Math.random() < 0.5 ? -1 : 1) * (180 + Math.random() * 280);

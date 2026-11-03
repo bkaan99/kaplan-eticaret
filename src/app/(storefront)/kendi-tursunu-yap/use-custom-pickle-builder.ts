@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   DEFAULT_BRINE_CONFIG,
   DEFAULT_SPICE_CONFIG,
-  MAX_INGREDIENTS,
+  maxIngredientsForSize,
   type BrineOption,
   type IngredientGroup,
   type IngredientView,
@@ -76,6 +76,7 @@ export function useCustomPickleBuilder(
   const size = sizes.find((item) => item.variantId === variantId);
   const sizeIndex = sizes.findIndex((item) => item.variantId === variantId);
   const currency = size?.currency ?? "TRY";
+  const maxIngredients = maxIngredientsForSize(size?.weightGram ?? null);
 
   const byId = useMemo(
     () => new Map(ingredients.map((item) => [item.id, item])),
@@ -98,15 +99,30 @@ export function useCustomPickleBuilder(
   const extras = chosen.reduce((sum, item) => sum + extraFor(item, size), 0);
   const unit = Math.round((base + extras) * 100) / 100;
   const hasVegetable = chosen.some((item) => item.group === "VEGETABLE");
-  const full = selected.length >= MAX_INGREDIENTS;
+  const full = selected.length >= maxIngredients;
   const canAdd = Boolean(size?.inStock) && hasVegetable && !pending;
+
+  function selectSize(nextVariantId: string) {
+    const next = sizes.find((item) => item.variantId === nextVariantId);
+    const limit = maxIngredientsForSize(next?.weightGram ?? null);
+    setVariantId(nextVariantId);
+    if (selected.length > limit) {
+      setSelected(selected.slice(0, limit));
+      setMessage({
+        text: `Bu boyutta en fazla ${limit} malzeme seçilebilir; fazla seçimler kaldırıldı`,
+        error: false,
+      });
+    } else {
+      setMessage(null);
+    }
+  }
 
   function toggle(id: string) {
     setMessage(null);
     setSelected((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
-        : current.length >= MAX_INGREDIENTS
+        : current.length >= maxIngredients
           ? current
           : [...current, id],
     );
@@ -152,6 +168,7 @@ export function useCustomPickleBuilder(
   return {
     variantId,
     setVariantId,
+    selectSize,
     selected,
     setSelected,
     brines,
@@ -172,6 +189,7 @@ export function useCustomPickleBuilder(
     justAdded,
     size,
     sizeIndex,
+    maxIngredients,
     currency,
     chosen,
     groups,

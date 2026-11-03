@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
-import { MAX_INGREDIENTS } from "@/modules/custom-pickle/custom-pickle.types";
 import type { BuilderSize } from "@/modules/custom-pickle/custom-pickle.service";
 import type { CustomPickleBuilderState } from "./use-custom-pickle-builder";
 import { Bidon } from "./bidon";
@@ -14,10 +13,11 @@ export function BuilderScene({
   builder: CustomPickleBuilderState;
   sizes: BuilderSize[];
 }) {
-  const { chosen, brine, spice, size, sizeIndex, toggle } = builder;
+  const { chosen, brine, spice, size, sizeIndex, maxIngredients, toggle } =
+    builder;
   const fillPct = Math.min(
     100,
-    Math.round((chosen.length / MAX_INGREDIENTS) * 100),
+    Math.round((chosen.length / maxIngredients) * 100),
   );
 
   return (
@@ -42,6 +42,7 @@ export function BuilderScene({
             spiceTint={builder.activeSpice?.tint}
             hasBubbles={builder.activeBrine?.hasBubbles}
             sizeLabel={size?.label ?? ""}
+            maxIngredients={maxIngredients}
             scale={
               sizes.length > 1
                 ? 0.86 + (0.08 * Math.max(0, sizeIndex)) / (sizes.length - 1)
@@ -54,7 +55,7 @@ export function BuilderScene({
           <p className="font-display text-lg font-semibold text-brand-dark tabular-nums sm:text-xl">
             %{fillPct} dolu
             <span className="ml-2 text-sm font-normal text-muted-foreground">
-              · {chosen.length}/{MAX_INGREDIENTS} malzeme
+              · {chosen.length}/{maxIngredients} malzeme
             </span>
           </p>
           <p className="text-sm text-muted-foreground">

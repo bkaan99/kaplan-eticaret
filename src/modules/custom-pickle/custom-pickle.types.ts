@@ -21,10 +21,22 @@ export function bidonWeightGram(
   return Math.round(unit === "g" || unit === "gr" ? amount : amount * 1000);
 }
 
-/** Bir bidona eklenebilecek en fazla malzeme */
+/** Bir bidona eklenebilecek mutlak üst sınır (10 kg). */
 export const MAX_INGREDIENTS = 8;
 /** Müşteri notunun en fazla uzunluğu */
 export const MAX_NOTE_LENGTH = 200;
+
+/**
+ * Bidon kilosuna göre çeşit üst sınırı:
+ * 3 kg → 4, 5 kg → 6, 10 kg → 8.
+ * Ağırlık yoksa en düşük limite düşer.
+ */
+export function maxIngredientsForSize(weightGram: number | null): number {
+  const kg = weightGram && weightGram > 0 ? weightGram / 1000 : 0;
+  if (kg <= 3) return 4;
+  if (kg <= 5) return 6;
+  return MAX_INGREDIENTS;
+}
 
 export type IngredientGroup = "VEGETABLE" | "AROMA";
 
