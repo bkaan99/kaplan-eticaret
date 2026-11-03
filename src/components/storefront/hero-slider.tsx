@@ -35,7 +35,7 @@ const SLIDES: Slide[] = [
       "Mevsiminde toplanan sebzeler, Çankırı kaya tuzu ve sarımsakla meşe fıçılarda ağır ağır dinlendirilir. Asırlık ev lezzeti sofranızda.",
     primaryCta: { label: "Hemen Alışverişe Başla", href: "/ara" },
     secondaryCta: { label: "Klasik Turşular", href: "/kategori/klasik-tursular" },
-    imageUrl: "/images/hero/hero-panoramic.jpg",
+    imageUrl: "/images/hero/hero-panoramic-wide.jpg",
     imageAlt: "Kaplan Doğal Fermente Gurme Turşular ve Çıtır Kornişon",
     theme: "light",
     highlightPill: "🥒 %100 Katkısız Çıtır Kornişon & Salatalık",
@@ -153,40 +153,48 @@ export function HeroSlider() {
               key={slide.id}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
                 isActive ? "opacity-100 z-10" : "opacity-0 pointer-events-none z-0"
-              }`}
+              } ${slide.theme === "light" ? "bg-[#fdfbf7]" : "bg-slate-950"}`}
             >
-              <Image
-                src={slide.imageUrl}
-                alt={slide.imageAlt}
-                fill
-                priority={index === 0}
-                sizes="100vw"
-                className={`object-cover ${
-                  slide.id === "acili-salgam"
-                    ? "object-center"
-                    : "object-right-bottom md:object-right lg:object-center"
-                }`}
-              />
+              {/* Fotoğraf mask ile zemine eriyor — krem overlay yerine (sert dikey kenar yok) */}
+              <div
+                className="absolute inset-0"
+                style={(() => {
+                  // 1. slayt: görsel sola doğru uzatıldı (hero-panoramic-wide.jpg), mask gerekmiyor.
+                  if (slide.id === "dogal-tursular") return {};
+                  const mask =
+                    "linear-gradient(to right, transparent 0%, transparent 22%, rgba(0,0,0,0.08) 34%, rgba(0,0,0,0.22) 42%, rgba(0,0,0,0.42) 50%, rgba(0,0,0,0.62) 58%, rgba(0,0,0,0.8) 68%, rgba(0,0,0,0.93) 80%, #000 92%, #000 100%)";
+                  return { WebkitMaskImage: mask, maskImage: mask };
+                })()}
+              >
+                <Image
+                  src={slide.imageUrl}
+                  alt={slide.imageAlt}
+                  fill
+                  priority={index === 0}
+                  sizes="100vw"
+                  className={`object-cover ${
+                    slide.id === "acili-salgam"
+                      ? "object-center"
+                      : slide.id === "dogal-tursular"
+                        ? "object-center"
+                        : "object-right-bottom md:object-right lg:object-center"
+                  }`}
+                />
+              </div>
 
-              {/* Okunabilirlik Degradeleri */}
+              {/* Mobil: alt okunabilirlik (mask yatay; küçük ekranda metin altta kalabilir) */}
               {slide.theme === "light" ? (
-                <>
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#fdfbf7] via-[#fdfbf7]/95 to-[#fdfbf7]/20 sm:w-[80%] md:w-[65%] lg:w-[58%] w-full" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#fdfbf7]/90 via-transparent to-transparent sm:hidden" />
-                </>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#fdfbf7]/90 via-transparent to-transparent sm:hidden" />
               ) : (
-                <>
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent sm:w-[80%] md:w-[65%] lg:w-[58%] w-full" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent sm:hidden" />
-                </>
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent sm:hidden" />
               )}
             </div>
           );
         })}
 
-        {/* Metin ve İçerik Alanı (max-w-6xl ızgarasına hizalı) */}
-        <div className="relative z-20 mx-auto flex min-h-[540px] sm:min-h-[600px] lg:min-h-[660px] xl:min-h-[700px] max-w-6xl flex-col justify-center px-4 sm:px-6 lg:px-8 py-14">
-          <div className="max-w-xl lg:max-w-2xl">
+        {/* Metin ve İçerik Alanı — hafif sola kaydırılmış (fotoğrafla nefes payı) */}
+        <div className="relative z-20 mx-auto flex min-h-[540px] sm:min-h-[600px] lg:min-h-[660px] xl:min-h-[700px] max-w-6xl flex-col justify-center pl-1 pr-4 sm:pl-2 sm:pr-6 lg:pl-0 lg:pr-8 py-14">
+          <div className="max-w-lg sm:max-w-xl lg:max-w-[36rem] -ml-1 sm:-ml-2 lg:-ml-6">
             {/* Üst Rozet */}
             <div
               className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-xs font-bold shadow-2xs backdrop-blur-md transition-colors duration-500 ${
