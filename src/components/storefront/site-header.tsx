@@ -110,11 +110,14 @@ export function SiteHeader() {
       </div>
 
       <header className="relative z-40 border-b border-slate-200 bg-white md:sticky md:top-0">
-        {/* Satır 1: logo · arama · aksiyonlar. Dar ekranda arama alt satıra iner. */}
-        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-x-6">
-          <Logo showBadge />
-          <SearchForm className="order-last col-span-2 min-w-0 md:order-none md:col-span-1" />
-          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+        {/* Satır 1: logo (sol) · arama (orta) · aksiyonlar (sağ). Tam genişlik;
+            dar ekranda arama alt satıra iner. */}
+        <div className="mx-auto grid w-full max-w-[1600px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,40rem)_minmax(0,1fr)] md:gap-x-6 lg:px-8 2xl:px-12">
+          <div className="justify-self-start">
+            <Logo showBadge />
+          </div>
+          <SearchForm className="order-last col-span-2 w-full min-w-0 md:order-none md:col-span-1" />
+          <div className="flex shrink-0 items-center gap-0.5 justify-self-end sm:gap-1">
             <Link
               href="/siparis-sorgula"
               className={`${iconLinkClass} max-md:hidden`}
@@ -150,7 +153,7 @@ export function SiteHeader() {
 
         {/* Satır 2: öne çıkan bağlantı · kategoriler · mağaza ve iletişim */}
         <div className="hidden border-t border-slate-100 md:block">
-          <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-1.5">
+          <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 px-4 py-1.5 lg:px-8 2xl:px-12">
             <BuilderLink />
             <div className="min-w-0 flex-1">
               <Suspense fallback={<div className="h-9" />}>
