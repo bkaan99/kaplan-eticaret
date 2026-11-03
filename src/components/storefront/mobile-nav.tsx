@@ -271,6 +271,14 @@ export function MobileNav({
                         <span>Bayi Başvurusu</span>
                       </Link>
                     ) : null}
+
+                    <Link
+                      href="/iletisim"
+                      className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                    >
+                      <MapPinIcon width={18} height={18} className="text-slate-400" />
+                      <span>İletişim & Mağazamız</span>
+                    </Link>
                   </div>
                 </div>
 

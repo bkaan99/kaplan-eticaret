@@ -14,6 +14,7 @@ import { HeaderNav } from "./header-nav";
 import { BidonThumb, HeartIcon, TruckIcon } from "./icons";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
+import { SearchForm } from "./search-form";
 
 async function MobileNavContainer() {
   await connection();
@@ -56,26 +57,6 @@ async function CategoryNav() {
         ...extra.map((item) => ({ href: item.url, label: item.label })),
       ]}
     />
-  );
-}
-
-function SearchForm({ className = "" }: { className?: string }) {
-  return (
-    <form action="/ara" role="search" className={`relative ${className}`}>
-      <input
-        name="q"
-        type="search"
-        placeholder="Turşu, şalgam, hediye kutusu ara…"
-        aria-label="Ürün ara"
-        className="h-12 w-full rounded-full border border-slate-200 bg-[#f4f5f0] pr-24 pl-5 text-sm font-semibold text-slate-900 transition-colors outline-none placeholder:font-semibold placeholder:text-slate-500 focus:border-primary focus:bg-white"
-      />
-      <button
-        type="submit"
-        className="absolute inset-y-0 right-0 rounded-r-full bg-primary px-7 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
-      >
-        Ara
-      </button>
-    </form>
   );
 }
 

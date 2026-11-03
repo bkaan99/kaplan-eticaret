@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { Logo } from "@/components/storefront/logo";
 import { siteConfig } from "@/config/site.config";
 import type { AdminNavItem } from "@/modules/admin/navigation";
 
 interface AdminSidebarProps {
   nav: AdminNavItem[];
-  user: {
+  user?: {
     name: string;
     email: string;
   };
-  siteName: string;
+  siteName?: string;
   version?: string;
 }
 
@@ -153,25 +154,20 @@ function getNavIcon(href: string) {
 
 export function AdminSidebar({
   nav,
-  user,
-  siteName,
+  user: _user,
+  siteName: _siteName,
   version = siteConfig.version,
 }: AdminSidebarProps) {
+  void _user;
+  void _siteName;
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  const initial = user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
 
   return (
     <>
       {/* Mobil Üst Bar */}
       <div className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-[#0c1a13] px-4 text-white md:hidden">
-        <Link href="/admin" className="flex items-center gap-2 font-bold">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black">
-            K
-          </span>
-          <span className="text-sm tracking-wide">Yönetim Paneli</span>
-        </Link>
+        <Logo showBadge inverted compact href="/admin" />
         <button
           type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -192,23 +188,14 @@ export function AdminSidebar({
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        {/* Logo & Marka Başlığı */}
-        <div className="flex h-16 items-center justify-between border-b border-emerald-950/80 px-5">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-sm font-black text-white shadow-xs">
-              K
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-white tracking-tight">{siteName}</span>
-              <span className="text-[10px] font-semibold text-amber-400 tracking-wider uppercase">
-                Yönetim Paneli
-              </span>
-            </div>
-          </Link>
+        {/* Logo — vitrin ile aynı amblem */}
+        <div className="flex h-16 items-center justify-between gap-2 border-b border-emerald-950/80 px-4">
+          <Logo showBadge inverted compact href="/admin" />
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
-            className="text-slate-400 hover:text-white md:hidden"
+            className="shrink-0 text-slate-400 hover:text-white md:hidden"
+            aria-label="Menüyü kapat"
           >
             ✕
           </button>
@@ -262,27 +249,6 @@ export function AdminSidebar({
             );
           })}
         </nav>
-
-        {/* Alt Kullanıcı Kartı */}
-        <div className="border-t border-emerald-950/80 p-4">
-          <Link
-            href="/hesabim"
-            className="group flex items-center gap-3 rounded-xl bg-white/5 p-2.5 transition hover:bg-white/10"
-            title="Profilimi Görüntüle"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-400 text-slate-950 font-bold text-xs shadow-2xs">
-              {initial}
-            </div>
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="truncate text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
-                {user.name || user.email}
-              </span>
-              <span className="text-[10px] text-emerald-400 font-medium">
-                Yönetici Hesabı →
-              </span>
-            </div>
-          </Link>
-        </div>
       </aside>
 
       {/* Masaüstü spacer: fixed sidebar için yer ayırır */}

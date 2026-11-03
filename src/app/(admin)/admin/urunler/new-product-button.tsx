@@ -32,7 +32,7 @@ export function NewProductButton({
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
+      <Button type="button" onClick={() => setOpen(true)} className="shadow-sm">
         Yeni ürün
       </Button>
 
@@ -65,10 +65,9 @@ export function NewProductButton({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                aria-label="Kapat"
+                className="inline-flex h-9 items-center rounded-xl px-3 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
               >
-                ✕
+                Kapat
               </button>
             </div>
 

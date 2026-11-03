@@ -115,6 +115,11 @@ async function FooterMenu() {
           Hesabım & Siparişlerim
         </Link>
       </li>
+      <li>
+        <Link href="/iletisim" className={linkClass}>
+          İletişim & Mağazamız
+        </Link>
+      </li>
       {items.map((item) => (
         <li key={`${item.label}-${item.url}`}>
           <Link href={item.url} className={linkClass}>
@@ -318,13 +323,27 @@ export function SiteFooter() {
       {/* Alt Telif & Ödeme Yöntemleri Barı */}
       <div className="border-t border-slate-200/80 bg-slate-100/60">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            ©{" "}
-            <Suspense fallback={null}>
-              <CurrentYear />
-            </Suspense>{" "}
-            {siteConfig.name}. Tüm hakları saklıdır.
-          </p>
+          <div className="flex flex-col gap-1">
+            <p>
+              ©{" "}
+              <Suspense fallback={null}>
+                <CurrentYear />
+              </Suspense>{" "}
+              {siteConfig.name}. Tüm hakları saklıdır.
+            </p>
+            <p className="text-[11px] text-slate-400">
+              Bu site{" "}
+              <a
+                href="https://bilgekaangurgen.com.tr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-slate-600 transition-colors hover:text-primary hover:underline"
+              >
+                bilgekaangurgen.com.tr
+              </a>{" "}
+              tarafından tasarlanmıştır.
+            </p>
+          </div>
 
           <div
             className="flex flex-wrap items-center gap-2"

@@ -15,22 +15,58 @@ import { absoluteUrl } from "@/shared/site-url";
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps<"/kategori/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const loaded = await loadCategory(slug);
   if (loaded.kind !== "ok") return {};
 
   const { category } = loaded.value;
+  const query = parseListQuery(await searchParams, { categorySlug: slug });
+  const hasFilters = Boolean(
+    (query.sort && query.sort !== "newest") ||
+    (query.brandSlugs && query.brandSlugs.length > 0) ||
+    (query.attributeFilters && Object.keys(query.attributeFilters).length > 0) ||
+    query.minPrice !== undefined ||
+    query.maxPrice !== undefined,
+  );
+
+  const page = query.page ?? 1;
+  const canonicalPath =
+    page > 1
+      ? `/kategori/${category.slug}?sayfa=${page}`
+      : `/kategori/${category.slug}`;
+
+  const baseTitle = category.seoTitle ?? category.name;
+  const title = page > 1 ? `${baseTitle} - Sayfa ${page}` : baseTitle;
+
   const description =
     category.seoDescription ??
     category.description ??
     `${category.name} kategorisindeki ürünleri keşfedin.`;
 
   return {
-    title: category.seoTitle ?? category.name,
+    title,
     description,
-    alternates: { canonical: absoluteUrl(`/kategori/${category.slug}`) },
-    openGraph: { title: category.name, description, type: "website" },
+    alternates: { canonical: absoluteUrl(canonicalPath) },
+    robots: hasFilters
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: category.imageUrl
+        ? [
+            {
+              url: category.imageUrl.startsWith("http")
+                ? category.imageUrl
+                : absoluteUrl(category.imageUrl),
+              alt: category.name,
+            },
+          ]
+        : undefined,
+    },
   };
 }
 

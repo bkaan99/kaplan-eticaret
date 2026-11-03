@@ -6,48 +6,62 @@ import { siteConfig } from "@/config/site.config";
 export function Logo({
   inverted = false,
   showBadge = false,
+  href = "/",
+  compact = false,
 }: {
   inverted?: boolean;
   showBadge?: boolean;
+  href?: string;
+  /** Admin kenar çubuğu gibi dar alanlar için daha küçük boyut. */
+  compact?: boolean;
 }) {
   return (
     <Link
-      href="/"
-      aria-label={`${siteConfig.name} ana sayfa`}
-      className="group inline-flex items-center gap-2 transition-opacity md:gap-3 hover:opacity-95"
+      href={href}
+      aria-label={siteConfig.name}
+      className={`group inline-flex items-center transition-opacity hover:opacity-95 ${
+        compact ? "gap-2" : "gap-2 md:gap-3"
+      }`}
     >
-      {/* Marka Amblem İkonu */}
       <div
         className={`relative flex shrink-0 items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 ${
           showBadge
-            ? "h-12 w-12 rounded-full md:h-[72px] md:w-[72px]"
-            : "h-11 w-11 rounded-xl bg-white shadow-xs ring-1 ring-slate-900/10"
+            ? compact
+              ? "h-10 w-10 rounded-full"
+              : "h-12 w-12 rounded-full md:h-[72px] md:w-[72px]"
+            : compact
+              ? "h-9 w-9 rounded-xl bg-white shadow-xs ring-1 ring-slate-900/10"
+              : "h-11 w-11 rounded-xl bg-white shadow-xs ring-1 ring-slate-900/10"
         }`}
       >
         <Image
-          src={showBadge ? "/images/logo/kaplan-badge-logo.jpg" : "/images/logo/kaplan-minimal-logo.jpg"}
+          src={
+            showBadge
+              ? "/images/logo/kaplan-badge-logo.jpg"
+              : "/images/logo/kaplan-minimal-logo.jpg"
+          }
           alt="Kaplan Gurme Turşu Amblemi"
           width={144}
           height={144}
-          // Rozet görselinde daire kenarlarında beyaz boşluk var; çerçeveyi dolduracak kadar büyütülür.
           className={`h-full w-full object-cover ${showBadge ? "scale-[1.34]" : "p-0.5"}`}
           priority
         />
       </div>
 
-      {/* Tipografi: İçiçe girmeyi önleyen orantılı satır aralığı (leading-tight) ve net hiyerarşi */}
       <div className="flex flex-col justify-center whitespace-nowrap">
         <span
-          className={`font-display text-[21px] font-bold tracking-tight leading-tight transition-colors ${
+          className={`font-display font-bold tracking-tight leading-tight transition-colors ${
+            compact ? "text-lg" : "text-[21px]"
+          } ${
             inverted ? "text-white" : "text-slate-900 group-hover:text-primary"
           }`}
         >
           Kaplan
         </span>
         <span
-          className={`text-[9px] font-bold tracking-[0.28em] uppercase leading-none transition-colors ${
-            inverted ? "text-amber-400" : "text-emerald-700"
-          }`}
+          className={`font-bold tracking-[0.28em] uppercase leading-none transition-colors ${
+            compact ? "text-[8px]" : "text-[9px]"
+          } ${inverted ? "text-amber-400" : "text-emerald-700"}`}
         >
           Gurme Turşu
         </span>
@@ -55,4 +69,3 @@ export function Logo({
     </Link>
   );
 }
-

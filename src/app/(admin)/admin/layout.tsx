@@ -16,16 +16,13 @@ export const metadata: Metadata = {
 async function AdminShell({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
   const nav = visibleNav(user.permissions, { b2bEnabled: features.b2b });
+  const initial = (user.name?.trim() || user.email?.trim() || "Y").charAt(0).toUpperCase();
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8fafc] md:flex-row">
       {/* Sol Menü / Sidebar (sabit) */}
       <AdminSidebar
         nav={nav}
-        user={{
-          name: user.name || "",
-          email: user.email,
-        }}
         siteName={siteConfig.name}
         version={siteConfig.version}
       />
@@ -39,7 +36,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
               {siteConfig.name}
             </p>
             <p className="truncate text-xs text-slate-500">
-              {user.name || user.email} · Yönetici oturumu
+              Yönetim Paneli
             </p>
           </div>
 
@@ -59,6 +56,26 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
                 Çevrimiçi
               </span>
             </div>
+
+            {/* Yönetici Profil Kartı */}
+            <Link
+              href="/hesabim"
+              className="group flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50/90 py-1 pl-1.5 pr-2.5 transition hover:border-slate-300 hover:bg-slate-100 sm:pr-3"
+              title="Profilimi Görüntüle"
+            >
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-slate-950 shadow-2xs">
+                {initial}
+              </div>
+              <div className="hidden max-w-[140px] flex-col text-left sm:flex">
+                <span className="truncate text-xs font-semibold text-slate-800 transition-colors group-hover:text-emerald-700 leading-tight">
+                  {user.name || user.email}
+                </span>
+                <span className="text-[10px] font-medium text-emerald-600 leading-tight">
+                  Yönetici Hesabı
+                </span>
+              </div>
+            </Link>
+
             <AdminLogoutButton variant="header" />
           </div>
         </header>
