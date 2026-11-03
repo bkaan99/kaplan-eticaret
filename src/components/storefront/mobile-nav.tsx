@@ -11,6 +11,7 @@ import {
   ClockIcon,
   HeartIcon,
   InstagramIcon,
+  BidonIcon,
   MailIcon,
   MapPinIcon,
   MenuIcon,
@@ -150,20 +151,27 @@ export function MobileNav({
                 {/* Öne Çıkan Eylem: Kendi Turşunu Yap */}
                 <Link
                   href="/kendi-tursunu-yap"
-                  className="group flex items-center justify-between gap-3 rounded-2xl bg-amber-400 p-4 font-semibold text-slate-950 shadow-sm shadow-amber-500/20 transition hover:bg-amber-300"
+                  className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-brand-dark p-4 text-[#f6efe0] shadow-[0_8px_24px_-8px_rgba(11,35,24,0.5)] ring-1 ring-brand-gold/20 transition-all duration-200 hover:ring-brand-gold/40"
                 >
-                  <div className="flex flex-col">
-                    <span className="flex items-center gap-1.5 text-xs font-bold tracking-wider uppercase text-amber-950/70">
-                      <span>✦</span> Özel Üretim
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-gold/10 blur-2xl transition-opacity group-hover:bg-brand-gold/20"
+                  />
+                  <div className="relative flex flex-col gap-1">
+                    <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-gold">
+                      Özel Üretim
                     </span>
-                    <span className="text-base font-bold text-slate-950">
+                    <span className="inline-flex items-center gap-2.5 text-base font-semibold">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30">
+                        <BidonIcon width={22} height={22} strokeWidth={1.6} aria-hidden />
+                      </span>
                       Kendi Turşunu Yap
                     </span>
-                    <span className="text-xs text-amber-950/80">
+                    <span className="text-xs text-[#f6efe0]/75">
                       Damak tadına göre bidonunu kendin hazırla
                     </span>
                   </div>
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white transition-transform group-hover:translate-x-0.5">
+                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-[#f6efe0] ring-1 ring-white/15 transition-transform group-hover:translate-x-0.5">
                     <ChevronRightIcon width={16} height={16} />
                   </span>
                 </Link>

@@ -124,6 +124,20 @@ export function JarIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+/** Turşu bidonu (kulplu bidon silüeti). */
+export function BidonIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      {/* Kapak */}
+      <path d="M9 2.5h6v2.5H9z" />
+      {/* Gövde + yan kulplar */}
+      <path d="M9 5h6v1.8c0 1.1 1.2 1.7 2.6 1.9 1.5.2 2.4 1.2 2.4 2.5v8.8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V11.2c0-1.3.9-2.3 2.4-2.5C7.8 8.5 9 7.9 9 6.8V5z" />
+      {/* Etiket */}
+      <path d="M8 13h8v3.5H8z" />
+    </Icon>
+  );
+}
+
 export function ClockIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
