@@ -32,6 +32,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: { default: siteConfig.name, template: `%s | ${siteConfig.name}` },
   description: siteConfig.description,
+  keywords: [
+    "turşu",
+    "çubuk turşusu",
+    "ev turşusu",
+    "doğal fermente",
+    "şalgam suyu",
+    "probiyotik turşu",
+    "kaplan turşu",
+    "ankara turşu",
+  ],
   alternates: {
     canonical: "./",
   },
@@ -39,6 +49,33 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     locale: "tr_TR",
     type: "website",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [
+      {
+        url: "/images/hero/hero-tursu-kavanozlar.jpg",
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} - Doğal Fermente Ev Turşuları`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: ["/images/hero/hero-tursu-kavanozlar.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

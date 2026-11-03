@@ -33,6 +33,11 @@ export async function generateMetadata({
   const description =
     product.seoDescription ?? plainText(product.description, 160);
   const image = product.images[0];
+  const imageUrl = image
+    ? image.url.startsWith("/")
+      ? absoluteUrl(image.url)
+      : image.url
+    : undefined;
 
   return {
     title: product.seoTitle ?? product.name,
@@ -42,16 +47,20 @@ export async function generateMetadata({
       title: product.name,
       description,
       type: "website",
-      images: image
+      images: imageUrl
         ? [
             {
-              url: image.url.startsWith("/")
-                ? absoluteUrl(image.url)
-                : image.url,
-              alt: image.alt,
+              url: imageUrl,
+              alt: image?.alt ?? product.name,
             },
           ]
         : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
     },
   };
 }

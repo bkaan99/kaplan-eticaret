@@ -10,10 +10,11 @@ import {
   AdminPanel,
   AdminToolbar,
 } from "@/components/admin/admin-list";
+import { CsvDownloadLink } from "@/components/admin/csv-download-link";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -25,7 +26,6 @@ import {
   PAYMENT_STATUS_LABELS,
 } from "@/modules/orders/order-labels";
 import type { OrderStatus, PaymentStatus } from "@/modules/orders/order.types";
-import { cn } from "@/shared/cn";
 import { PERMISSIONS } from "@/shared/permissions";
 
 export const metadata: Metadata = { title: "Siparişler" };
@@ -184,15 +184,7 @@ export default function AdminOrdersPage({
       <PageHeader
         title="Siparişler"
         description="Ödeme, hazırlık ve kargo durumlarını buradan yönetin."
-        actions={
-          <a
-            href="/admin/disa-aktar/siparisler"
-            className={cn(buttonVariants({ variant: "outline" }))}
-            download
-          >
-            CSV indir
-          </a>
-        }
+        actions={<CsvDownloadLink href="/admin/disa-aktar/siparisler" />}
       />
       <Suspense fallback={<AdminLoading label="Siparişler yükleniyor..." />}>
         <OrdersContent searchParams={searchParams} />

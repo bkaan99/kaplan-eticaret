@@ -12,6 +12,7 @@ import {
   AdminTabs,
   AdminToolbar,
 } from "@/components/admin/admin-list";
+import { CsvDownloadLink } from "@/components/admin/csv-download-link";
 import { PageHeader } from "@/components/admin/page-header";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
@@ -124,13 +125,7 @@ async function ProductsContent({
         description="Katalog, stok ve yayın durumunu yönetin."
         actions={
           <>
-            <a
-              href="/admin/disa-aktar/urunler"
-              className={cn(buttonVariants({ variant: "outline" }))}
-              download
-            >
-              CSV indir
-            </a>
+            <CsvDownloadLink href="/admin/disa-aktar/urunler" />
             {canWrite ? (
               <Link
                 href="/admin/urunler/ice-aktar"

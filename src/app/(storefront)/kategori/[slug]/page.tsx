@@ -45,6 +45,12 @@ export async function generateMetadata({
     category.description ??
     `${category.name} kategorisindeki ürünleri keşfedin.`;
 
+  const categoryImageUrl = category.imageUrl
+    ? category.imageUrl.startsWith("http")
+      ? category.imageUrl
+      : absoluteUrl(category.imageUrl)
+    : undefined;
+
   return {
     title,
     description,
@@ -56,16 +62,20 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      images: category.imageUrl
+      images: categoryImageUrl
         ? [
             {
-              url: category.imageUrl.startsWith("http")
-                ? category.imageUrl
-                : absoluteUrl(category.imageUrl),
+              url: categoryImageUrl,
               alt: category.name,
             },
           ]
         : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: categoryImageUrl ? [categoryImageUrl] : undefined,
     },
   };
 }

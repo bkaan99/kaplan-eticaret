@@ -45,7 +45,7 @@ async function CategoryTiles() {
           >
             <Image
               src={category.imageUrl ?? "/placeholder.svg"}
-              alt=""
+              alt={`${category.name} Çeşitleri`}
               fill
               sizes="(min-width: 1024px) 25vw, 50vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"

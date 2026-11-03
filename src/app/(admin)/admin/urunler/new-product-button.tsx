@@ -32,7 +32,24 @@ export function NewProductButton({
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)} className="shadow-sm">
+      <Button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="gap-2 shadow-sm"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
         Yeni ürün
       </Button>
 
