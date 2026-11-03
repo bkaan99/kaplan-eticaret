@@ -14,6 +14,7 @@ import {
   TruckIcon,
 } from "@/components/storefront/icons";
 import { siteConfig } from "@/config/site.config";
+import { storefrontContact } from "@/config/storefront-contact";
 import { formatMoney } from "@/shared/money";
 import { getSiteUrl } from "@/shared/site-url";
 import { getCategoryTree } from "@/modules/catalog/cached";
@@ -86,8 +87,19 @@ async function SiteJsonLd() {
           name: siteConfig.name,
           url,
           email: contact.email,
-          telephone: contact.phone,
-          ...(contact.address ? { address: contact.address } : {}),
+          telephone: storefrontContact.phoneTel,
+          address: storefrontContact.address,
+          hasMap: storefrontContact.mapsUrl,
+          sameAs: [
+            storefrontContact.instagramUrl,
+            storefrontContact.trendyolUrl,
+          ],
+          openingHoursSpecification: {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: [...storefrontContact.openingHours.daysOfWeek],
+            opens: storefrontContact.openingHours.opens,
+            closes: storefrontContact.openingHours.closes,
+          },
         }}
       />
       <JsonLd

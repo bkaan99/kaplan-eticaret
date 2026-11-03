@@ -6,9 +6,13 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { EASE_OUT } from "@/components/motion/motion";
 import {
+  BagIcon,
   ChevronRightIcon,
+  ClockIcon,
   HeartIcon,
+  InstagramIcon,
   MailIcon,
+  MapPinIcon,
   MenuIcon,
   PhoneIcon,
   TruckIcon,
@@ -16,6 +20,7 @@ import {
   XIcon,
 } from "./icons";
 import { Logo } from "./logo";
+import { storefrontContact } from "@/config/storefront-contact";
 import { formatMoney } from "@/shared/money";
 
 export interface MobileNavCategory {
@@ -33,7 +38,9 @@ export interface MobileNavProps {
   categories: MobileNavCategory[];
   extraItems?: MobileNavExtraItem[];
   sitePhone: string;
+  sitePhoneTel?: string;
   siteEmail: string;
+  workingHours?: string;
   freeShippingThreshold: number;
   wishlistEnabled?: boolean;
   b2bEnabled?: boolean;
@@ -47,7 +54,9 @@ export function MobileNav({
   categories,
   extraItems = [],
   sitePhone,
+  sitePhoneTel,
   siteEmail,
+  workingHours,
   freeShippingThreshold,
   wishlistEnabled = true,
   b2bEnabled = false,
@@ -266,21 +275,54 @@ export function MobileNav({
                     </span>
                   </div>
 
-                  <div className="space-y-1.5 border-t border-slate-200/70 pt-2.5">
+                  <div className="space-y-2.5 border-t border-slate-200/70 pt-2.5">
                     <a
-                      href={`tel:${sitePhone.replace(/\s/g, "")}`}
-                      className="flex items-center gap-2 font-medium text-slate-700 transition hover:text-primary"
+                      href={`tel:${sitePhoneTel ?? sitePhone.replace(/\s/g, "")}`}
+                      className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
                     >
-                      <PhoneIcon width={14} height={14} className="text-slate-400" />
+                      <PhoneIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
                       <span>{sitePhone}</span>
                     </a>
                     <a
                       href={`mailto:${siteEmail}`}
-                      className="flex items-center gap-2 font-medium text-slate-700 transition hover:text-primary"
+                      className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
                     >
-                      <MailIcon width={14} height={14} className="text-slate-400" />
+                      <MailIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
                       <span>{siteEmail}</span>
                     </a>
+                    <a
+                      href={storefrontContact.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2.5 text-sm leading-snug text-slate-600 transition hover:text-primary"
+                    >
+                      <MapPinIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <span>{storefrontContact.address}</span>
+                    </a>
+                    <a
+                      href={storefrontContact.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
+                    >
+                      <InstagramIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <span>Instagram</span>
+                    </a>
+                    <a
+                      href={storefrontContact.trendyolUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
+                    >
+                      <BagIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <span>Trendyol Mağazası</span>
+                    </a>
+                    {workingHours ? (
+                      <p className="flex items-start gap-2.5 text-sm leading-snug text-slate-600">
+                        <ClockIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                        <span>{workingHours}</span>
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </div>

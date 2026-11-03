@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { isFeatureEnabled } from "@/config/features";
 import { siteConfig } from "@/config/site.config";
+import { storefrontContact } from "@/config/storefront-contact";
 import { getCategoryTree } from "@/modules/catalog/cached";
 import { getCachedMenu } from "@/modules/content/cached";
 import { getCachedContactSettings } from "@/modules/settings/cached";
@@ -26,8 +27,10 @@ async function MobileNavContainer() {
     <MobileNav
       categories={tree}
       extraItems={extra.map((item) => ({ label: item.label, url: item.url }))}
-      sitePhone={contact.phone}
+      sitePhone={storefrontContact.phone}
+      sitePhoneTel={storefrontContact.phoneTel}
       siteEmail={contact.email}
+      workingHours={storefrontContact.workingHours}
       freeShippingThreshold={siteConfig.shipping.freeShippingThreshold}
       wishlistEnabled={isFeatureEnabled("wishlist")}
       b2bEnabled={isFeatureEnabled("b2b")}
@@ -75,11 +78,11 @@ function BuilderLink({ className = "" }: { className?: string }) {
   return (
     <Link
       href="/kendi-tursunu-yap"
-      className={`group inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm shadow-amber-500/20 transition hover:bg-amber-300 ${className}`}
+      className={`group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-amber-400 px-4 text-sm font-semibold leading-none text-slate-900 shadow-sm shadow-amber-500/30 ring-1 ring-amber-500/20 transition hover:-translate-y-px hover:bg-amber-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary h-9 ${className}`}
     >
       <span
         aria-hidden="true"
-        className="transition-transform duration-300 group-hover:rotate-90"
+        className="text-[13px] transition-transform duration-300 group-hover:rotate-90"
       >
         ✦
       </span>
@@ -107,7 +110,7 @@ export function SiteHeader() {
       </div>
 
       {/* Ana Başlık Alanı */}
-      <div className="relative border-b border-slate-100 bg-white/95 backdrop-blur-md">
+      <div className="relative border-b border-slate-200/70 bg-white/95 shadow-[0_1px_8px_rgba(15,23,42,0.04)] backdrop-blur-md">
         {/* Satır 1: logo · arama · aksiyonlar (sağ/sol içeriğe göre, arama kalan alanı alır) */}
         <div className="mx-auto grid h-16 max-w-6xl grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-4">
           <div className="flex min-w-0 items-center gap-1.5 justify-self-start whitespace-nowrap">
@@ -140,9 +143,13 @@ export function SiteHeader() {
 
         {/* Satır 2: kategoriler ortada, öne çıkan bağlantı sağda */}
         <div className="border-t border-slate-100/80">
-          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 xl:grid xl:grid-cols-[1fr_auto_1fr]">
+          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 xl:grid xl:grid-cols-[1fr_auto_1fr]">
             <span aria-hidden="true" className="hidden xl:block" />
             <BuilderLink className="xl:hidden" />
+            <span
+              aria-hidden="true"
+              className="h-5 w-px shrink-0 bg-slate-200 xl:hidden"
+            />
             <div className="min-w-0 flex-1">
               <Suspense fallback={<div className="h-9" />}>
                 <CategoryNav />

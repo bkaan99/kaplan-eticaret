@@ -22,7 +22,7 @@ export function HeaderNav({ items }: { items: HeaderNavItem[] }) {
   return (
     <nav
       aria-label="Kategoriler"
-      className="-mx-4 flex gap-1 overflow-x-auto px-4 text-sm font-medium whitespace-nowrap [scrollbar-width:none] xl:mx-0 xl:justify-center xl:px-0"
+      className="flex items-center gap-1 overflow-x-auto text-sm font-medium whitespace-nowrap [scrollbar-width:none] xl:justify-center"
     >
       {items.map((item) => {
         const active = isActive(pathname, item.href);
