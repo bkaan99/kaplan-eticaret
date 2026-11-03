@@ -16,6 +16,7 @@ import {
   SpiceStep,
 } from "./builder-steps";
 import { BuilderSummary } from "./builder-summary";
+import { FlyToBidonOverlay } from "./fly-to-bidon";
 
 /**
  * "Kendi Turşunu Yap" ana bileşeni (Orchestrator).
@@ -36,12 +37,13 @@ export function Builder({
   const builder = useCustomPickleBuilder(sizes, ingredients, brines, spices);
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
-      {/* Sol Sütun: Bidon ve Seçilen Malzemeler Sahnesi */}
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,12fr)] lg:gap-12 xl:gap-16">
+      <FlyToBidonOverlay />
+      {/* Sol: bidon sahnesi — görsel odak */}
       <BuilderScene builder={builder} sizes={sizes} />
 
-      {/* Sağ Sütun: Yapılandırma Adımları ve Sepet Özeti */}
-      <div className="flex flex-col gap-12">
+      {/* Sağ: adımlar + özet */}
+      <div className="flex flex-col gap-10 sm:gap-12">
         <SizeStep sizes={sizes} builder={builder} />
         <IngredientsStep builder={builder} />
         <BrineStep builder={builder} />

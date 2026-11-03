@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 140" width="100%" height="100%" fill="none">
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="sealGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="50%" stop-color="#ca8a04" />
+      <stop offset="100%" stop-color="#854d0e" />
+    </linearGradient>
+    <linearGradient id="sealDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+  </defs>
+
+  <!-- Circular Badge: Left side (110x110) -->
+  <g transform="translate(15, 15)">
+    <!-- Outer scalloped or delicate border ring -->
+    <circle cx="55" cy="55" r="53" fill="#fcfbf7" stroke="#ca8a04" stroke-width="2" />
+    <circle cx="55" cy="55" r="48" fill="#064e3b" />
+    <circle cx="55" cy="55" r="45" stroke="#ca8a04" stroke-width="1.2" stroke-dasharray="3 2" />
+
+    <!-- Center Emblem: Minimalist Noble Tiger Silhouette & Pickle Crown -->
+    <!-- Tiger Silhouette (Refined & Royal Profile) -->
+    <path d="M 55 23 C 58 20, 64 24, 62 29 C 68 28, 74 34, 71 42 C 73 45, 74 52, 70 56 C 66 61, 63 60, 58 64 C 55 67, 52 67, 49 64 C 44 60, 41 61, 37 56 C 33 52, 34 45, 36 42 C 33 34, 39 28, 45 29 C 43 24, 49 20, 52 23 Z" 
+          fill="url(#sealGold)" />
+
+    <!-- Negative space facial line details inside silhouette -->
+    <!-- Eyes -->
+    <path d="M 46 42 L 50 44 L 47 46 Z" fill="#064e3b" />
+    <path d="M 61 42 L 57 44 L 60 46 Z" fill="#064e3b" />
+    <!-- Nose & Whiskers cuts -->
+    <circle cx="53.5" cy="52" r="2" fill="#064e3b" />
+    <line x1="43" y1="52" x2="35" y2="50" stroke="#064e3b" stroke-width="1.5" stroke-linecap="round" />
+    <line x1="43" y1="55" x2="36" y2="56" stroke="#064e3b" stroke-width="1.5" stroke-linecap="round" />
+    <line x1="64" y1="52" x2="72" y2="50" stroke="#064e3b" stroke-width="1.5" stroke-linecap="round" />
+    <line x1="64" y1="55" x2="71" y2="56" stroke="#064e3b" stroke-width="1.5" stroke-linecap="round" />
+
+    <!-- Crossed Pickles / Gherkins below the tiger (Culinary Crest) -->
+    <!-- Left Gherkin -->
+    <path d="M 36 78 C 42 70, 52 68, 60 74 C 56 79, 44 83, 36 78 Z" fill="#22c55e" opacity="0.95" />
+    <!-- Right Gherkin -->
+    <path d="M 71 78 C 65 70, 55 68, 47 74 C 51 79, 63 83, 71 78 Z" fill="#16a34a" opacity="0.95" />
+    <!-- Center garlic / dill flower knot -->
+    <circle cx="53.5" cy="74" r="3" fill="#ca8a04" />
+
+    <!-- Bottom Ribbon text: 1974 -->
+    <rect x="37" y="86" width="33" height="12" rx="4" fill="#ca8a04" />
+    <text x="53.5" y="95" font-family="system-ui, sans-serif" font-size="8.5" font-weight="900" fill="#064e3b" text-anchor="middle" letter-spacing="1">1974</text>
+  </g>
+
+  <!-- Typography: Right side -->
+  <g transform="translate(145, 30)">
+    <!-- Brand Name: KAPLAN -->
+    <text x="0" y="44" 
+          font-family="'Baskerville', 'Times New Roman', Georgia, serif" 
+          font-size="46" 
+          font-weight="700" 
+          letter-spacing="2" 
+          fill="#064e3b">
+      KAPLAN
+    </text>
+
+    <!-- Subtitle: GURME TURŞU -->
+    <text x="3" y="72" 
+          font-family="system-ui, -apple-system, sans-serif" 
+          font-size="14" 
+          font-weight="800" 
+          letter-spacing="8" 
+          fill="#ca8a04">
+      GURME TURŞU
+    </text>
+
+    <!-- Heritage Slogan & Star Accents -->
+    <line x1="3" y1="83" x2="280" y2="83" stroke="#cbd5e1" stroke-width="1.2" />
+    <text x="3" y="97" 
+          font-family="system-ui, -apple-system, sans-serif" 
+          font-size="10.5" 
+          font-weight="600" 
+          letter-spacing="2.5" 
+          fill="#64748b">
+      USTALIKLA KURULAN KÖKLÜ LEZZET
+    </text>
+  </g>
+</svg>
+

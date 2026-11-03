@@ -37,12 +37,27 @@ export function BuilderSummary({
     message,
   } = builder;
 
+  const ctaLabel = justAdded
+    ? "Sepete eklendi ✓"
+    : pending
+      ? "Ekleniyor..."
+      : !hasVegetable
+        ? "Önce sebze seçin"
+        : `Sepete ekle · ${formatMoney(unit * quantity, currency)}`;
+
   return (
     <section
       aria-label="Bidon özeti"
       className="flex flex-col gap-4 rounded-[2rem] bg-brand-dark p-6 text-brand-cream sm:p-8"
     >
-      <h2 className="font-display text-2xl font-semibold">Bidonunuz</h2>
+      <div className="flex items-end justify-between gap-3">
+        <h2 className="font-display text-2xl font-semibold">Neredeyse hazır</h2>
+        <span className="text-sm text-brand-cream/65">
+          {chosen.length === 0
+            ? "Malzeme bekleniyor"
+            : `${chosen.length} malzeme`}
+        </span>
+      </div>
       <dl className="flex flex-col gap-2 text-sm">
         <div className="flex justify-between gap-4">
           <dt>{size?.label ?? "Bidon"}</dt>
@@ -62,6 +77,9 @@ export function BuilderSummary({
             </motion.div>
           ))}
         </AnimatePresence>
+        {chosen.length === 0 ? (
+          <p className="text-brand-cream/60">Henüz malzeme seçmediniz.</p>
+        ) : null}
         <div className="flex justify-between gap-4 text-brand-cream/75">
           <dt>Salamura · acılık</dt>
           <dd>
@@ -121,23 +139,17 @@ export function BuilderSummary({
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.span
-              key={justAdded ? "added" : "idle"}
+              key={ctaLabel}
               className="inline-flex items-center gap-2"
               initial={{ y: 16, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -16, opacity: 0 }}
               transition={{ duration: 0.25, ease: EASE_OUT }}
             >
-              {justAdded ? (
-                "Sepete eklendi ✓"
-              ) : (
-                <>
-                  <BagIcon width={18} height={18} />
-                  {pending
-                    ? "Ekleniyor..."
-                    : `Sepete ekle · ${formatMoney(unit * quantity, currency)}`}
-                </>
+              {justAdded || pending || !hasVegetable ? null : (
+                <BagIcon width={18} height={18} />
               )}
+              {ctaLabel}
             </motion.span>
           </AnimatePresence>
         </motion.button>

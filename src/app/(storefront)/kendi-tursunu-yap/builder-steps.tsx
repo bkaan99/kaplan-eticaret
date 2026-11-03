@@ -19,6 +19,7 @@ import {
   extraFor,
   type CustomPickleBuilderState,
 } from "./use-custom-pickle-builder";
+import { launchFlyToBidon } from "./fly-to-bidon";
 
 const BRINE_TEXT: Record<BrineOption, string> = {
   VINEGAR: "Üzüm sirkesiyle klasik, kıtır ve ekşi.",
@@ -44,15 +45,15 @@ export function Step({
 }) {
   return (
     <motion.section
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 border-t border-border/70 pt-8 first:border-t-0 first:pt-0"
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.7, ease: EASE_OUT }}
     >
       <div className="flex items-end justify-between gap-4">
-        <h2 className="flex items-center gap-3 font-display text-2xl font-semibold">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+        <h2 className="flex items-center gap-3 font-display text-2xl font-semibold text-brand-dark">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-dark text-sm font-bold text-brand-cream">
             {index}
           </span>
           {title}
@@ -94,6 +95,38 @@ function PepperIcons({ count }: { count: number }) {
   );
 }
 
+function SizeThumb({ active }: { active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 48 58"
+      className={`h-12 w-10 shrink-0 transition-opacity ${active ? "opacity-100" : "opacity-70"}`}
+      aria-hidden="true"
+    >
+      <ellipse cx="24" cy="54" rx="16" ry="2.5" fill="#0b2318" opacity="0.12" />
+      <path
+        d="M15 16 C11 17 9 21 8 27 C7 35 7 42 9 47 C11 51 15 53 19 53 H29 C33 53 37 51 39 47 C41 42 41 35 40 27 C39 21 37 17 33 16 Z"
+        fill="#f4f7f0"
+        stroke="#8fa07a"
+        strokeWidth="1.4"
+      />
+      <rect x="15" y="6" width="18" height="11" rx="2.5" fill="#f0c800" />
+      <rect x="17" y="4" width="14" height="3" rx="1" fill="#ffe566" />
+      {[0, 1, 2, 3].map((i) => (
+        <rect
+          key={i}
+          x={17.5 + i * 3.4}
+          y="10"
+          width="1.5"
+          height="5"
+          rx="0.5"
+          fill="#b89600"
+          opacity="0.4"
+        />
+      ))}
+    </svg>
+  );
+}
+
 export function SizeStep({
   sizes,
   builder,
@@ -105,7 +138,11 @@ export function SizeStep({
 
   return (
     <Step index={1} title="Bidon boyutu">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <p className="-mt-2 text-sm text-muted-foreground">
+        Boyutu seçin; malzemeler seçtiğiniz bidona göre fiyatlanır. En fazla{" "}
+        {MAX_INGREDIENTS} malzeme ekleyebilirsiniz.
+      </p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {sizes.map((item) => {
           const active = item.variantId === variantId;
           return (
@@ -118,7 +155,7 @@ export function SizeStep({
                 setVariantId(item.variantId);
                 setMessage(null);
               }}
-              className="relative flex flex-col items-start gap-1 rounded-2xl border-2 border-border bg-white p-4 text-left transition-colors hover:border-primary/40 disabled:opacity-40"
+              className="relative flex items-center gap-3 rounded-2xl border-2 border-border bg-white p-4 text-left transition-colors hover:border-primary/40 disabled:opacity-40 sm:flex-col sm:items-start sm:gap-2"
             >
               {active ? (
                 <motion.span
@@ -132,13 +169,21 @@ export function SizeStep({
                   }}
                 />
               ) : null}
-              <span className="relative font-display text-xl font-semibold">
-                {item.label}
+              <span className="relative">
+                <SizeThumb active={active} />
               </span>
-              <span className="relative text-sm text-muted-foreground">
-                {item.inStock
-                  ? formatMoney(item.price, item.currency)
-                  : "Tükendi"}
+              <span className="relative flex min-w-0 flex-col gap-0.5">
+                <span className="font-display text-xl font-semibold text-brand-dark">
+                  {item.label}
+                </span>
+                <span className="text-sm font-medium text-foreground/80">
+                  {item.inStock
+                    ? formatMoney(item.price, item.currency)
+                    : "Tükendi"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  En fazla {MAX_INGREDIENTS} malzeme
+                </span>
               </span>
             </button>
           );
@@ -184,7 +229,26 @@ export function IngredientsStep({
                   type="button"
                   aria-pressed={active}
                   disabled={disabled}
-                  onClick={() => toggle(item.id)}
+                  onClick={(event) => {
+                    // Eklerken karttan bidona uçuş; çıkarırken sadece toggle.
+                    if (!active && !disabled) {
+                      const thumb =
+                        event.currentTarget.querySelector<HTMLElement>(
+                          "[data-fly-thumb]",
+                        ) ?? event.currentTarget;
+                      const rect = thumb.getBoundingClientRect();
+                      launchFlyToBidon({
+                        imageUrl: item.imageUrl ?? "/placeholder.svg",
+                        from: {
+                          left: rect.left,
+                          top: rect.top,
+                          width: rect.width,
+                          height: rect.height,
+                        },
+                      });
+                    }
+                    toggle(item.id);
+                  }}
                   whileTap={{ scale: 0.95 }}
                   className={`group relative flex flex-col items-center gap-2 rounded-2xl border-2 bg-white p-3 text-center transition-colors disabled:opacity-40 ${active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
                 >
@@ -218,6 +282,7 @@ export function IngredientsStep({
                     ) : null}
                   </AnimatePresence>
                   <motion.span
+                    data-fly-thumb
                     className="relative h-14 w-14"
                     animate={
                       active ? { rotate: [0, -12, 10, 0] } : { rotate: 0 }

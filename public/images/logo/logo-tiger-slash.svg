@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 145" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="slashDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="slashTigerGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <filter id="shadowSlash" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.14" />
+    </filter>
+  </defs>
+
+  <!-- AMBLEM (120x120) -->
+  <g transform="translate(15, 12)" filter="url(#shadowSlash)">
+    <rect x="0" y="0" width="120" height="120" rx="30" fill="url(#slashDark)" />
+    <rect x="3" y="3" width="114" height="114" rx="27" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.4" fill="none" />
+
+    <!-- Kavisli Çıtır Kornişon Gövdesi -->
+    <path d="M 38 25 C 28 36, 26 80, 42 96 C 52 106, 74 104, 82 92 C 94 72, 90 34, 76 24 C 65 15, 48 15, 38 25 Z" 
+          fill="#0f3d24" stroke="#10b981" stroke-width="1.5" />
+
+    <!-- 3 ADET KESKİN KAPLAN PENÇE/DESEN YIRTIĞI (GOLD TIGER CLAW STRIPES) -->
+    <!-- Çizgi 1 (Üst) -->
+    <path d="M 24 38 C 42 35, 62 42, 92 32 C 80 44, 58 48, 24 38 Z" fill="url(#slashTigerGold)" />
+    
+    <!-- Çizgi 2 (Orta - Ana yırtık, turşuyu kesen kaplan deseni) -->
+    <path d="M 20 58 C 46 54, 72 63, 100 50 C 85 68, 56 72, 20 58 Z" fill="url(#slashTigerGold)" />
+
+    <!-- Çizgi 3 (Alt) -->
+    <path d="M 28 80 C 48 76, 70 82, 94 72 C 82 86, 60 90, 28 80 Z" fill="url(#slashTigerGold)" />
+
+    <!-- Turşunun Taze Sapı ve Yaprağı -->
+    <path d="M 58 18 C 58 12, 64 8, 68 8" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" fill="none" />
+    <circle cx="68" cy="8" r="2.5" fill="#34d399" />
+
+    <!-- Çıtır Salamura Damlacıkları (Golden flavor burst) -->
+    <circle cx="88" cy="42" r="2.5" fill="#fbbf24" />
+    <circle cx="98" cy="62" r="3" fill="#fbbf24" />
+    <circle cx="92" cy="82" r="2.2" fill="#fbbf24" />
+  </g>
+
+  <!-- TİPOGRAFİ (Sağ Taraf) -->
+  <g transform="translate(155, 28)">
+    <text x="0" y="44" 
+          font-family="system-ui, -apple-system, 'SF Pro Display', Roboto, sans-serif" 
+          font-size="46" 
+          font-weight="900" 
+          letter-spacing="4" 
+          fill="#064e3b">
+      KAPLAN
+    </text>
+
+    <text x="3" y="74" 
+          font-family="system-ui, -apple-system, sans-serif" 
+          font-size="14.5" 
+          font-weight="800" 
+          letter-spacing="8" 
+          fill="#d97706">
+      GURME TURŞU
+    </text>
+
+    <line x1="3" y1="85" x2="310" y2="85" stroke="#cbd5e1" stroke-width="1.5" />
+
+    <text x="3" y="100" 
+          font-family="system-ui, -apple-system, sans-serif" 
+          font-size="11" 
+          font-weight="600" 
+          letter-spacing="3" 
+          fill="#64748b">
+      PENÇE KADAR KESKİN • BUZ GİBİ ÇITIR
+    </text>
+  </g>
+</svg>
+

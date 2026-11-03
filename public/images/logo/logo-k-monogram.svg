@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 140" width="100%" height="100%" fill="none">
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="monogramPickleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1b5e39" />
+      <stop offset="60%" stop-color="#0f3d24" />
+      <stop offset="100%" stop-color="#092617" />
+    </linearGradient>
+    <linearGradient id="tigerGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="subtleGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1" />
+    </filter>
+  </defs>
+
+  <!-- Emblem Icon: Left side (110x110) -->
+  <g transform="translate(15, 15)" filter="url(#subtleGlow)">
+    <!-- Background rounded squircle -->
+    <rect x="0" y="0" width="110" height="110" rx="28" fill="#f8faf6" stroke="#0f3d24" stroke-width="2.5" stroke-opacity="0.15" />
+    
+    <!-- Monogram K Element -->
+    <!-- Left Stem: The Crunchy Gherkin (Pickle) -->
+    <path d="M 32 24 C 28 32, 28 78, 32 86 C 36 94, 46 94, 50 86 C 54 78, 54 32, 50 24 C 46 16, 36 16, 32 24 Z" 
+          fill="url(#monogramPickleGrad)" />
+    <!-- Pickle Dimples & Dots (Crunch texture) -->
+    <circle cx="39" cy="38" r="2" fill="#34d399" opacity="0.6" />
+    <circle cx="43" cy="55" r="2.2" fill="#34d399" opacity="0.6" />
+    <circle cx="38" cy="72" r="1.8" fill="#34d399" opacity="0.6" />
+    <!-- Pickle tiny stem on top -->
+    <path d="M 41 18 C 41 14, 45 12, 48 10" stroke="#059669" stroke-width="3" stroke-linecap="round" fill="none" />
+
+    <!-- Top Diagonal Arm: Upper Tiger Claw / Stripe (Golden Amber) -->
+    <path d="M 52 56 C 58 54, 70 38, 88 30 C 80 44, 70 54, 58 64 Z" 
+          fill="url(#tigerGoldGrad)" />
+    <!-- Subtle secondary accent stripe -->
+    <path d="M 64 36 C 72 28, 82 23, 90 22 C 85 29, 78 35, 71 40 Z" 
+          fill="url(#tigerGoldGrad)" opacity="0.85" />
+
+    <!-- Bottom Diagonal Arm: Lower Tiger Stripe & Pickle Leaf Shape -->
+    <path d="M 54 62 C 65 72, 76 82, 89 88 C 76 88, 64 82, 52 74 Z" 
+          fill="url(#monogramPickleGrad)" />
+    <!-- Golden Tiger accent claw on bottom -->
+    <path d="M 65 76 C 74 84, 82 87, 88 88 C 82 84, 75 78, 70 71 Z" 
+          fill="url(#tigerGoldGrad)" />
+  </g>
+
+  <!-- Typography: Right side -->
+  <g transform="translate(145, 30)">
+    <!-- Brand Name: KAPLAN -->
+    <text x="0" y="44" 
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Playfair Display', serif" 
+          font-size="46" 
+          font-weight="900" 
+          letter-spacing="3" 
+          fill="#0c2e1b">
+      KAPLAN
+    </text>
+
+    <!-- Subtitle: GURME TURŞU -->
+    <text x="2" y="72" 
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+          font-size="14" 
+          font-weight="700" 
+          letter-spacing="9" 
+          fill="#b45309">
+      GURME TURŞU
+    </text>
+
+    <!-- Heritage Tag & Decorative line -->
+    <line x1="2" y1="83" x2="260" y2="83" stroke="#e2e8f0" stroke-width="1.5" />
+    <text x="2" y="96" 
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+          font-size="10.5" 
+          font-weight="600" 
+          letter-spacing="3" 
+          fill="#64748b">
+      DOĞAL FERMENTE • GEDELEK GELENEĞİ
+    </text>
+  </g>
+</svg>
+

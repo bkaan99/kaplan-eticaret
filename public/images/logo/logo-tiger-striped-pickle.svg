@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 145" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Zengin renk geçişleri -->
+    <linearGradient id="pickleBodyGrad" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#1b5435" />
+      <stop offset="45%" stop-color="#0f3822" />
+      <stop offset="100%" stop-color="#071d12" />
+    </linearGradient>
+
+    <!-- Kaplan çizgisi amber/altın dolgusu -->
+    <linearGradient id="tigerStripeAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="40%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#92400e" />
+    </linearGradient>
+
+    <!-- Taze dereotu ve salamura yaprağı ışıltısı -->
+    <linearGradient id="dillSproutGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+
+    <filter id="emblemGlow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.16" />
+    </filter>
+  </defs>
+
+  <!-- AMBLEM ALANI (120x120) -->
+  <g transform="translate(15, 12)" filter="url(#emblemGlow)">
+    <!-- Dış Rozet Kalkanı (Yuvarlatılmış sekizgen / modern kalkan) -->
+    <rect x="0" y="0" width="120" height="120" rx="32" fill="#071e13" />
+    <rect x="3" y="3" width="114" height="114" rx="29" stroke="#d97706" stroke-width="1.6" stroke-opacity="0.5" fill="none" />
+    
+    <!-- ARKA PLAN: İnce organik salamura halkası -->
+    <circle cx="60" cy="60" r="48" stroke="#059669" stroke-width="1" stroke-dasharray="3 4" opacity="0.35" />
+
+    <!-- KAPLAN DESENLİ ÇITIR KORNİŞON (THE TIGER GHERKIN) -->
+    <!-- Kornişonun kıvrımlı, tok ve iştah açıcı gövdesi -->
+    <g transform="rotate(-26 60 60)">
+      <!-- Ana Turşu Gövdesi -->
+      <path d="M 44 20 C 33 30, 31 75, 42 94 C 50 106, 68 106, 76 94 C 88 74, 86 31, 74 20 C 66 12, 51 12, 44 20 Z" 
+            fill="url(#pickleBodyGrad)" />
+      
+      <!-- Turşu Sapı ve Başındaki Taze Dereotu Filizi -->
+      <path d="M 59 15 C 59 9, 64 6, 68 5" stroke="#34d399" stroke-width="2.8" stroke-linecap="round" fill="none" />
+      <path d="M 68 5 C 72 2, 76 3, 78 5 C 75 7, 71 7, 68 5 Z" fill="#34d399" />
+      <path d="M 66 8 C 70 8, 74 10, 75 13 C 71 13, 68 11, 66 8 Z" fill="#10b981" />
+
+      <!-- KAPLAN ÇİZGİLERİ (Turşu gövdesine organik oyulmuş yırtıcı kaplan deseni) -->
+      <!-- Üst Sol Kaplan Çizgisi -->
+      <path d="M 37 36 C 45 37, 54 39, 61 44 C 54 45, 43 42, 36 40 Z" fill="url(#tigerStripeAmber)" />
+      <!-- Üst Sağ Kaplan Çizgisi -->
+      <path d="M 81 33 C 72 36, 64 42, 58 48 C 65 47, 75 42, 83 37 Z" fill="url(#tigerStripeAmber)" />
+
+      <!-- Orta Sol Büyük Kaplan Çizgisi (Çatallı yırtıcı desen) -->
+      <path d="M 34 54 C 44 54, 55 58, 64 65 C 56 64, 46 61, 35 59 Z" fill="url(#tigerStripeAmber)" />
+      <path d="M 38 62 C 45 64, 52 69, 56 74 C 50 72, 44 68, 38 65 Z" fill="url(#tigerStripeAmber)" opacity="0.9" />
+
+      <!-- Orta Sağ Büyük Kaplan Çizgisi -->
+      <path d="M 84 52 C 73 54, 63 60, 56 67 C 64 66, 75 62, 85 57 Z" fill="url(#tigerStripeAmber)" />
+      <path d="M 80 64 C 72 67, 65 73, 61 78 C 68 76, 75 71, 81 67 Z" fill="url(#tigerStripeAmber)" opacity="0.9" />
+
+      <!-- Alt Gövde Kaplan Pençesi Çizgileri -->
+      <path d="M 40 78 C 48 80, 56 85, 62 91 C 55 89, 47 86, 41 82 Z" fill="url(#tigerStripeAmber)" />
+      <path d="M 78 77 C 70 80, 63 86, 58 92 C 64 89, 72 85, 78 81 Z" fill="url(#tigerStripeAmber)" />
+
+      <!-- Turşunun Kıtır Pütürleri (Kaplan çizgileri arasına serpiştirilmiş doğal doku) -->
+      <circle cx="50" cy="31" r="1.8" fill="#34d399" opacity="0.75" />
+      <circle cx="68" cy="30" r="1.5" fill="#34d399" opacity="0.75" />
+      <circle cx="48" cy="72" r="2" fill="#34d399" opacity="0.75" />
+      <circle cx="70" cy="71" r="1.8" fill="#34d399" opacity="0.75" />
+      <circle cx="58" cy="85" r="1.6" fill="#34d399" opacity="0.75" />
+    </g>
+
+    <!-- Rozet Köşe Vurguları (Altın Yıldızlar) -->
+    <polygon points="18,18 20,22 24,22 21,25 22,29 18,26 14,29 15,25 12,22 16,22" fill="#d97706" opacity="0.7" />
+    <polygon points="102,18 104,22 108,22 105,25 106,29 102,26 98,29 99,25 96,22 100,22" fill="#d97706" opacity="0.7" />
+  </g>
+
+  <!-- TİPOGRAFİ BÖLÜMÜ (Sağ Taraf) -->
+  <g transform="translate(155, 28)">
+    <!-- Marka Adı: KAPLAN -->
+    <text x="0" y="44" 
+          font-family="'Playfair Display', 'Cinzel', Georgia, serif" 
+          font-size="45" 
+          font-weight="900" 
+          letter-spacing="4" 
+          fill="#062e1b">
+      KAPLAN
+    </text>
+
+    <!-- İkincil Başlık: GURME TURŞU -->
+    <text x="2" y="74" 
+          font-family="system-ui, -apple-system, sans-serif" 
+          font-size="14.5" 
+          font-weight="800" 
+          letter-spacing="8" 
+          fill="#d97706">
+      GURME TURŞU
+    </text>
+
+    <!-- Ayırıcı Çizgi & Kaplan Çiziği Motifi -->
+    <path d="M 2 85 L 180 85" stroke="#cbd5e1" stroke-width="1.5" />
+    <path d="M 185 82 L 195 85 L 185 88 Z" fill="#d97706" />
+    <path d="M 200 85 L 320 85" stroke="#cbd5e1" stroke-width="1.5" />
+
+    <!-- Marka Sloganı -->
+    <text x="2" y="100" 
+          font-family="system-ui, -apple-system, sans-serif" 
+          font-size="11" 
+          font-weight="600" 
+          letter-spacing="2.5" 
+          fill="#475569">
+      KAPLAN GİBİ KESKİN &amp; ÇITIR LEZZET
+    </text>
+  </g>
+</svg>
+

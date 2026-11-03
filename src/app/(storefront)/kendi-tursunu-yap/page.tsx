@@ -73,7 +73,7 @@ export default function CustomPicklePage() {
       <header className="flex max-w-2xl flex-col gap-4">
         <Reveal>
           <span className="text-xs font-semibold tracking-[0.25em] text-brand-leaf uppercase">
-            Senin tarifin, bizim emeğimiz
+            Senin tarifin
           </span>
         </Reveal>
         <HeroTitle
@@ -86,8 +86,9 @@ export default function CustomPicklePage() {
         />
         <Reveal delay={0.3}>
           <p className="text-lg leading-relaxed text-muted-foreground">
-            Bidonunu seç, sevdiğin sebzeleri ve baharatları ekle; salamurasına
-            ve acılığına sen karar ver. Senin için hazırlayıp kapına gönderelim.
+            Bidon boyutunu seç, sevdiğin malzemeleri ekle; salamura ve acılık
+            senin kararın. Kaplan ustaları senin tarifinle hazırlayıp kapına
+            göndersin.
           </p>
         </Reveal>
       </header>
