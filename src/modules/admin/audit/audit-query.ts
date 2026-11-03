@@ -1,5 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
-import { auditLog, containsText, countWhere, type Db } from "@/db";
+import type { AuditQueryRepository } from "./audit-query.repository";
 
 export interface AuditQuery {
   action?: string;
@@ -32,52 +31,14 @@ export interface AuditPage {
 
 /** Denetim günlüğü okuma modeli: yalnızca sorgular, yazma `AuditLogger`dadır. */
 export class AuditQueryService {
-  constructor(private readonly db: () => Db) {}
+  constructor(private readonly audits: AuditQueryRepository) {}
 
   async search(query: AuditQuery): Promise<AuditPage> {
-    const db = this.db();
-    const where = and(
-      query.action ? containsText(auditLog.action, query.action) : undefined,
-      query.entityType ? eq(auditLog.entityType, query.entityType) : undefined,
-      query.actorId ? eq(auditLog.actorId, query.actorId) : undefined,
-    );
-
-    const [total, rows, types] = await Promise.all([
-      countWhere(db, auditLog, where),
-      db.query.auditLog.findMany({
-        where,
-        orderBy: desc(auditLog.createdAt),
-        offset: (query.page - 1) * query.pageSize,
-        limit: query.pageSize,
-        with: {
-          actor: { columns: { firstName: true, lastName: true, email: true } },
-        },
-      }),
-      db
-        .selectDistinct({ entityType: auditLog.entityType })
-        .from(auditLog)
-        .orderBy(asc(auditLog.entityType)),
-    ]);
-
+    const result = await this.audits.search(query);
     return {
-      total,
+      ...result,
       page: query.page,
-      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-      entityTypes: types.map((row) => row.entityType),
-      items: rows.map((row) => ({
-        id: row.id,
-        createdAt: row.createdAt,
-        actorName: row.actor
-          ? `${row.actor.firstName} ${row.actor.lastName}`.trim()
-          : null,
-        actorEmail: row.actor?.email ?? null,
-        action: row.action,
-        entityType: row.entityType,
-        entityId: row.entityId,
-        before: row.before,
-        after: row.after,
-        ip: row.ip,
-      })),
+      totalPages: Math.max(1, Math.ceil(result.total / query.pageSize)),
     };
   }
 }

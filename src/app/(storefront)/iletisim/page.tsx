@@ -13,12 +13,33 @@ import {
 import { siteConfig } from "@/config/site.config";
 import { storefrontContact } from "@/config/storefront-contact";
 import { getCachedContactSettings } from "@/modules/settings/cached";
-import { getSiteUrl } from "@/shared/site-url";
+import { absoluteUrl, getSiteUrl } from "@/shared/site-url";
 import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
   title: "İletişim & Fabrika Satış Mağazası",
   description: `${siteConfig.name} iletişim bilgileri, telefon, WhatsApp destek hattı, fabrika satış mağazası adresi ve iletişim formu.`,
+  alternates: { canonical: absoluteUrl("/iletisim") },
+  openGraph: {
+    title: `İletişim & Fabrika Satış Mağazası | ${siteConfig.name}`,
+    description: `${siteConfig.name} iletişim bilgileri, telefon, WhatsApp destek hattı, fabrika satış mağazası adresi ve iletişim formu.`,
+    url: absoluteUrl("/iletisim"),
+    type: "website",
+    images: [
+      {
+        url: absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg"),
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} İletişim & Fabrika Satış Mağazası`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `İletişim & Fabrika Satış Mağazası | ${siteConfig.name}`,
+    description: `${siteConfig.name} telefon, WhatsApp, adres ve iletişim formu.`,
+    images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
+  },
 };
 
 export default async function ContactPage() {
@@ -43,25 +64,65 @@ export default async function ContactPage() {
 
   return (
     <>
+      {/* Schema.org BreadcrumbList */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Ana Sayfa",
+              item: absoluteUrl("/"),
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "İletişim",
+              item: absoluteUrl("/iletisim"),
+            },
+          ],
+        }}
+      />
+
       {/* Schema.org ContactPage & LocalBusiness */}
       <JsonLd
         data={{
           "@context": "https://schema.org",
           "@type": "ContactPage",
           name: `İletişim - ${siteConfig.name}`,
-          url: `${siteUrl}/iletisim`,
+          url: absoluteUrl("/iletisim"),
           mainEntity: {
-            "@type": "LocalBusiness",
+            "@type": ["Store", "LocalBusiness"],
             name: siteConfig.name,
             telephone: phoneDisplay,
             email: emailDisplay,
+            priceRange: "₺₺",
+            logo: absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+            image: [
+              absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg"),
+              absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+            ],
             address: {
               "@type": "PostalAddress",
-              streetAddress: addressDisplay,
-              addressLocality: "Çubuk",
-              addressRegion: "Ankara",
-              addressCountry: "TR",
+              ...storefrontContact.postalAddress,
             },
+            geo: {
+              "@type": "GeoCoordinates",
+              ...storefrontContact.geo,
+            },
+            hasMap: storefrontContact.mapsUrl,
+            openingHoursSpecification: {
+              "@type": "OpeningHoursSpecification",
+              dayOfWeek: [...storefrontContact.openingHours.daysOfWeek],
+              opens: storefrontContact.openingHours.opens,
+              closes: storefrontContact.openingHours.closes,
+            },
+            sameAs: [
+              storefrontContact.instagramUrl,
+              storefrontContact.trendyolUrl,
+            ],
           },
         }}
       />

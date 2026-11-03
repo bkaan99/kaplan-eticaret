@@ -77,7 +77,7 @@ async function loadPage(slug: string) {
       slug: template.slug,
       content: template.content,
       isPublished: true,
-      seoTitle: `${template.title} | Kaplan Turşuları`,
+      seoTitle: template.title,
       seoDescription: `${template.title} hakkında resmi ve güncel bilgilendirme metni.`,
       updatedAt: new Date(),
     };
@@ -93,12 +93,27 @@ export async function generateMetadata({
   const page = await loadPage(slug);
   if (!page) return {};
 
+  const title = page.seoTitle ?? page.title;
+  const description =
+    page.seoDescription ??
+    `${page.title} hakkında detaylı bilgilendirme ve kurumsal koşullar.`;
+  const url = absoluteUrl(`/sayfa/${page.slug}`);
+
   return {
-    title: page.seoTitle ?? `${page.title} | Kaplan Turşuları`,
-    description:
-      page.seoDescription ??
-      `${page.title} hakkında detaylı bilgilendirme ve kurumsal koşullar.`,
-    alternates: { canonical: absoluteUrl(`/sayfa/${page.slug}`) },
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 

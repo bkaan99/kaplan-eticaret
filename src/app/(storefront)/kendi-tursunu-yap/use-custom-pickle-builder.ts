@@ -22,6 +22,7 @@ import {
 } from "@/modules/custom-pickle/custom-pickle.types";
 import type { BuilderSize } from "@/modules/custom-pickle/custom-pickle.service";
 import { trackEvent } from "@/shared/analytics/client";
+import { refreshStorefrontShell } from "@/components/storefront/shell-events";
 import { addCustomPickleAction } from "./actions";
 import { flavorProfile, mixNote } from "./flavor-profile";
 import type { PicklePreset } from "./pickle-presets";
@@ -257,6 +258,7 @@ export function useCustomPickleBuilder(
       }
       setMessage({ text: "Bidonunuz sepete eklendi", error: false });
       setJustAdded(true);
+      refreshStorefrontShell();
       trackEvent("add_to_cart", {
         currency,
         value: unit * quantity,

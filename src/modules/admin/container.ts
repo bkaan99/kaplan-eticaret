@@ -8,7 +8,9 @@ import { D1TaxonomyRepository } from "./taxonomy/taxonomy.repository";
 import { TaxonomyService } from "./taxonomy/taxonomy.service";
 import { D1PromotionRepository } from "./promotions/promotion.repository";
 import { PromotionService } from "./promotions/promotion.service";
+import { D1AuditQueryRepository } from "./audit/audit-query.repository";
 import { AuditQueryService } from "./audit/audit-query";
+import { D1CustomerQueryRepository } from "./customers/customer-query.repository";
 import { CustomerQueryService } from "./customers/customer-query";
 import { D1PriceListRepository } from "./pricing/price-list.repository";
 import { PriceListService } from "./pricing/price-list.service";
@@ -58,11 +60,11 @@ export function getPromotionService(): PromotionService {
 }
 
 export function getAuditQueryService(): AuditQueryService {
-  return new AuditQueryService(getDb);
+  return new AuditQueryService(new D1AuditQueryRepository(getDb));
 }
 
 export function getCustomerQueryService(): CustomerQueryService {
-  return new CustomerQueryService(getDb);
+  return new CustomerQueryService(new D1CustomerQueryRepository(getDb));
 }
 
 export function getPriceListService(): PriceListService {
