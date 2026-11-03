@@ -138,8 +138,20 @@ const worker: ExportedHandler<CloudflareEnv> = {
       case "0 * * * *":
         await callCron(env, "/api/cron/purge-rate-limits");
         break;
-      case "30 3 * * *":
-        await callCron(env, "/api/cron/purge-audit-log");
+      case "30 3 * * *": {
+        const results = await Promise.allSettled([
+          callCron(env, "/api/cron/purge-audit-log"),
+          callCron(env, "/api/cron/purge-abandoned-carts"),
+        ]);
+        for (const res of results) {
+          if (res.status === "rejected") {
+            console.error("Gece bakım cronu hatası:", res.reason);
+          }
+        }
+        break;
+      }
+      case "0 4 * * *":
+        await callCron(env, "/api/cron/purge-abandoned-carts");
         break;
       default:
         console.warn("Tanımsız cron", controller.cron);
