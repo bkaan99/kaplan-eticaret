@@ -102,12 +102,20 @@ async function CategoryContent({
         data={{
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          itemListElement: breadcrumbs.map((crumb, index) => ({
-            "@type": "ListItem",
-            position: index + 1,
-            name: crumb.name,
-            item: absoluteUrl(`/kategori/${crumb.slug}`),
-          })),
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Ana Sayfa",
+              item: absoluteUrl("/"),
+            },
+            ...breadcrumbs.map((crumb, index) => ({
+              "@type": "ListItem",
+              position: index + 2,
+              name: crumb.name,
+              item: absoluteUrl(`/kategori/${crumb.slug}`),
+            })),
+          ],
         }}
       />
       <Breadcrumbs items={crumbs} />

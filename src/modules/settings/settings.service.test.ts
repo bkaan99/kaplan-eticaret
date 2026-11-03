@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SettingsService } from "./settings.service";
 import { contactSettingsSchema } from "./settings.schema";
-import type { Db } from "@/db";
+import type { SettingsRepository } from "./settings.repository";
 import { ValidationError } from "@/shared/errors";
 
 describe("contactSettingsSchema", () => {
@@ -30,7 +30,11 @@ describe("contactSettingsSchema", () => {
 
 describe("SettingsService", () => {
   it("throws ValidationError when payload is invalid", async () => {
-    const service = new SettingsService(() => ({}) as unknown as Db);
+    const repo: SettingsRepository = {
+      getContactSettingsRaw: async () => null,
+      saveContactSettings: async () => undefined,
+    };
+    const service = new SettingsService(repo);
 
     await expect(
       service.saveContactSettings(

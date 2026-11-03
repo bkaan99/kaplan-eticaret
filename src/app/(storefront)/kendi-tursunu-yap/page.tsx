@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/storefront/breadcrumbs";
+import { JsonLd } from "@/components/storefront/json-ld";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { customPickleService } from "@/modules/custom-pickle/container";
 import { absoluteUrl } from "@/shared/site-url";
@@ -62,6 +63,26 @@ async function BuilderContent() {
 export default function CustomPicklePage() {
   return (
     <div className="flex flex-col gap-6">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Ana Sayfa",
+              item: absoluteUrl("/"),
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Kendi Turşunu Yap",
+              item: absoluteUrl("/kendi-tursunu-yap"),
+            },
+          ],
+        }}
+      />
       <Breadcrumbs
         items={[
           { name: "Ana sayfa", href: "/" },

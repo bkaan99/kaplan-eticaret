@@ -72,6 +72,11 @@ export class OrderService {
     return this.orders.listByUser(userId);
   }
 
+  /** Ödeme süresi dolan siparişleri iptal eder ve rezerv stokları serbest bırakır. */
+  releaseExpired(now: Date = new Date()): Promise<number> {
+    return this.orders.releaseExpired(now);
+  }
+
   /** Kargolanmamış siparişi iptal eder; ödenmişse iadeyi başlatır. */
   async cancel(orderNumber: string, access: OrderAccess): Promise<OrderView> {
     const order = await this.getForAccess(orderNumber, access);

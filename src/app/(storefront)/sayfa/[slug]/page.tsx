@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { RichText } from "@/components/content/rich-text";
+import { JsonLd } from "@/components/storefront/json-ld";
 import { getContentService } from "@/modules/content/container";
 import {
   LEGAL_PAGE_TEMPLATES,
@@ -113,6 +114,36 @@ async function PageContent({
 
   return (
     <div className="flex flex-col gap-6 py-4">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Ana Sayfa",
+              item: absoluteUrl("/"),
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: isLegal ? "Yasal Belgeler" : "Kurumsal",
+              item: absoluteUrl(
+                isLegal
+                  ? "/sayfa/mesafeli-satis-sozlesmesi"
+                  : "/sayfa/hakkimizda",
+              ),
+            },
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: page.title,
+              item: absoluteUrl(`/sayfa/${page.slug}`),
+            },
+          ],
+        }}
+      />
       {/* Üst Breadcrumb */}
       <nav
         aria-label="Sayfa yolu"

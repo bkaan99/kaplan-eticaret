@@ -90,24 +90,36 @@ async function FooterMenu() {
     getCachedMenu("footer"),
     getCachedLegalLinks(),
   ]);
-  const known = new Set(menuItems.map((item) => item.url));
-  const items = [
-    ...menuItems.map((item) => ({ label: item.label, url: item.url })),
-    ...legal
-      .filter((page) => !known.has(page.href))
-      .map((page) => ({ label: page.title, url: page.href })),
-  ];
+  const known = new Set([
+    "/sayfa/hakkimizda",
+    "/sayfa/sikca-sorulan-sorular",
+    "/siparis-sorgula",
+    "/sayfa/teslimat-ve-kargo",
+    "/iletisim",
+    ...menuItems.map((item) => item.url),
+  ]);
+  const extraLegal = legal.filter((page) => !known.has(page.href));
 
   return (
     <>
+      <li>
+        <Link href="/sayfa/hakkimizda" className={linkClass}>
+          Hakkımızda
+        </Link>
+      </li>
+      <li>
+        <Link href="/sayfa/sikca-sorulan-sorular" className={linkClass}>
+          Sıkça Sorulan Sorular
+        </Link>
+      </li>
       <li>
         <Link href="/siparis-sorgula" className={linkClass}>
           Sipariş Sorgulama
         </Link>
       </li>
       <li>
-        <Link href="/hesabim" className={linkClass}>
-          Hesabım & Siparişlerim
+        <Link href="/sayfa/teslimat-ve-kargo" className={linkClass}>
+          Teslimat ve Kargo
         </Link>
       </li>
       <li>
@@ -115,10 +127,17 @@ async function FooterMenu() {
           İletişim & Mağazamız
         </Link>
       </li>
-      {items.map((item) => (
+      {menuItems.map((item) => (
         <li key={`${item.label}-${item.url}`}>
           <Link href={item.url} className={linkClass}>
             {item.label}
+          </Link>
+        </li>
+      ))}
+      {extraLegal.map((page) => (
+        <li key={page.href}>
+          <Link href={page.href} className={linkClass}>
+            {page.title}
           </Link>
         </li>
       ))}
@@ -337,6 +356,37 @@ export function SiteFooter() {
               </a>{" "}
               tarafından tasarlanmıştır.
             </p>
+          </div>
+
+          {/* Yasal Sözleşme Linkleri */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+            <Link
+              href="/sayfa/mesafeli-satis-sozlesmesi"
+              className="transition-colors hover:text-primary hover:underline"
+            >
+              Mesafeli Satış
+            </Link>
+            <span className="text-slate-300">·</span>
+            <Link
+              href="/sayfa/kvkk-aydinlatma-metni"
+              className="transition-colors hover:text-primary hover:underline"
+            >
+              KVKK
+            </Link>
+            <span className="text-slate-300">·</span>
+            <Link
+              href="/sayfa/cerez-politikasi"
+              className="transition-colors hover:text-primary hover:underline"
+            >
+              Gizlilik ve Çerez
+            </Link>
+            <span className="text-slate-300">·</span>
+            <Link
+              href="/sayfa/iade-ve-iptal-kosullari"
+              className="transition-colors hover:text-primary hover:underline"
+            >
+              İade Koşulları
+            </Link>
           </div>
 
           <div

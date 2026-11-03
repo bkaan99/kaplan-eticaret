@@ -1,7 +1,6 @@
 import { connection } from "next/server";
 import { getAuditLogger } from "@/shared/audit";
-import { getDb } from "@/shared/db";
-import { ExportService } from "@/modules/admin/reports/export.service";
+import { getExportService } from "@/modules/admin/container";
 import { requirePermission } from "@/modules/auth/session";
 import { isAppError } from "@/shared/errors";
 import { PERMISSIONS } from "@/shared/permissions";
@@ -23,7 +22,7 @@ export async function GET(
 
   try {
     const user = await requirePermission(PERMISSIONS.EXPORT_RUN);
-    const service = new ExportService(getDb);
+    const service = getExportService();
     const csv =
       type === "siparisler"
         ? await service.ordersCsv()

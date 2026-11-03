@@ -21,6 +21,12 @@ import { ProductImportService } from "./import/product-import.service";
 import { getAccountService } from "../account/container";
 import { D1StaffRepository } from "./staff/staff.repository";
 import { StaffService } from "./staff/staff.service";
+import { D1ExportRepository } from "./reports/export.repository";
+import { ExportService } from "./reports/export.service";
+
+export function getExportService(): ExportService {
+  return new ExportService(new D1ExportRepository(getDb));
+}
 
 export function getAdminOrderService(): AdminOrderService {
   return new AdminOrderService(
