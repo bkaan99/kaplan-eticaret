@@ -141,9 +141,9 @@ export function SiteHeader() {
               >
                 Mağazamız
               </a>
-              <a href="#iletisim" className={secondaryLinkClass}>
+              <Link href="/iletisim" className={secondaryLinkClass}>
                 İletişim
-              </a>
+              </Link>
             </div>
           </div>
         </div>
