@@ -1,69 +1,21 @@
-import { trackingUrl } from "@/shared/shipping/carriers";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { AdminLoading } from "@/components/admin/admin-list";
-import { PageHeader } from "@/components/admin/page-header";
-import { Price } from "@/components/storefront/price";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatMoney } from "@/shared/money";
 import { getAdminOrderService } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
 import {
   allowedTransitions,
   isStaffCancellable,
 } from "@/modules/admin/orders/order-state";
-import {
-  ORDER_STATUS_LABELS,
-  ORDER_STATUS_TONES,
-  PAYMENT_STATUS_LABELS,
-} from "@/modules/orders/order-labels";
-import type { PaymentStatus } from "@/modules/orders/order.types";
-import { isAppError } from "@/shared/errors";
 import { hasPermission } from "@/modules/auth/authorization";
+import { isAppError } from "@/shared/errors";
 import { PERMISSIONS } from "@/shared/permissions";
 import { OrderActions } from "./order-actions";
+import { OrderDetailView } from "./order-detail-view";
 
 export const metadata: Metadata = { title: "Sipariş detayı" };
-
-function AddressBlock({
-  title,
-  address,
-}: {
-  title: string;
-  address: Record<string, string | null>;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-1 text-sm">
-        <p>
-          {address["firstName"]} {address["lastName"]} · {address["phone"]}
-        </p>
-        <p className="text-muted-foreground">
-          {address["addressLine"]}
-          {address["neighborhood"] ? `, ${address["neighborhood"]}` : ""}{" "}
-          {address["district"]}/{address["city"]}
-        </p>
-        {address["companyName"] ? (
-          <p>
-            {address["companyName"]} · VKN {address["taxNumber"]} (
-            {address["taxOffice"]})
-          </p>
-        ) : address["nationalId"] ? (
-          <p className="font-mono text-xs text-slate-700">
-            TCKN: {address["nationalId"]}
-          </p>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
 
 async function OrderDetail({
   params,
@@ -85,247 +37,34 @@ async function OrderDetail({
   const canUpdate = hasPermission(user.permissions, PERMISSIONS.ORDER_UPDATE);
   const canCancel = hasPermission(user.permissions, PERMISSIONS.ORDER_CANCEL);
   const payment = order.payments[0];
-  const METHOD_LABELS = {
-    CARD: "Kart",
-    BANK_TRANSFER: "Havale / EFT",
-    DEFERRED: "Vadeli",
-  } as const;
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title={`Sipariş ${order.orderNumber}`}
-        description={`${order.createdAt.toLocaleString("tr-TR")} · Kanal: ${order.source}`}
-        actions={
-          <Link
-            href="/admin/siparisler"
-            className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50"
-          >
-            ← Siparişler
-          </Link>
-        }
-      />
-      <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-xs">
-        <Badge tone={ORDER_STATUS_TONES[order.status]}>
-          {ORDER_STATUS_LABELS[order.status]}
-        </Badge>
-        <span className="text-sm font-medium text-slate-600">
-          Ödeme: {PAYMENT_STATUS_LABELS[order.paymentStatus as PaymentStatus]}
-        </span>
-      </div>
-
-      {canUpdate || canCancel ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>İşlemler</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <OrderActions
-              orderNumber={order.orderNumber}
-              canProcess={canUpdate && transitions.includes("PROCESSING")}
-              canShip={canUpdate && transitions.includes("SHIPPED")}
-              canDeliver={canUpdate && transitions.includes("DELIVERED")}
-              canCancel={canCancel && isStaffCancellable(order.status)}
-              canConfirmBankTransfer={
-                canUpdate &&
-                payment?.method === "BANK_TRANSFER" &&
-                order.status === "PENDING_PAYMENT"
-              }
-              canCollectDeferred={
-                canUpdate &&
-                payment?.method === "DEFERRED" &&
-                order.paymentStatus === "PENDING" &&
-                order.status !== "CANCELLED"
-              }
-              paid={order.paymentStatus === "PAID"}
-            />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Ürünler</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="flex flex-col divide-y divide-border text-sm">
-            {order.items.map((item) => {
-              const custom = item.customization as
-                | {
-                    kind?: string;
-                    ingredients?: { name: string; unitExtra?: string; share?: number }[];
-                    brine?: string;
-                    spice?: string;
-                    note?: string | null;
-                  }
-                | undefined;
-
-              return (
-                <li
-                  key={item.id ?? item.sku}
-                  className="flex flex-col gap-1 py-3"
-                >
-                  <div className="flex justify-between gap-4">
-                    <span>
-                      <span className="font-semibold">{item.productName}</span>
-                      {item.variantName ? (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          · {item.variantName}
-                        </span>
-                      ) : null}
-                      <span className="text-muted-foreground"> ({item.sku})</span>{" "}
-                      × {item.quantity}
-                    </span>
-                    <Price value={item.lineTotal} currency={order.currency} />
-                  </div>
-                  {custom?.kind === "custom-pickle" ? (
-                    <div className="mt-1 rounded-xl bg-slate-50 p-2.5 text-xs text-slate-700">
-                      <p className="font-semibold text-primary">
-                        🥒 Özel Turşu Reçetesi:
-                      </p>
-                      <p className="mt-0.5">
-                        <strong>Malzemeler:</strong>{" "}
-                        {custom.ingredients
-                        ?.map((i) =>
-                          i.share === undefined ? i.name : `${i.name} %${i.share}`,
-                        ).join(", ") ||
-                          "-"}
-                      </p>
-                      <p>
-                        <strong>Salamura:</strong> {custom.brine || "-"} ·{" "}
-                        <strong>Acılık:</strong> {custom.spice || "-"}
-                      </p>
-                      {custom.note ? (
-                        <p className="italic text-muted-foreground">
-                          Not: {custom.note}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-          <dl className="ml-auto mt-4 flex max-w-xs flex-col gap-1 text-sm">
-            <div className="flex justify-between">
-              <dt>Ara toplam</dt>
-              <dd>
-                <Price value={order.subtotal} currency={order.currency} />
-              </dd>
-            </div>
-            {Number(order.discountTotal) > 0 ? (
-              <div className="flex justify-between">
-                <dt>
-                  İndirim{order.couponCode ? ` (${order.couponCode})` : ""}
-                </dt>
-                <dd>
-                  -
-                  <Price
-                    value={order.discountTotal}
-                    currency={order.currency}
-                  />
-                </dd>
-              </div>
-            ) : null}
-            <div className="flex justify-between">
-              <dt>Kargo</dt>
-              <dd>
-                <Price value={order.shippingTotal} currency={order.currency} />
-              </dd>
-            </div>
-            <div className="flex justify-between border-t border-border pt-1 font-semibold">
-              <dt>Toplam</dt>
-              <dd>
-                <Price value={order.grandTotal} currency={order.currency} />
-              </dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <AddressBlock title="Teslimat adresi" address={order.shippingAddress} />
-        <AddressBlock title="Fatura adresi" address={order.billingAddress} />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Müşteri</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm">
-            <p>{order.email}</p>
-            <p className="text-muted-foreground">
-              {order.userId ? "Üye" : "Misafir"}
-            </p>
-            {order.customerNote ? (
-              <p className="mt-2">Not: {order.customerNote}</p>
-            ) : null}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Ödeme ve kargo</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2 text-sm">
-            {order.payments.map((payment) => (
-              <div
-                key={payment.merchantOid}
-                className="flex flex-wrap items-baseline gap-1.5"
-              >
-                <span>
-                  {METHOD_LABELS[payment.method]} · {payment.status} ·
-                </span>
-                <span className="font-semibold text-foreground">
-                  {formatMoney(payment.amount, order.currency)}
-                </span>
-                <span className="text-muted-foreground">
-                  ({payment.merchantOid})
-                </span>
-                {payment.dueAt ? (
-                  <span className="text-muted-foreground">
-                    · vade {payment.dueAt.toLocaleDateString("tr-TR")}
-                  </span>
-                ) : null}
-              </div>
-            ))}
-            {order.shipments.map((shipment, index) => (
-              <div key={index} className="flex flex-wrap items-baseline gap-1">
-                <span>
-                  {shipment.carrier}
-                  {shipment.trackingNumber ? ` · ${shipment.trackingNumber}` : ""}
-                </span>
-                {trackingUrl(shipment.carrier, shipment.trackingNumber) ? (
-                  <>
-                    <span className="text-muted-foreground">·</span>
-                    <a
-                      href={trackingUrl(
-                        shipment.carrier,
-                        shipment.trackingNumber,
-                      )!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      Takip
-                    </a>
-                  </>
-                ) : null}
-              </div>
-            ))}
-            {order.returns.map((request) => (
-              <div key={request.id}>
-                <Link href="/admin/iadeler" className="underline">
-                  İade talebi
-                </Link>{" "}
-                · {request.status}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <OrderDetailView
+      order={order}
+      actions={
+        canUpdate || canCancel ? (
+          <OrderActions
+            orderNumber={order.orderNumber}
+            canProcess={canUpdate && transitions.includes("PROCESSING")}
+            canShip={canUpdate && transitions.includes("SHIPPED")}
+            canDeliver={canUpdate && transitions.includes("DELIVERED")}
+            canCancel={canCancel && isStaffCancellable(order.status)}
+            canConfirmBankTransfer={
+              canUpdate &&
+              payment?.method === "BANK_TRANSFER" &&
+              order.status === "PENDING_PAYMENT"
+            }
+            canCollectDeferred={
+              canUpdate &&
+              payment?.method === "DEFERRED" &&
+              order.paymentStatus === "PENDING" &&
+              order.status !== "CANCELLED"
+            }
+            paid={order.paymentStatus === "PAID"}
+          />
+        ) : null
+      }
+    />
   );
 }
 
@@ -333,7 +72,7 @@ export default function AdminOrderPage({
   params,
 }: PageProps<"/admin/siparisler/[orderNumber]">) {
   return (
-    <Suspense fallback={<AdminLoading />}>
+    <Suspense fallback={<AdminLoading label="Sipariş yükleniyor..." />}>
       <OrderDetail params={params} />
     </Suspense>
   );

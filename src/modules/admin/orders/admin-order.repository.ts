@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import { containsText, countWhere, order, shipment, type Db } from "@/db";
 import type { OrderStatus } from "../../orders/order.types";
 
@@ -19,6 +19,8 @@ export interface AdminOrderRow {
   grandTotal: string;
   currency: string;
   itemCount: number;
+  /** Son ödeme kaydının yöntemi; ödeme kaydı yoksa null */
+  paymentMethod: "CARD" | "BANK_TRANSFER" | "DEFERRED" | null;
   createdAt: Date;
 }
 
@@ -83,6 +85,8 @@ export interface AdminOrderDetail {
 
 export interface AdminOrderRepository {
   list(query: AdminOrderListQuery): Promise<AdminOrderList>;
+  /** Arama koşuluna uyan siparişlerin durum bazında sayısı (sekmeler için). */
+  countByStatus(search?: string): Promise<Partial<Record<OrderStatus, number>>>;
   findDetail(orderNumber: string): Promise<AdminOrderDetail | null>;
   /** `from` içindeki bir durumdaysa `to`'ya geçirir; geçiş yapılamadıysa false. */
   transition(
@@ -104,17 +108,32 @@ function toAddress(json: unknown): Record<string, string | null> {
 export class D1AdminOrderRepository implements AdminOrderRepository {
   constructor(private readonly db: () => Db) {}
 
+  private searchWhere(raw: string | undefined): SQL | undefined {
+    const search = raw?.trim();
+    return search
+      ? or(
+          containsText(order.orderNumber, search),
+          containsText(order.guestEmail, search),
+        )
+      : undefined;
+  }
+
+  async countByStatus(
+    search?: string,
+  ): Promise<Partial<Record<OrderStatus, number>>> {
+    const rows = await this.db()
+      .select({ status: order.status, count: count() })
+      .from(order)
+      .where(this.searchWhere(search))
+      .groupBy(order.status);
+    return Object.fromEntries(rows.map((row) => [row.status, row.count]));
+  }
+
   async list(query: AdminOrderListQuery): Promise<AdminOrderList> {
     const db = this.db();
-    const search = query.search?.trim();
     const where = and(
       query.status ? eq(order.status, query.status) : undefined,
-      search
-        ? or(
-            containsText(order.orderNumber, search),
-            containsText(order.guestEmail, search),
-          )
-        : undefined,
+      this.searchWhere(query.search),
     );
 
     const [total, rows] = await Promise.all([
@@ -124,7 +143,14 @@ export class D1AdminOrderRepository implements AdminOrderRepository {
         orderBy: desc(order.createdAt),
         offset: (query.page - 1) * query.pageSize,
         limit: query.pageSize,
-        with: { items: { columns: { quantity: true } } },
+        with: {
+          items: { columns: { quantity: true } },
+          payments: {
+            columns: { method: true },
+            orderBy: (payment, { desc }) => desc(payment.createdAt),
+            limit: 1,
+          },
+        },
       }),
     ]);
 
@@ -145,6 +171,7 @@ export class D1AdminOrderRepository implements AdminOrderRepository {
           grandTotal: row.grandTotal.toFixed(2),
           currency: row.currency,
           itemCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
+          paymentMethod: row.payments[0]?.method ?? null,
           createdAt: row.createdAt,
         };
       }),

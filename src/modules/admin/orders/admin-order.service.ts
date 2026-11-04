@@ -41,6 +41,10 @@ export class AdminOrderService {
     return this.orders.list(query);
   }
 
+  statusCounts(search?: string): Promise<Partial<Record<OrderStatus, number>>> {
+    return this.orders.countByStatus(search);
+  }
+
   async get(orderNumber: string): Promise<AdminOrderDetail> {
     const order = await this.orders.findDetail(orderNumber);
     if (!order) throw new NotFoundError("Sipariş");
