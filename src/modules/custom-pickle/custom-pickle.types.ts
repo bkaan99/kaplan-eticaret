@@ -187,6 +187,69 @@ export interface CustomizationSnapshot {
   note: string | null;
 }
 
+export const MONTH_NAMES_TR = [
+  "Ocak",
+  "Şubat",
+  "Mart",
+  "Nisan",
+  "Mayıs",
+  "Haziran",
+  "Temmuz",
+  "Ağustos",
+  "Eylül",
+  "Ekim",
+  "Kasım",
+  "Aralık",
+] as const;
+
+export function formatSeasonRange(
+  start: number | null | undefined,
+  end: number | null | undefined,
+): string {
+  if (!start || !end) return "Tüm Yıl";
+  const startName = MONTH_NAMES_TR[start - 1] ?? "";
+  const endName = MONTH_NAMES_TR[end - 1] ?? "";
+  return `${startName} - ${endName}`;
+}
+
+/** Verilen ay (1-12) malzemenin mevsiminde mi? */
+export function isMonthInSeason(
+  startMonth: number | null | undefined,
+  endMonth: number | null | undefined,
+  month = new Date().getMonth() + 1,
+): boolean {
+  if (!startMonth || !endMonth) return true;
+  if (startMonth <= endMonth) {
+    return month >= startMonth && month <= endMonth;
+  }
+  // Yıl dönümünü aşan mevsimler (örn: Kasım (11) - Şubat (2))
+  return month >= startMonth || month <= endMonth;
+}
+
+/** Stok miktarı pozitif mi? (null/undefined = limitsiz stok) */
+export function isStockAvailable(
+  stockKg: Decimal.Value | null | undefined,
+): boolean {
+  if (stockKg === null || stockKg === undefined) return true;
+  return Number(stockKg) > 0;
+}
+
+/** Stok kritik seviyede veya altında mı? */
+export function isStockCritical(
+  stockKg: Decimal.Value | null | undefined,
+  minStockKg: Decimal.Value | null | undefined,
+): boolean {
+  if (
+    stockKg === null ||
+    stockKg === undefined ||
+    minStockKg === null ||
+    minStockKg === undefined
+  ) {
+    return false;
+  }
+  return Number(stockKg) <= Number(minStockKg);
+}
+
 export interface IngredientView {
   id: string;
   name: string;
@@ -195,6 +258,14 @@ export interface IngredientView {
   description: string | null;
   imageUrl: string | null;
   pricePerKg: string;
+  stockKg: string | null;
+  minStockKg: string | null;
+  seasonStartMonth: number | null;
+  seasonEndMonth: number | null;
+  inStock: boolean;
+  inSeason: boolean;
+  isAvailable: boolean;
+  isCriticalStock: boolean;
   isActive: boolean;
   sortOrder: number;
 }

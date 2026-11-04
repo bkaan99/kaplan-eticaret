@@ -28,6 +28,9 @@ import {
   bidonWeightGram,
   BRINE_OPTIONS,
   CUSTOM_PICKLE_PRODUCT_SLUG,
+  isMonthInSeason,
+  isStockAvailable,
+  isStockCritical,
   maxIngredientsForSize,
   SPICE_OPTIONS,
   type CustomPickleConfig,
@@ -115,7 +118,17 @@ function readShares(value: unknown): Record<string, number> | undefined {
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
-function toView(record: IngredientRecord): IngredientView {
+function toView(record: IngredientRecord, now = new Date()): IngredientView {
+  const currentMonth = now.getMonth() + 1;
+  const inSeason = isMonthInSeason(
+    record.seasonStartMonth,
+    record.seasonEndMonth,
+    currentMonth,
+  );
+  const inStock = isStockAvailable(record.stockKg);
+  const isCriticalStock = isStockCritical(record.stockKg, record.minStockKg);
+  const isAvailable = record.isActive && inStock && inSeason;
+
   return {
     id: record.id,
     name: record.name,
@@ -124,6 +137,16 @@ function toView(record: IngredientRecord): IngredientView {
     description: record.description,
     imageUrl: record.imageUrl,
     pricePerKg: toDecimal(record.pricePerKg).toFixed(2),
+    stockKg: record.stockKg ? toDecimal(record.stockKg).toFixed(2) : null,
+    minStockKg: record.minStockKg
+      ? toDecimal(record.minStockKg).toFixed(2)
+      : null,
+    seasonStartMonth: record.seasonStartMonth,
+    seasonEndMonth: record.seasonEndMonth,
+    inStock,
+    inSeason,
+    isAvailable,
+    isCriticalStock,
     isActive: record.isActive,
     sortOrder: record.sortOrder,
   };
@@ -243,7 +266,7 @@ export class CustomPickleService
           inStock: available === null || available > 0,
         };
       }),
-      ingredients: ingredients.map(toView),
+      ingredients: ingredients.map((item) => toView(item)),
       brines: options.brines
         .filter((item) => item.isActive)
         .sort((a, b) => a.sortOrder - b.sortOrder),
@@ -284,6 +307,26 @@ export class CustomPickleService
     if (active.length !== input.ingredientIds.length) {
       throw new ConflictError(
         "Seçtiğiniz malzemelerden biri artık mevcut değil, lütfen seçiminizi güncelleyin",
+      );
+    }
+    const currentMonth = new Date().getMonth() + 1;
+    const unavailable = active.find(
+      (item) =>
+        !isStockAvailable(item.stockKg) ||
+        !isMonthInSeason(
+          item.seasonStartMonth,
+          item.seasonEndMonth,
+          currentMonth,
+        ),
+    );
+    if (unavailable) {
+      if (!isStockAvailable(unavailable.stockKg)) {
+        throw new ConflictError(
+          `"${unavailable.name}" malzemesi tükendiği için seçilemez`,
+        );
+      }
+      throw new ConflictError(
+        `"${unavailable.name}" malzemesi mevsim dışı olduğu için seçilemez`,
       );
     }
     if (!active.some((item) => item.group === "VEGETABLE")) {
@@ -408,9 +451,19 @@ export class CustomPickleService
           (a, b) =>
             a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "tr"),
         );
+      const currentMonth = new Date().getMonth() + 1;
       const available =
         found.length === customization.ingredientIds.length &&
-        found.every((item) => item.isActive);
+        found.every(
+          (item) =>
+            item.isActive &&
+            isStockAvailable(item.stockKg) &&
+            isMonthInSeason(
+              item.seasonStartMonth,
+              item.seasonEndMonth,
+              currentMonth,
+            ),
+        );
 
       const priced = found.map((item) => {
         const share = customization.shares?.[item.id];
@@ -479,7 +532,7 @@ export class CustomPickleService
 
   async listIngredients(): Promise<IngredientView[]> {
     return (await this.repository.listIngredients({ activeOnly: false })).map(
-      toView,
+      (item) => toView(item),
     );
   }
 

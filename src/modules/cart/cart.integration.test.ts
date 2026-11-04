@@ -139,7 +139,7 @@ describe("Cart (veritabanı)", () => {
     await db
       .update(cart)
       .set({ updatedAt: sixtyDaysAgo })
-      .where(eq(cart.id, oldGuest.cart.id));
+      .where(eq(cart.id, oldGuest.cart.id!));
 
     // 2. Yeni anonim sepet (dokunulmamalı)
     const freshGuest = await service.addItem(
@@ -164,20 +164,20 @@ describe("Cart (veritabanı)", () => {
     const [oldRow] = await db
       .select({ id: cart.id })
       .from(cart)
-      .where(eq(cart.id, oldGuest.cart.id));
+      .where(eq(cart.id, oldGuest.cart.id!));
     expect(oldRow).toBeUndefined();
 
     // Yeni anonim sepet ve üye sepeti durmalı
     const [freshRow] = await db
       .select({ id: cart.id })
       .from(cart)
-      .where(eq(cart.id, freshGuest.cart.id));
+      .where(eq(cart.id, freshGuest.cart.id!));
     expect(freshRow).toBeDefined();
 
     const [userRow] = await db
       .select({ id: cart.id })
       .from(cart)
-      .where(eq(cart.id, userCart.cart.id));
+      .where(eq(cart.id, userCart.cart.id!));
     expect(userRow).toBeDefined();
   });
 });

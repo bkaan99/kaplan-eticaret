@@ -839,6 +839,10 @@ export const pickleIngredient = sqliteTable(
     description: text("description"),
     imageUrl: text("imageUrl"),
     pricePerKg: decimal("pricePerKg").notNull(),
+    stockKg: decimal("stockKg"),
+    minStockKg: decimal("minStockKg"),
+    seasonStartMonth: integer("seasonStartMonth"),
+    seasonEndMonth: integer("seasonEndMonth"),
     isActive: integer("isActive", { mode: "boolean" }).notNull().default(true),
     sortOrder: integer("sortOrder").notNull().default(0),
     createdAt: timestamp("createdAt")

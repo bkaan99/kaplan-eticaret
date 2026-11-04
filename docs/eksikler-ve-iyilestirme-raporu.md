@@ -110,18 +110,7 @@ Bütün kod tabanı (70 test paketi, 473 birim testi ve TypeScript derleyicisi) 
 
 ## 4. Kullanıcı Deneyimi ve Ürün Backlog'u (P3)
 
-### 4.1. Malzeme Bazında Stok ve Tedarik / Mevsimsellik Takibi
-- **İlgili Dosyalar:**
-  - [`src/db/schema.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/db/schema.ts#L830) (`pickleIngredient` tablosu)
-  - [`src/modules/custom-pickle/custom-pickle.service.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/custom-pickle/custom-pickle.service.ts)
-- **Durum:**
-  `PickleIngredient` modelinde yalnızca `isActive: Boolean` alanı yer almaktadır. Malzeme bazında kilogram/adet stoku, kritik stok uyarı seviyesi veya mevsimsel uygunluk ayları (`seasonMonths`) bulunmamaktadır.
-- **Öneri:**
-  Malzemelere kilogram bazlı stok takibi eklenmeli veya en azından admin panelinden "Mevsimi Bitti / Geçici Temin Edilemiyor" durumları için planlı pasife alma desteği verilmelidir.
-
----
-
-### 4.2. Müşteri Değerlendirme ve Yorum Motoru (Review Engine)
+### 4.1. Müşteri Değerlendirme ve Yorum Motoru (Review Engine)
 - **İlgili Dosyalar:**
   - [`src/app/(storefront)/page.tsx`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/app/(storefront)/page.tsx#L182) (`CustomerReviews`)
 - **Durum:**
@@ -131,7 +120,7 @@ Bütün kod tabanı (70 test paketi, 473 birim testi ve TypeScript derleyicisi) 
 
 ---
 
-### 4.3. Canlı Kargo API Entegrasyonu (Yurtiçi, Aras, MNG)
+### 4.2. Canlı Kargo API Entegrasyonu (Yurtiçi, Aras, MNG)
 - **İlgili Dosyalar:**
   - [`src/shared/shipping/carriers.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/shared/shipping/carriers.ts)
 - **Durum:**
@@ -158,6 +147,12 @@ Aşağıdaki maddelerin güncel kod tabanında çözüldüğü ve birim testlerl
 6. ✅ **Ürün Özelleştirme Stratejisi (OCP / `ItemCustomizationHandler`):**
    - Çekirdek `CartService`, `CheckoutPricing`, `CheckoutValidator` ve `checkout-customizations.ts` dosyalarındaki katı kodlanmış `CUSTOM_PICKLE_PRODUCT_SLUG`, `bidonWeightGram` ve turşu metinleri temizlenmiştir.
    - Genel `ItemCustomizationHandler` sözleşmesi (`src/modules/cart/customization.ts`) tanımlanmış; `CustomPickleService` bu sözleşmeyi uygulayarak çekirdek sepetten ve ödeme servislerinden tamamen soyutlanmıştır.
+7. ✅ **Malzeme Bazında Stok ve Mevsimsellik Takibi:**
+   - `PickleIngredient` tablosuna `stockKg`, `minStockKg`, `seasonStartMonth`, `seasonEndMonth` sütunları eklendi (`0002_pickle_ingredient_stock_and_season.sql` ve `src/db/schema.ts`).
+   - `CustomPickleService` katmanında `isMonthInSeason`, `isStockAvailable`, `isStockCritical` ve `toView` modelleri geliştirildi; stokta olmayan veya mevsim dışı malzemeler sepet hazırlamada (`prepare`) ve sepet teklifinde (`quote`) engellendi.
+   - Kendi Turşunu Yap arayüzünde (`builder-steps.tsx`) tükenen ve mevsim dışı malzemelere özel rozetler, buton kilitleri ve mevsim aralığı gösterimi eklendi.
+   - Yönetim panelinde (`ingredient-manager.tsx`) malzeme ekleme/düzenleme formuna stok miktarı, kritik stok eşiği ve ay bazlı mevsimsellik seçimi; malzeme tablosuna ise stok durumu ve mevsim rozetleri entegre edildi.
+   - `db/seed.ts` güncellendi ve tüm senaryolar birim testlerle (`custom-pickle.service.test.ts`) doğrulandı.
 
 ---
 
@@ -171,6 +166,5 @@ Aşağıdaki maddelerin güncel kod tabanında çözüldüğü ve birim testlerl
 | 🟠 **P2** | `DevPaymentProvider.signPayload` sızıntısının izole edilmesi | `src/integrations/payment/`, `odeme/actions.ts` | 1 saat |
 | 🟠 **P2** | Terk edilmiş sahipsiz sepetlerin süpürülmesi (cron) | `src/app/api/cron/purge-abandoned-carts/` | 1 saat |
 | 🟠 **P2** | Global `siteConfig` doğrudan import bağımlılıklarının temizlenmesi | `src/modules/checkout/shipping.ts` | 1 saat |
-| 🟢 **P3** | Malzeme bazında stok ve mevsimsellik takibi | `src/db/schema.ts`, `custom-pickle/` | 3-4 saat |
 | 🟢 **P3** | Müşteri değerlendirme ve yorum motoru (Review Engine) | Yeni `Review` tablosu & modülü | 1-2 gün |
 | 🟢 **P3** | Canlı kargo API entegrasyonu (Yurtiçi/Aras/MNG) | `src/integrations/shipping/` | 2-3 gün |

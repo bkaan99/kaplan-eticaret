@@ -381,8 +381,8 @@ describe("CartService", () => {
 
       const removed = await service.purgeAbandoned(new Date());
       expect(removed).toBe(1);
-      expect(repo.carts.has(guestCart.cart.id)).toBe(false);
-      expect(repo.carts.has(userCart.cart.id)).toBe(true);
+      expect(repo.carts.has(guestCart.cart.id!)).toBe(false);
+      expect(repo.carts.has(userCart.cart.id!)).toBe(true);
     });
   });
 });

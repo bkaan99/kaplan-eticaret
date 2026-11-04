@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import { useState, type ReactNode } from "react";
 import {
+  formatSeasonRange,
   INGREDIENT_GROUP_LABELS,
   maxIngredientsForSize,
   MAX_NOTE_LENGTH,
@@ -371,7 +372,7 @@ export function IngredientsStep({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
         {items.map((item) => {
           const active = selected.includes(item.id);
-          const disabled = !active && full;
+          const disabled = (!active && full) || !item.isAvailable;
           return (
             <button
               key={item.id}
@@ -398,13 +399,24 @@ export function IngredientsStep({
                 }
                 toggle(item.id);
               }}
-              className={`group flex flex-col rounded-2xl border p-2 text-left transition-colors disabled:opacity-40 ${
-                active
-                  ? "border-primary bg-primary/5"
-                  : "border-slate-200 hover:border-primary/50"
+              className={`group flex flex-col rounded-2xl border p-2 text-left transition-colors ${
+                !item.isAvailable
+                  ? "border-slate-200 bg-slate-50/70 opacity-60 cursor-not-allowed"
+                  : active
+                    ? "border-primary bg-primary/5"
+                    : "border-slate-200 hover:border-primary/50"
               }`}
             >
               <span className="relative flex aspect-[4/3] w-full items-center justify-center rounded-xl bg-[#f4f5f0]">
+                {!item.inStock ? (
+                  <span className="absolute top-1.5 left-1.5 z-10 rounded-md bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                    Tükendi
+                  </span>
+                ) : !item.inSeason ? (
+                  <span className="absolute top-1.5 left-1.5 z-10 rounded-md bg-amber-600 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                    Mevsim Dışı
+                  </span>
+                ) : null}
                 <span data-fly-thumb className="relative h-16 w-16">
                   <Image
                     src={item.imageUrl ?? "/placeholder.svg"}
@@ -418,17 +430,38 @@ export function IngredientsStep({
               <span className="mt-2 px-1 text-sm leading-tight font-bold text-primary">
                 {item.name}
               </span>
-              <span className="mt-0.5 px-1 text-xs text-slate-500">
-                {formatMoney(item.pricePerKg, currency)} / kg
-              </span>
+              <div className="mt-0.5 flex flex-col gap-0.5 px-1">
+                <span className="text-xs text-slate-500">
+                  {formatMoney(item.pricePerKg, currency)} / kg
+                </span>
+                {item.seasonStartMonth && item.seasonEndMonth ? (
+                  <span className="text-[11px] text-emerald-700/80">
+                    Mevsim:{" "}
+                    {formatSeasonRange(
+                      item.seasonStartMonth,
+                      item.seasonEndMonth,
+                    )}
+                  </span>
+                ) : null}
+              </div>
               <span
                 className={`mt-2 rounded-full py-1.5 text-center text-xs font-bold ${
-                  active
-                    ? "bg-primary text-white"
-                    : "border border-primary text-primary"
+                  !item.inStock
+                    ? "bg-slate-200 text-slate-600"
+                    : !item.inSeason
+                      ? "bg-amber-100 text-amber-800"
+                      : active
+                        ? "bg-primary text-white"
+                        : "border border-primary text-primary"
                 }`}
               >
-                {active ? "Eklendi ✓" : "+ Bidona ekle"}
+                {!item.inStock
+                  ? "Tükendi"
+                  : !item.inSeason
+                    ? "Mevsim Dışı"
+                    : active
+                      ? "Eklendi ✓"
+                      : "+ Bidona ekle"}
               </span>
             </button>
           );

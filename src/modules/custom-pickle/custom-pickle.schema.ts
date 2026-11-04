@@ -105,6 +105,56 @@ export const ingredientInputSchema = z.object({
     }
     return parsed;
   }),
+  stockKg: z
+    .union([z.string(), z.number()])
+    .nullable()
+    .optional()
+    .transform((value, ctx) => {
+      if (value === undefined || value === null || value === "") return null;
+      const parsed = Number(String(value).replace(",", "."));
+      if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100000) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Geçerli bir stok miktarı (kg) girin",
+        });
+        return z.NEVER;
+      }
+      return parsed;
+    }),
+  minStockKg: z
+    .union([z.string(), z.number()])
+    .nullable()
+    .optional()
+    .transform((value, ctx) => {
+      if (value === undefined || value === null || value === "") return null;
+      const parsed = Number(String(value).replace(",", "."));
+      if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100000) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Geçerli bir kritik stok miktarı (kg) girin",
+        });
+        return z.NEVER;
+      }
+      return parsed;
+    }),
+  seasonStartMonth: z
+    .union([z.string(), z.number()])
+    .nullable()
+    .optional()
+    .transform((value) => {
+      if (value === undefined || value === null || value === "") return null;
+      const num = Number(value);
+      return Number.isInteger(num) && num >= 1 && num <= 12 ? num : null;
+    }),
+  seasonEndMonth: z
+    .union([z.string(), z.number()])
+    .nullable()
+    .optional()
+    .transform((value) => {
+      if (value === undefined || value === null || value === "") return null;
+      const num = Number(value);
+      return Number.isInteger(num) && num >= 1 && num <= 12 ? num : null;
+    }),
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
   isActive: z.boolean().default(true),
 });
