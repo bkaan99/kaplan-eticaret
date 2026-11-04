@@ -14,6 +14,7 @@ import { catalogService } from "@/modules/catalog/container";
 import { loadProduct } from "@/modules/catalog/loaders";
 import { CUSTOM_PICKLE_PRODUCT_SLUG } from "@/modules/custom-pickle/custom-pickle.types";
 import { TrackOnMount } from "@/shared/analytics/track-on-mount";
+import { validGtin } from "@/shared/seo/gtin";
 import { absoluteUrl } from "@/shared/site-url";
 
 function plainText(value: string | null, max: number): string | undefined {
@@ -237,6 +238,24 @@ async function ProductContent({
           name: product.name,
           description: plainText(product.description, 500),
           sku: product.variants[0]?.sku || product.slug,
+          gtin: validGtin(product.barcode) ?? undefined,
+          category:
+            breadcrumbs.map((crumb) => crumb.name).join(" > ") || undefined,
+          weight: product.weightGram
+            ? {
+                "@type": "QuantitativeValue",
+                value: product.weightGram,
+                unitCode: "GRM",
+              }
+            : undefined,
+          additionalProperty:
+            product.attributes.length > 0
+              ? product.attributes.map((attribute) => ({
+                  "@type": "PropertyValue",
+                  name: attribute.name,
+                  value: attribute.values.join(", "),
+                }))
+              : undefined,
           image: product.images.map((image) =>
             image.url.startsWith("http") ? image.url : absoluteUrl(image.url),
           ),

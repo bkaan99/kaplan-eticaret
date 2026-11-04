@@ -72,6 +72,9 @@ export interface EditableProduct {
   weightGram: number | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  ingredients: string | null;
+  allergens: string | null;
+  shelfLife: string | null;
   attributeValueIds: string[];
   options: { name: string; values: string[] }[];
   variants: {
@@ -227,6 +230,9 @@ export class D1ProductAdminRepository implements ProductAdminRepository {
       weightGram: row.weightGram,
       seoTitle: row.seoTitle,
       seoDescription: row.seoDescription,
+      ingredients: row.ingredients,
+      allergens: row.allergens,
+      shelfLife: row.shelfLife,
       attributeValueIds: row.attributes.map((a) => a.attributeValueId),
       options: row.options.map((option) => ({
         name: option.name,
@@ -371,6 +377,9 @@ export class D1ProductAdminRepository implements ProductAdminRepository {
         input.weightGram === null ? null : Math.round(input.weightGram),
       seoTitle: input.seoTitle,
       seoDescription: input.seoDescription,
+      ingredients: input.ingredients,
+      allergens: input.allergens,
+      shelfLife: input.shelfLife,
     };
   }
 

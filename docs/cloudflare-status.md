@@ -34,6 +34,8 @@ Tarih: 2026-11-01 · Dal: `cloudflare-adaptation`
 | Worker secrets | Orta | AUTH/CRON set; APP_URL vars ile çakışma uyarısı kontrol |
 | D1 seed (katalog + admin) | — | **Tamam:** `npm run db:seed-remote -- --admin …` |
 | E-posta adapter (Queue consumer) | Yüksek | Kod hazır (Resend); `wrangler secret put RESEND_API_KEY` + doğrulanmış from domain |
+| Kargo SMS (Queue consumer, Netgsm) | Orta | Kod hazır; `src/config/project.json` içinde `features.sms: true` + `wrangler secret put NETGSM_USERCODE` / `NETGSM_PASSWORD` / `NETGSM_MSGHEADER` (Netgsm onaylı başlık) |
+| Ürün beslemesi | Düşük | `/feeds/products.xml` — Google Merchant Center ve Meta Commerce Manager'a "zamanlanmış besleme" olarak eklenir |
 | Integration testler SQLite | Orta | Hâlâ eski Postgres URL varsayımı |
 | Para şema Int harden | Düşük | Helper var; kolonlar Decimal emülasyonu |
 | `pg-boss` paketi / ölü dosya temizliği | Düşük | Kullanılmıyor |

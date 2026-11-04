@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
+import { RevenueChart } from "@/components/admin/revenue-chart";
 import { Price } from "@/components/storefront/price";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +48,8 @@ async function DashboardContent({
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <p className="text-slate-600">
-          Hoş geldiniz, <strong>{user.name || user.email}</strong>. Sol menüden çalışmak istediğiniz bölümü seçebilirsiniz.
+          Hoş geldiniz, <strong>{user.name || user.email}</strong>. Sol menüden
+          çalışmak istediğiniz bölümü seçebilirsiniz.
         </p>
       </div>
     );
@@ -64,10 +66,17 @@ async function DashboardContent({
       {/* Dönem Seçimi Barı */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Genel Bakış & Metrikler</h2>
-          <p className="text-xs text-slate-500">Önceki dönemle karşılaştırmalı performans verileri</p>
+          <h2 className="text-lg font-bold text-slate-900">
+            Genel Bakış & Metrikler
+          </h2>
+          <p className="text-xs text-slate-500">
+            Önceki dönemle karşılaştırmalı performans verileri
+          </p>
         </div>
-        <nav aria-label="Dönem" className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
+        <nav
+          aria-label="Dönem"
+          className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs"
+        >
           {REPORT_PERIODS.map((days) => (
             <Link
               key={days}
@@ -102,7 +111,9 @@ async function DashboardContent({
               </span>
               <Change value={data.revenue.changePercent} />
             </div>
-            <p className="mt-1 text-xs text-slate-400">Son {data.periodDays} günlük ciro</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Son {data.periodDays} günlük ciro
+            </p>
           </CardContent>
         </Card>
 
@@ -116,11 +127,14 @@ async function DashboardContent({
           <CardContent>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-2xl font-bold tracking-tight text-slate-900">
-                {data.orders.current} <span className="text-sm font-normal text-slate-500">adet</span>
+                {data.orders.current}{" "}
+                <span className="text-sm font-normal text-slate-500">adet</span>
               </span>
               <Change value={data.orders.changePercent} />
             </div>
-            <p className="mt-1 text-xs text-slate-400">Tamamlanan & aktif siparişler</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Tamamlanan & aktif siparişler
+            </p>
           </CardContent>
         </Card>
 
@@ -137,10 +151,31 @@ async function DashboardContent({
                 <Price value={data.averageOrderValue} />
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-400">Sipariş başına ortalama tutar</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Sipariş başına ortalama tutar
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Ciro Grafiği */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>
+            {data.revenueSeries.granularity === "day" ? "Günlük" : "Aylık"} Ciro
+          </CardTitle>
+          <p className="text-xs text-slate-500">
+            Son {data.periodDays} gün · iptal ve iadeler hariç, Türkiye saatine
+            göre
+          </p>
+        </CardHeader>
+        <CardContent>
+          <RevenueChart
+            buckets={data.revenueSeries.buckets}
+            granularity={data.revenueSeries.granularity}
+          />
+        </CardContent>
+      </Card>
 
       {/* Müşteri İstatistikleri */}
       <div className="grid gap-5 sm:grid-cols-3">
@@ -154,11 +189,14 @@ async function DashboardContent({
           <CardContent>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-2xl font-bold tracking-tight text-slate-900">
-                {data.customers.newCustomers} <span className="text-sm font-normal text-slate-500">kişi</span>
+                {data.customers.newCustomers}{" "}
+                <span className="text-sm font-normal text-slate-500">kişi</span>
               </span>
               <Change value={data.customers.newChangePercent} />
             </div>
-            <p className="mt-1 text-xs text-slate-400">Bu dönemde kayıt olanlar</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Bu dönemde kayıt olanlar
+            </p>
           </CardContent>
         </Card>
 
@@ -171,9 +209,12 @@ async function DashboardContent({
           </CardHeader>
           <CardContent>
             <span className="text-2xl font-bold tracking-tight text-slate-900">
-              {data.customers.buyers} <span className="text-sm font-normal text-slate-500">üye</span>
+              {data.customers.buyers}{" "}
+              <span className="text-sm font-normal text-slate-500">üye</span>
             </span>
-            <p className="mt-1 text-xs text-slate-400">En az 1 sipariş verenler</p>
+            <p className="mt-1 text-xs text-slate-400">
+              En az 1 sipariş verenler
+            </p>
           </CardContent>
         </Card>
 
@@ -190,7 +231,9 @@ async function DashboardContent({
                 ? "—"
                 : `%${data.customers.returningRate}`}
             </span>
-            <p className="mt-1 text-xs text-slate-400">Sadık müşteri bağlılığı</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Sadık müşteri bağlılığı
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -200,9 +243,13 @@ async function DashboardContent({
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-            <h3 className="text-sm font-bold text-slate-900">İşlem Bekleyen Aksiyonlar</h3>
+            <h3 className="text-sm font-bold text-slate-900">
+              İşlem Bekleyen Aksiyonlar
+            </h3>
           </div>
-          <span className="text-xs font-semibold text-amber-800">Acil Müdahale</span>
+          <span className="text-xs font-semibold text-amber-800">
+            Acil Müdahale
+          </span>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -211,7 +258,9 @@ async function DashboardContent({
             className="flex items-center justify-between rounded-xl border border-amber-200/60 bg-white p-4 shadow-2xs transition hover:border-amber-400 hover:shadow-xs"
           >
             <div className="flex flex-col">
-              <span className="text-xs font-medium text-slate-600">Hazırlanacak Sipariş</span>
+              <span className="text-xs font-medium text-slate-600">
+                Hazırlanacak Sipariş
+              </span>
               <span className="text-xl font-bold text-slate-900">
                 {data.attention.ordersToProcess}
               </span>
@@ -226,7 +275,9 @@ async function DashboardContent({
             className="flex items-center justify-between rounded-xl border border-amber-200/60 bg-white p-4 shadow-2xs transition hover:border-amber-400 hover:shadow-xs"
           >
             <div className="flex flex-col">
-              <span className="text-xs font-medium text-slate-600">Bekleyen İade Talebi</span>
+              <span className="text-xs font-medium text-slate-600">
+                Bekleyen İade Talebi
+              </span>
               <span className="text-xl font-bold text-slate-900">
                 {data.attention.openReturnRequests}
               </span>
@@ -241,7 +292,9 @@ async function DashboardContent({
             className="flex items-center justify-between rounded-xl border border-amber-200/60 bg-white p-4 shadow-2xs transition hover:border-amber-400 hover:shadow-xs"
           >
             <div className="flex flex-col">
-              <span className="text-xs font-medium text-slate-600">Onay Bekleyen Bayi</span>
+              <span className="text-xs font-medium text-slate-600">
+                Onay Bekleyen Bayi
+              </span>
               <span className="text-xl font-bold text-slate-900">
                 {data.attention.pendingDealers}
               </span>
@@ -268,12 +321,17 @@ async function DashboardContent({
             ) : (
               <ul className="flex flex-col divide-y divide-slate-100 text-sm">
                 {data.topProducts.map((product, index) => (
-                  <li key={product.name} className="flex items-center justify-between py-3">
+                  <li
+                    key={product.name}
+                    className="flex items-center justify-between py-3"
+                  >
                     <div className="flex items-center gap-3">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
                         {index + 1}
                       </span>
-                      <span className="font-semibold text-slate-800">{product.name}</span>
+                      <span className="font-semibold text-slate-800">
+                        {product.name}
+                      </span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
@@ -282,6 +340,49 @@ async function DashboardContent({
                       <span className="font-bold text-slate-900">
                         <Price value={product.revenue} />
                       </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Popüler Turşu Malzemeleri */}
+        <Card className="lg:order-last lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle>En Popüler Turşu Malzemeleri</CardTitle>
+            <p className="text-xs text-slate-500">
+              “Kendi Turşunu Yap” siparişleri ·{" "}
+              {data.popularIngredients.totalJars} bidon
+            </p>
+          </CardHeader>
+          <CardContent>
+            {data.popularIngredients.items.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-400">
+                Bu dönemde özel turşu siparişi yok.
+              </p>
+            ) : (
+              <ul className="grid gap-x-10 gap-y-3 text-sm sm:grid-cols-2">
+                {data.popularIngredients.items.map((item) => (
+                  <li key={item.name} className="flex flex-col gap-1.5">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-semibold text-slate-800">
+                        {item.name}
+                      </span>
+                      <span className="text-xs text-slate-500 tabular-nums">
+                        {item.jarCount} bidon · %{item.sharePercent}
+                      </span>
+                    </div>
+                    <div
+                      className="h-2 overflow-hidden rounded-full bg-slate-100"
+                      role="img"
+                      aria-label={`${item.name}: bidonların yüzde ${item.sharePercent}'inde`}
+                    >
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${Math.max(2, item.sharePercent)}%` }}
+                      />
                     </div>
                   </li>
                 ))}
@@ -303,10 +404,17 @@ async function DashboardContent({
             ) : (
               <ul className="flex flex-col divide-y divide-slate-100 text-sm">
                 {data.attention.lowStock.map((item) => (
-                  <li key={item.sku} className="flex items-center justify-between py-3">
+                  <li
+                    key={item.sku}
+                    className="flex items-center justify-between py-3"
+                  >
                     <div className="flex flex-col">
-                      <span className="font-semibold text-slate-800">{item.productName}</span>
-                      <span className="text-xs text-slate-400 font-mono">SKU: {item.sku}</span>
+                      <span className="font-semibold text-slate-800">
+                        {item.productName}
+                      </span>
+                      <span className="text-xs text-slate-400 font-mono">
+                        SKU: {item.sku}
+                      </span>
                     </div>
                     <Badge tone={item.available === 0 ? "danger" : "warning"}>
                       {item.available} adet kaldı
@@ -318,7 +426,6 @@ async function DashboardContent({
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 }

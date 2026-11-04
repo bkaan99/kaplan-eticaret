@@ -4,6 +4,7 @@ import { getWorkerQueue } from "@/shared/queue";
 import { registerEmailJobs } from "./jobs/email";
 import { registerMaintenanceJobs } from "./jobs/maintenance";
 import { registerOrderJobs } from "./jobs/orders";
+import { registerSmsJobs } from "./jobs/sms";
 
 /** Arka plan işlerini işleyen ayrı süreç. Çalıştırmak için: npm run worker */
 async function main(): Promise<void> {
@@ -12,6 +13,7 @@ async function main(): Promise<void> {
   await registerMaintenanceJobs(queue);
   await registerEmailJobs(queue);
   await registerOrderJobs(queue);
+  await registerSmsJobs(queue);
   logger.info("Worker başlatıldı");
 
   const shutdown = async (signal: string): Promise<void> => {

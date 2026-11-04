@@ -32,6 +32,10 @@ declare global {
     /** Queue consumer: Resend API */
     RESEND_API_KEY?: string;
     MAIL_FROM?: string;
+    /** Queue consumer: Netgsm SMS (features.sms) */
+    NETGSM_USERCODE?: string;
+    NETGSM_PASSWORD?: string;
+    NETGSM_MSGHEADER?: string;
   }
 }
 

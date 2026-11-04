@@ -43,6 +43,10 @@ const envSchema = z
     TURNSTILE_SECRET_KEY: optionalString,
     /** Workers queue consumer; yerelde SMTP kullanılır */
     RESEND_API_KEY: optionalString,
+    /** Netgsm SMS (features.sms): abone no, şifre ve onaylı SMS başlığı */
+    NETGSM_USERCODE: optionalString,
+    NETGSM_PASSWORD: optionalString,
+    NETGSM_MSGHEADER: optionalString,
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;

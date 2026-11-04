@@ -46,6 +46,9 @@ export const emptyProduct: EditableProduct = {
   weightGram: null,
   seoTitle: "",
   seoDescription: "",
+  ingredients: "",
+  allergens: "",
+  shelfLife: "",
   attributeValueIds: [],
   options: [],
   variants: [],
@@ -76,7 +79,11 @@ export interface UseProductFormProps {
   mode: "create" | "edit";
 }
 
-export function useProductForm({ product, references, mode }: UseProductFormProps) {
+export function useProductForm({
+  product,
+  references,
+  mode,
+}: UseProductFormProps) {
   const initial = product ?? emptyProduct;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -101,6 +108,9 @@ export function useProductForm({ product, references, mode }: UseProductFormProp
   const [seoDescription, setSeoDescription] = useState(
     initial.seoDescription ?? "",
   );
+  const [ingredients, setIngredients] = useState(initial.ingredients ?? "");
+  const [allergens, setAllergens] = useState(initial.allergens ?? "");
+  const [shelfLife, setShelfLife] = useState(initial.shelfLife ?? "");
   const [attributeValueIds, setAttributeValueIds] = useState<string[]>(
     initial.attributeValueIds,
   );
@@ -230,6 +240,9 @@ export function useProductForm({ product, references, mode }: UseProductFormProp
       weightGram,
       seoTitle,
       seoDescription,
+      ingredients,
+      allergens,
+      shelfLife,
       attributeValueIds,
       options: parsedOptions,
       variants: variants.map((variant) => ({
@@ -315,6 +328,12 @@ export function useProductForm({ product, references, mode }: UseProductFormProp
     setSeoTitle,
     seoDescription,
     setSeoDescription,
+    ingredients,
+    setIngredients,
+    allergens,
+    setAllergens,
+    shelfLife,
+    setShelfLife,
     attributeValueIds,
     toggleAttribute,
     options,

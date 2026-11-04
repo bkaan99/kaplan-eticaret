@@ -9,6 +9,7 @@ import type {
 } from "@/modules/admin/catalog/product-admin.repository";
 import { ProductAttributesSection } from "./product-attributes-section";
 import { ProductBasicInfo } from "./product-basic-info";
+import { ProductFoodInfoSection } from "./product-food-info-section";
 import { ProductMediaSection } from "./product-media-section";
 import { ProductSeoSection } from "./product-seo-section";
 import { ProductVariantsSection } from "./product-variants-section";
@@ -42,7 +43,9 @@ export function ProductForm({
           id: "variants",
           label: "Bidon Boyutları & Fiyatlar",
           icon: "🏺",
-          badge: form.variants.length ? `${form.variants.length} Boyut` : undefined,
+          badge: form.variants.length
+            ? `${form.variants.length} Boyut`
+            : undefined,
         },
         { id: "basic", label: "Genel Ürün Bilgileri", icon: "📋" },
         {
@@ -105,7 +108,9 @@ export function ProductForm({
       ) : (
         <>
           <span>💾</span>
-          <span>{mode === "create" ? "Ürünü Oluştur" : "Değişiklikleri Kaydet"}</span>
+          <span>
+            {mode === "create" ? "Ürünü Oluştur" : "Değişiklikleri Kaydet"}
+          </span>
         </>
       )}
     </Button>
@@ -131,8 +136,9 @@ export function ProductForm({
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-                  Müşterilerinizin turşu kurarken seçtiği bidon boyutları bu ürünün varyantlarıdır.
-                  Taban satış fiyatlarını ve stoklarını buradan güncelleyebilir, yeni boyutlar ekleyebilirsiniz.
+                  Müşterilerinizin turşu kurarken seçtiği bidon boyutları bu
+                  ürünün varyantlarıdır. Taban satış fiyatlarını ve stoklarını
+                  buradan güncelleyebilir, yeni boyutlar ekleyebilirsiniz.
                 </p>
               </div>
             </div>
@@ -250,6 +256,18 @@ export function ProductForm({
             setWeightGram={form.setWeightGram}
             fieldErrors={form.fieldErrors}
             references={form.references}
+          />
+        )}
+
+        {activeTab === "basic" && (
+          <ProductFoodInfoSection
+            ingredients={form.ingredients}
+            setIngredients={form.setIngredients}
+            allergens={form.allergens}
+            setAllergens={form.setAllergens}
+            shelfLife={form.shelfLife}
+            setShelfLife={form.setShelfLife}
+            fieldErrors={form.fieldErrors}
           />
         )}
 

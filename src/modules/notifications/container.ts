@@ -1,3 +1,4 @@
+import { isFeatureEnabled } from "@/config/features";
 import { siteConfig } from "@/config/site.config";
 import { SmtpMailer } from "@/integrations/notification/smtp-mailer";
 import { getCloudflareEnv } from "@/shared/cloudflare";
@@ -8,6 +9,7 @@ import { getJobQueue } from "@/shared/queue";
 import { getSiteUrl } from "@/shared/site-url";
 import { D1OrderRepository } from "../orders/order.repository";
 import { DirectNotificationDispatcher } from "./direct-notification-dispatcher";
+import { SmsNotificationHandler } from "./handlers/sms-notification.handler";
 import {
   QueueNotificationDispatcher,
   type NotificationDispatcher,
@@ -67,6 +69,19 @@ export function getNotificationService(): NotificationService {
   bus.subscribe("order.shipped", ({ orderId }) =>
     service.onOrderShipped(orderId),
   );
+
+  // Kargo SMS'i: features.sms açıksa kuyruğa atılır; gönderimi kuyruk
+  // tüketicisi (Netgsm) yapar. Sağlayıcı ayarı yoksa iş loglanıp atlanır.
+  if (isFeatureEnabled("sms")) {
+    const sms = new SmsNotificationHandler({
+      orders: new D1OrderRepository(getDb),
+      queue: getJobQueue(),
+      context: { siteName: siteConfig.name, baseUrl: getSiteUrl() },
+    });
+    bus.subscribe("order.shipped", ({ orderId }) =>
+      sms.onOrderShipped(orderId),
+    );
+  }
 
   return notifications;
 }

@@ -24,9 +24,11 @@ import {
 } from "@/db";
 import type {
   CustomerMetrics,
+  IngredientUsageRow,
   LowStockItem,
   PeriodTotals,
   ReportingRepository,
+  RevenueRow,
   TopProduct,
 } from "./reporting.service";
 
@@ -61,6 +63,37 @@ export class D1ReportingRepository implements ReportingRepository {
       ),
       orderCount: rows.length,
     };
+  }
+
+  async revenueRows(from: Date, to: Date): Promise<RevenueRow[]> {
+    return this.db()
+      .select({ createdAt: order.createdAt, grandTotal: order.grandTotal })
+      .from(order)
+      .where(
+        and(
+          inArray(order.status, [...REVENUE_STATUSES]),
+          gte(order.createdAt, from),
+          lt(order.createdAt, to),
+        ),
+      );
+  }
+
+  async ingredientUsage(from: Date, to: Date): Promise<IngredientUsageRow[]> {
+    return this.db()
+      .select({
+        quantity: orderItem.quantity,
+        customization: orderItem.customization,
+      })
+      .from(orderItem)
+      .innerJoin(order, eq(order.id, orderItem.orderId))
+      .where(
+        and(
+          isNotNull(orderItem.customization),
+          inArray(order.status, [...REVENUE_STATUSES]),
+          gte(order.createdAt, from),
+          lt(order.createdAt, to),
+        ),
+      );
   }
 
   async topProducts(
