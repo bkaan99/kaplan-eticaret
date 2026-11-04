@@ -42,7 +42,7 @@ export default function WishlistPage() {
       </h1>
       <Suspense
         fallback={
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}

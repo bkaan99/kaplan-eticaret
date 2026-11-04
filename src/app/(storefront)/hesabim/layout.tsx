@@ -10,7 +10,7 @@ export default async function AccountLayout({
 
   return (
     <div className="full-bleed -mt-6 min-h-[70vh] bg-[#f3f4ef]">
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
+      <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-8 2xl:px-12 py-8 sm:py-10">
         <Reveal y={12} className="border-b border-slate-900/10 pb-6">
           <p className="text-[11px] font-bold tracking-[0.2em] text-primary uppercase">
             Hesabım

@@ -181,7 +181,11 @@ async function FooterContact() {
             rel="noopener noreferrer"
             className={contactRowClass}
           >
-            <WhatsAppIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-[#25d366]" />
+            <WhatsAppIcon
+              width={20}
+              height={20}
+              className="mt-0.5 size-5 shrink-0 text-[#25d366]"
+            />
             <span>WhatsApp Destek</span>
           </a>
         </li>
@@ -231,10 +235,13 @@ async function FooterContact() {
 
 export function SiteFooter() {
   return (
-    <footer id="iletisim" className="mt-20 scroll-mt-32 bg-slate-50 text-slate-700">
+    <footer
+      id="iletisim"
+      className="mt-20 scroll-mt-32 bg-slate-50 text-slate-700"
+    >
       {/* Üst Güvence Rozetleri */}
       <div className="bg-primary">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-5 px-4 py-7 sm:grid-cols-4 sm:gap-6">
+        <div className="mx-auto grid max-w-[1600px] px-4 lg:px-8 2xl:px-12 grid-cols-2 gap-5 py-7 sm:grid-cols-4 sm:gap-6">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-amber-300">
               <LeafIcon width={18} height={18} />
@@ -291,7 +298,7 @@ export function SiteFooter() {
       </div>
 
       {/* Ana Sütunlar */}
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:py-14 lg:grid-cols-12 lg:gap-10">
+      <div className="mx-auto grid max-w-[1600px] px-4 lg:px-8 2xl:px-12 gap-10 py-12 sm:grid-cols-2 sm:py-14 lg:grid-cols-12 lg:gap-10">
         {/* Marka Tanıtımı */}
         <div className="flex flex-col gap-4 lg:col-span-5">
           <Logo />
@@ -335,7 +342,7 @@ export function SiteFooter() {
 
       {/* Alt Telif & Ödeme Yöntemleri Barı */}
       <div className="border-t border-slate-200/80 bg-slate-100/60">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-[1600px] px-4 lg:px-8 2xl:px-12 flex-col gap-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-1">
             <p>
               ©{" "}
