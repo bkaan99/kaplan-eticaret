@@ -27,6 +27,7 @@ import {
   variantOptionValue,
   type Db,
 } from "@/db";
+import type { SQL } from "drizzle-orm";
 import type { ProductInput } from "./product.schema";
 
 export interface ProductListQuery {
@@ -44,11 +45,24 @@ export interface ProductListRow {
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   categoryName: string;
   variantCount: number;
+  /** Aktif varyantların satılabilir toplamı (stok − rezerve) */
   totalStock: number;
+  /** false ise stok takibi yapılmaz; stok sütunu gösterilmez */
+  trackInventory: boolean;
+  /** Satılabilir adedi 0 olan aktif varyant sayısı */
+  outOfStockVariants: number;
+  /** İlk aktif varyantın SKU'su */
+  sku: string | null;
   minPrice: string | null;
+  /** Aktif varyant fiyatları farklıysa true ("… başlayan") */
+  hasPriceRange: boolean;
   imageUrl: string | null;
   updatedAt: Date;
 }
+
+export type ProductStatusCounts = Partial<
+  Record<"DRAFT" | "ACTIVE" | "ARCHIVED", number>
+>;
 
 export interface ProductListResult {
   items: ProductListRow[];
@@ -107,6 +121,10 @@ export interface FormReferences {
 
 export interface ProductAdminRepository {
   list(query: ProductListQuery): Promise<ProductListResult>;
+  /** Arama/kategori koşuluna uyan ürünlerin yayın durumuna göre sayısı */
+  countByStatus(
+    query: Pick<ProductListQuery, "search" | "categoryId">,
+  ): Promise<ProductStatusCounts>;
   findForEdit(id: string): Promise<EditableProduct | null>;
   references(): Promise<FormReferences>;
   slugTaken(slug: string, excludeId?: string): Promise<boolean>;
@@ -120,11 +138,12 @@ type BatchOps = Parameters<typeof runBatch>[1];
 export class D1ProductAdminRepository implements ProductAdminRepository {
   constructor(private readonly db: () => Db) {}
 
-  async list(query: ProductListQuery): Promise<ProductListResult> {
-    const db = this.db();
+  private filterWhere(
+    db: Db,
+    query: Pick<ProductListQuery, "search" | "categoryId">,
+  ): SQL | undefined {
     const search = query.search?.trim();
-    const where = and(
-      query.status ? eq(product.status, query.status) : undefined,
+    return and(
       query.categoryId ? eq(product.categoryId, query.categoryId) : undefined,
       search
         ? or(
@@ -143,6 +162,26 @@ export class D1ProductAdminRepository implements ProductAdminRepository {
           )
         : undefined,
     );
+  }
+
+  async countByStatus(
+    query: Pick<ProductListQuery, "search" | "categoryId">,
+  ): Promise<ProductStatusCounts> {
+    const db = this.db();
+    const rows = await db
+      .select({ status: product.status, n: count() })
+      .from(product)
+      .where(this.filterWhere(db, query))
+      .groupBy(product.status);
+    return Object.fromEntries(rows.map((row) => [row.status, row.n]));
+  }
+
+  async list(query: ProductListQuery): Promise<ProductListResult> {
+    const db = this.db();
+    const where = and(
+      query.status ? eq(product.status, query.status) : undefined,
+      this.filterWhere(db, query),
+    );
 
     const [[totalRow], rows] = await Promise.all([
       db.select({ n: count() }).from(product).where(where),
@@ -153,7 +192,16 @@ export class D1ProductAdminRepository implements ProductAdminRepository {
         limit: query.pageSize,
         with: {
           category: { columns: { name: true } },
-          variants: { columns: { price: true, stockQuantity: true } },
+          variants: {
+            orderBy: (variant, { asc }) => asc(variant.price),
+            columns: {
+              sku: true,
+              price: true,
+              stockQuantity: true,
+              reservedQuantity: true,
+              isActive: true,
+            },
+          },
           images: {
             orderBy: (image, { asc }) => asc(image.position),
             limit: 1,
@@ -168,25 +216,33 @@ export class D1ProductAdminRepository implements ProductAdminRepository {
       total,
       page: query.page,
       totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
-      items: rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        slug: row.slug,
-        status: row.status,
-        categoryName: row.category.name,
-        variantCount: row.variants.length,
-        totalStock: row.variants.reduce((sum, v) => sum + v.stockQuantity, 0),
-        minPrice: row.variants.length
-          ? row.variants
-              .reduce(
-                (min, v) => (v.price.lt(min) ? v.price : min),
-                row.variants[0]!.price,
-              )
-              .toFixed(2)
-          : null,
-        imageUrl: row.images[0]?.url ?? null,
-        updatedAt: row.updatedAt,
-      })),
+      items: rows.map((row) => {
+        // Pasif varyantlar satılamaz; stok ve fiyat yalnızca aktiflerden hesaplanır.
+        const active = row.variants.filter((v) => v.isActive);
+        const available = active.map((v) =>
+          Math.max(0, v.stockQuantity - v.reservedQuantity),
+        );
+        const prices = active.map((v) => v.price);
+        const min = prices.length
+          ? prices.reduce((a, b) => (b.lt(a) ? b : a))
+          : null;
+        return {
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          status: row.status,
+          categoryName: row.category.name,
+          variantCount: row.variants.length,
+          totalStock: available.reduce((sum, n) => sum + n, 0),
+          trackInventory: row.trackInventory,
+          outOfStockVariants: available.filter((n) => n === 0).length,
+          sku: active[0]?.sku ?? row.variants[0]?.sku ?? null,
+          minPrice: min ? min.toFixed(2) : null,
+          hasPriceRange: prices.some((p) => !min || !p.eq(min)),
+          imageUrl: row.images[0]?.url ?? null,
+          updatedAt: row.updatedAt,
+        };
+      }),
     };
   }
 

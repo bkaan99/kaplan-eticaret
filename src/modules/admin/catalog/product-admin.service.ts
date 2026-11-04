@@ -8,6 +8,7 @@ import type {
   ProductAdminRepository,
   ProductListQuery,
   ProductListResult,
+  ProductStatusCounts,
 } from "./product-admin.repository";
 import { productInputSchema, type ProductInput } from "./product.schema";
 
@@ -45,6 +46,12 @@ export class ProductAdminService {
 
   list(query: ProductListQuery): Promise<ProductListResult> {
     return this.products.list(query);
+  }
+
+  statusCounts(
+    query: Pick<ProductListQuery, "search" | "categoryId">,
+  ): Promise<ProductStatusCounts> {
+    return this.products.countByStatus(query);
   }
 
   references(): Promise<FormReferences> {
