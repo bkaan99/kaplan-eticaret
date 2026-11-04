@@ -36,6 +36,19 @@ export function RevenueChart({
   const best = values.indexOf(Math.max(...values));
   const empty = values.every((value) => value === 0);
 
+  if (empty) {
+    return (
+      <div className="flex h-56 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 text-center">
+        <p className="text-[13px] font-medium text-slate-600">
+          Bu dönemde satış kaydı bulunmuyor
+        </p>
+        <p className="text-[12px] text-slate-400">
+          Ödemesi alınan siparişler burada günlere göre görünür.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <figure className="flex flex-col gap-3">
       <div className="flex h-56 gap-2">
@@ -62,63 +75,57 @@ export function RevenueChart({
             <div className="border-t border-slate-200" />
           </div>
 
-          {empty ? (
-            <p className="relative m-auto pb-6 text-sm text-slate-400">
-              Bu dönemde satış kaydı bulunmuyor.
-            </p>
-          ) : (
-            <ul
-              aria-hidden="true"
-              className="relative flex flex-1 items-end gap-[2px]"
-            >
-              {buckets.map((bucket, index) => {
-                const value = values[index]!;
-                const height = (value / max) * 100;
-                const showLabel =
-                  index % labelEvery === 0 || index === buckets.length - 1;
-                return (
-                  <li
-                    key={bucket.key}
-                    className="group relative flex h-full min-w-0 flex-1 flex-col items-center"
-                  >
-                    <div className="flex w-full flex-1 items-end justify-center">
+          <ul
+            aria-hidden="true"
+            className="relative flex flex-1 items-end gap-[2px]"
+          >
+            {buckets.map((bucket, index) => {
+              const value = values[index]!;
+              const height = (value / max) * 100;
+              const showLabel =
+                index % labelEvery === 0 || index === buckets.length - 1;
+              return (
+                <li
+                  key={bucket.key}
+                  className="group relative flex h-full min-w-0 flex-1 flex-col items-center"
+                >
+                  <div className="flex w-full flex-1 items-end justify-center">
+                    <div
+                      tabIndex={0}
+                      className="relative flex h-full w-full max-w-6 cursor-default items-end justify-center outline-none"
+                    >
                       <div
-                        tabIndex={0}
-                        className="relative flex h-full w-full max-w-6 cursor-default items-end justify-center outline-none"
-                      >
-                        <div
-                          className="w-full rounded-t-[4px] bg-primary transition-opacity group-hover:opacity-85"
-                          style={{
-                            height: `${Math.max(value > 0 ? 1.5 : 0, height)}%`,
-                          }}
-                        />
-                        {/* İpucu: hover ve klavye odağında */}
-                        <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] whitespace-nowrap text-white shadow-lg group-hover:block group-focus-within:block">
-                          <p className="font-semibold">{bucket.label}</p>
-                          <p className="tabular-nums">
-                            {formatMoney(bucket.revenue)} · {bucket.orderCount}{" "}
-                            sipariş
-                          </p>
-                        </div>
+                        className="w-full rounded-t-[4px] bg-primary transition-opacity group-hover:opacity-85"
+                        style={{
+                          height: `${Math.max(value > 0 ? 1.5 : 0, height)}%`,
+                        }}
+                      />
+                      {/* İpucu: hover ve klavye odağında */}
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] whitespace-nowrap text-white shadow-lg group-hover:block group-focus-within:block">
+                        <p className="font-semibold">{bucket.label}</p>
+                        <p className="tabular-nums">
+                          {formatMoney(bucket.revenue)} · {bucket.orderCount}{" "}
+                          sipariş
+                        </p>
                       </div>
                     </div>
-                    {/* Etiket sütundan taşabilir (seyrek basılır, komşusuyla çakışmaz) */}
-                    <span className="relative mt-1.5 h-4.5 w-full">
-                      {showLabel ? (
-                        <span className="absolute left-1/2 -translate-x-1/2 text-[10px] whitespace-nowrap text-slate-400">
-                          {bucket.label}
-                        </span>
-                      ) : null}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                  </div>
+                  {/* Etiket sütundan taşabilir (seyrek basılır, komşusuyla çakışmaz) */}
+                  <span className="relative mt-1.5 h-4.5 w-full">
+                    {showLabel ? (
+                      <span className="absolute left-1/2 -translate-x-1/2 text-[10px] whitespace-nowrap text-slate-400">
+                        {bucket.label}
+                      </span>
+                    ) : null}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </div>
 
-      {!empty && best >= 0 ? (
+      {best >= 0 ? (
         <figcaption className="text-xs text-slate-500">
           En yüksek {granularity === "day" ? "gün" : "ay"}:{" "}
           <strong className="font-semibold text-slate-800">
