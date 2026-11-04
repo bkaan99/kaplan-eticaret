@@ -18,6 +18,35 @@ export interface LowStockItem {
   available: number;
 }
 
+/** Ciro grafiği için ham sipariş satırı. */
+export interface RevenueRow {
+  createdAt: Date;
+  grandTotal: Decimal.Value;
+}
+
+/** Grafikteki tek sütun (gün veya ay). */
+export interface RevenueBucket {
+  /** YYYY-MM-DD (günlük) veya YYYY-MM (aylık), Türkiye saatine göre */
+  key: string;
+  label: string;
+  revenue: string;
+  orderCount: number;
+}
+
+/** Turşu siparişinden malzeme satırı (sipariş satırındaki kopya). */
+export interface IngredientUsageRow {
+  quantity: number;
+  customization: unknown;
+}
+
+export interface PopularIngredient {
+  name: string;
+  /** Bu malzemenin girdiği bidon sayısı */
+  jarCount: number;
+  /** Bidonların yüzde kaçında var (0–100) */
+  sharePercent: number;
+}
+
 export interface CustomerMetrics {
   /** Dönemde kayıt olan müşteri sayısı */
   newCustomers: number;
@@ -37,7 +66,12 @@ export interface DashboardData {
   revenue: { current: string; previous: string; changePercent: number | null };
   orders: { current: number; previous: number; changePercent: number | null };
   averageOrderValue: string;
+  revenueSeries: {
+    granularity: "day" | "month";
+    buckets: RevenueBucket[];
+  };
   topProducts: TopProduct[];
+  popularIngredients: { totalJars: number; items: PopularIngredient[] };
   attention: {
     ordersToProcess: number;
     openReturnRequests: number;
@@ -54,6 +88,140 @@ export interface ReportingRepository {
   countPendingDealers(): Promise<number>;
   lowStock(threshold: number, limit: number): Promise<LowStockItem[]>;
   customerMetrics(from: Date, to: Date): Promise<CustomerMetrics>;
+  revenueRows(from: Date, to: Date): Promise<RevenueRow[]>;
+  ingredientUsage(from: Date, to: Date): Promise<IngredientUsageRow[]>;
+}
+
+/** Türkiye saati (2016'dan beri sabit UTC+3, yaz saati yok). */
+const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
+const MONTHS_SHORT_TR = [
+  "Oca",
+  "Şub",
+  "Mar",
+  "Nis",
+  "May",
+  "Haz",
+  "Tem",
+  "Ağu",
+  "Eyl",
+  "Eki",
+  "Kas",
+  "Ara",
+] as const;
+
+function trDateParts(date: Date): { y: number; m: number; d: number } {
+  const local = new Date(date.getTime() + TR_OFFSET_MS);
+  return {
+    y: local.getUTCFullYear(),
+    m: local.getUTCMonth(),
+    d: local.getUTCDate(),
+  };
+}
+
+const pad = (value: number) => String(value).padStart(2, "0");
+
+/**
+ * Siparişleri Türkiye saatine göre gün (veya ay) sütunlarına toplar. Satışsız
+ * günler de 0 olarak yer alır; böylece grafikte boşluk yanlış okunmaz.
+ */
+export function bucketRevenue(
+  rows: readonly RevenueRow[],
+  start: Date,
+  end: Date,
+  granularity: "day" | "month",
+): RevenueBucket[] {
+  const buckets = new Map<string, RevenueBucket & { sum: Decimal }>();
+  const keyOf = (date: Date) => {
+    const { y, m, d } = trDateParts(date);
+    return granularity === "day"
+      ? `${y}-${pad(m + 1)}-${pad(d)}`
+      : `${y}-${pad(m + 1)}`;
+  };
+
+  // Başlangıçtan bitişe tüm sütunları sırayla aç.
+  const { y, m, d } = trDateParts(start);
+  const cursor = new Date(Date.UTC(y, m, granularity === "day" ? d : 1));
+  const last = keyOf(end);
+  for (let guard = 0; guard < 400; guard++) {
+    const key =
+      granularity === "day"
+        ? `${cursor.getUTCFullYear()}-${pad(cursor.getUTCMonth() + 1)}-${pad(cursor.getUTCDate())}`
+        : `${cursor.getUTCFullYear()}-${pad(cursor.getUTCMonth() + 1)}`;
+    const month = MONTHS_SHORT_TR[cursor.getUTCMonth()]!;
+    buckets.set(key, {
+      key,
+      label:
+        granularity === "day"
+          ? `${cursor.getUTCDate()} ${month}`
+          : `${month} ${cursor.getUTCFullYear()}`,
+      revenue: "0.00",
+      orderCount: 0,
+      sum: toDecimal(0),
+    });
+    if (key === last) break;
+    if (granularity === "day") cursor.setUTCDate(cursor.getUTCDate() + 1);
+    else cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  for (const row of rows) {
+    const bucket = buckets.get(keyOf(row.createdAt));
+    if (!bucket) continue;
+    bucket.sum = bucket.sum.plus(row.grandTotal);
+    bucket.orderCount += 1;
+  }
+
+  return [...buckets.values()].map(({ sum, ...bucket }) => ({
+    ...bucket,
+    revenue: sum.toFixed(2),
+  }));
+}
+
+/**
+ * "Kendi Turşunu Yap" sipariş satırlarından malzeme popülerliğini çıkarır.
+ * Her malzeme, girdiği bidon sayısı (satır adedi) kadar sayılır.
+ */
+export function rankIngredients(
+  rows: readonly IngredientUsageRow[],
+  limit: number,
+): { totalJars: number; items: PopularIngredient[] } {
+  const counts = new Map<string, number>();
+  let totalJars = 0;
+
+  for (const row of rows) {
+    const snapshot = row.customization as {
+      kind?: unknown;
+      ingredients?: { name?: unknown }[];
+    } | null;
+    if (
+      snapshot?.kind !== "custom-pickle" ||
+      !Array.isArray(snapshot.ingredients)
+    ) {
+      continue;
+    }
+    totalJars += row.quantity;
+    const names = new Set(
+      snapshot.ingredients
+        .map((ingredient) => ingredient?.name)
+        .filter(
+          (name): name is string => typeof name === "string" && name !== "",
+        ),
+    );
+    for (const name of names) {
+      counts.set(name, (counts.get(name) ?? 0) + row.quantity);
+    }
+  }
+
+  const items = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "tr"))
+    .slice(0, limit)
+    .map(([name, jarCount]) => ({
+      name,
+      jarCount,
+      sharePercent:
+        totalJars === 0 ? 0 : Math.round((jarCount / totalJars) * 100),
+    }));
+
+  return { totalJars, items };
 }
 
 /** Önceki döneme göre yüzde değişim; önceki dönem 0 ise karşılaştırılamaz (null). */
@@ -95,6 +263,8 @@ export class ReportingService {
       lowStock,
       customers,
       previousCustomers,
+      revenueRows,
+      ingredientRows,
     ] = await Promise.all([
       this.repository.periodTotals(start, end),
       this.repository.periodTotals(previousStart, start),
@@ -105,7 +275,10 @@ export class ReportingService {
       this.repository.lowStock(this.lowStockThreshold, 10),
       this.repository.customerMetrics(start, end),
       this.repository.customerMetrics(previousStart, start),
+      this.repository.revenueRows(start, end),
+      this.repository.ingredientUsage(start, end),
     ]);
+    const granularity = periodDays > 90 ? "month" : "day";
 
     const average =
       current.orderCount === 0
@@ -138,7 +311,12 @@ export class ReportingService {
         changePercent: percentChange(current.orderCount, previous.orderCount),
       },
       averageOrderValue: average.toFixed(2),
+      revenueSeries: {
+        granularity,
+        buckets: bucketRevenue(revenueRows, start, end, granularity),
+      },
       topProducts,
+      popularIngredients: rankIngredients(ingredientRows, 8),
       attention: {
         ordersToProcess,
         openReturnRequests,

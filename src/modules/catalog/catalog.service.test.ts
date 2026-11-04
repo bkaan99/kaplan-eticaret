@@ -43,6 +43,7 @@ function card(id: string, variants: VariantRecord[]): ProductCardRecord {
     imageUrl: null,
     imageAlt: null,
     variants,
+    attributes: [],
   };
 }
 

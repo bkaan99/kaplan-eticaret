@@ -81,6 +81,9 @@ const existingProduct = (): EditableProduct => ({
   weightGram: null,
   seoTitle: null,
   seoDescription: null,
+  ingredients: null,
+  allergens: null,
+  shelfLife: null,
   attributeValueIds: [],
   options: [{ name: "Beden", values: ["S", "M"] }],
   variants: [

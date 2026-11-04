@@ -1,3 +1,4 @@
+import { productBadges } from "./product-badges";
 import type Decimal from "decimal.js";
 import { NotFoundError } from "@/shared/errors";
 import { toDecimal } from "@/shared/money";
@@ -314,6 +315,7 @@ export class CatalogService {
         priceVisible && inStock && record.variants.length === 1
           ? record.variants[0]!.id
           : null,
+      badges: productBadges(record.attributes),
     };
   }
 
@@ -380,6 +382,11 @@ export class CatalogService {
         values,
       })),
       taxRate: record.taxRate.toFixed(2),
+      ingredients: record.ingredients,
+      allergens: record.allergens,
+      shelfLife: record.shelfLife,
+      barcode: record.barcode,
+      weightGram: record.weightGram,
     };
   }
 }

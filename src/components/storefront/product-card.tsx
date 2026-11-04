@@ -57,6 +57,23 @@ export function ProductCard({
           {product.name}
         </h3>
 
+        {product.badges.length > 0 ? (
+          <ul className="mt-1.5 flex flex-wrap gap-1">
+            {product.badges.map((badge) => (
+              <li
+                key={badge}
+                className={
+                  badge === "Acılı"
+                    ? "rounded-full bg-brand-pepper/10 px-2 py-0.5 text-[11px] font-bold text-brand-pepper"
+                    : "rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800"
+                }
+              >
+                {badge}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
         {product.rating && product.rating.count > 0 ? (
           <div className="mt-1 flex items-center gap-1 text-xs text-slate-600">
             <span className="text-amber-400">★</span>

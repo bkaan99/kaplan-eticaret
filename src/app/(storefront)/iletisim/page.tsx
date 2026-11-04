@@ -61,6 +61,8 @@ export default async function ContactPage() {
   const emailDisplay = contact.email || siteConfig.contact.email;
   const addressDisplay = contact.address || storefrontContact.address;
   const workingHours = contact.workingHours || storefrontContact.workingHours;
+  const { latitude, longitude } = storefrontContact.geo;
+  const mapEmbedUrl = `https://www.google.com/maps?q=${latitude},${longitude}&z=16&hl=tr&output=embed`;
 
   return (
     <>
@@ -273,16 +275,21 @@ export default async function ContactPage() {
 
               <div className="border-t border-slate-200/60 pt-3 text-xs leading-relaxed text-slate-600">
                 <p>
-                  Üretim tesisimiz ve perakende satış mağazamız haftanın her günü
-                  açıktır. Meşe fıçılarda fermente edilen taze turşularımızı yerinde
-                  tadabilir ve doğrudan üreticiden teslim alabilirsiniz.
+                  Üretim tesisimiz ve perakende satış mağazamız haftanın her
+                  günü açıktır. Meşe fıçılarda fermente edilen taze
+                  turşularımızı yerinde tadabilir ve doğrudan üreticiden teslim
+                  alabilirsiniz.
                 </p>
               </div>
 
               <div className="flex flex-col gap-2 rounded-2xl bg-white p-3.5 border border-slate-200/60 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-700">Pazartesi – Pazar:</span>
-                  <span className="font-bold text-slate-900">09:00 – 19:00</span>
+                  <span className="font-semibold text-slate-700">
+                    Pazartesi – Pazar:
+                  </span>
+                  <span className="font-bold text-slate-900">
+                    09:00 – 19:00
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-slate-500">
                   <span>Müşteri Desteği:</span>
@@ -300,10 +307,10 @@ export default async function ContactPage() {
                 </h3>
               </div>
               <p className="text-xs leading-relaxed text-slate-600">
-                Restoranlar, oteller, lokantalar ve şarküteriler için 5 kg, 10 kg
-                ve 18 kg bidon ambalajlarda düzenli toptan sevkiyat yapıyoruz.
-                Özel toptan fiyat listesi için form üzerinden veya WhatsApp ile
-                talep oluşturabilirsiniz.
+                Restoranlar, oteller, lokantalar ve şarküteriler için 5 kg, 10
+                kg ve 18 kg bidon ambalajlarda düzenli toptan sevkiyat
+                yapıyoruz. Özel toptan fiyat listesi için form üzerinden veya
+                WhatsApp ile talep oluşturabilirsiniz.
               </p>
               <div className="mt-1">
                 <a
@@ -320,7 +327,11 @@ export default async function ContactPage() {
             <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5">
-                  <MapPinIcon width={18} height={18} className="text-rose-500" />
+                  <MapPinIcon
+                    width={18}
+                    height={18}
+                    className="text-rose-500"
+                  />
                   <span className="text-sm font-bold text-slate-900">
                     Konum & Yol Tarifi
                   </span>
@@ -338,7 +349,17 @@ export default async function ContactPage() {
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
                 {addressDisplay}
               </p>
-              <div className="mt-4 flex items-center justify-center rounded-2xl bg-slate-50 p-6 border border-slate-200/60 text-center">
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/60 bg-slate-50">
+                <iframe
+                  title={`${siteConfig.name} konumu — Google Haritalar`}
+                  src={mapEmbedUrl}
+                  className="block aspect-[4/3] w-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+              </div>
+              <div className="mt-4 flex justify-center">
                 <a
                   href={storefrontContact.mapsUrl}
                   target="_blank"

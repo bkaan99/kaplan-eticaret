@@ -54,3 +54,29 @@ export class ConfiguredShippingRateCalculator implements ShippingRateCalculator 
     );
   }
 }
+
+export interface FreeShippingProgress {
+  /** Ücretsiz kargoya ulaşıldı mı */
+  reached: boolean;
+  /** Ücretsiz kargo için eksik tutar (2 basamak); ulaşıldıysa "0.00" */
+  remaining: string;
+  /** 0–100 arası tamamlanma yüzdesi (tam sayı) */
+  percent: number;
+}
+
+/** Sepet ara toplamının ücretsiz kargo limitine ne kadar yaklaştığını hesaplar. */
+export function freeShippingProgress(
+  subtotal: Decimal.Value,
+  threshold: number,
+): FreeShippingProgress {
+  const amount = toDecimal(subtotal);
+  if (threshold <= 0 || amount.gte(threshold)) {
+    return { reached: true, remaining: "0.00", percent: 100 };
+  }
+  const remaining = roundMoney(toDecimal(threshold).minus(amount));
+  const percent = Math.max(
+    0,
+    Math.min(99, Math.floor(amount.dividedBy(threshold).times(100).toNumber())),
+  );
+  return { reached: false, remaining: remaining.toFixed(2), percent };
+}

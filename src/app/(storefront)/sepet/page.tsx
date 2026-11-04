@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { FreeShippingBar } from "@/components/storefront/free-shipping-bar";
 import { Price } from "@/components/storefront/price";
 import { getCurrentCart } from "@/modules/cart/cart.session";
 import { CartLines } from "./cart-lines";
@@ -20,7 +21,10 @@ async function CartContent() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-      <CartLines cart={cart} />
+      <div className="flex flex-col gap-4">
+        <FreeShippingBar subtotal={cart.subtotal} />
+        <CartLines cart={cart} />
+      </div>
       <aside className="flex h-fit flex-col gap-4 rounded-theme border border-border p-5">
         <h2 className="font-semibold">Sipariş özeti</h2>
         <div className="flex items-center justify-between text-sm">
@@ -28,7 +32,8 @@ async function CartContent() {
           <Price value={cart.subtotal} currency={cart.currency} />
         </div>
         <p className="text-xs text-muted-foreground">
-          KDV dahildir. Kargo ücreti ödeme adımında hesaplanır.
+          KDV dahildir. Kargo ücreti ödeme adımında hesaplanır; kupon indirimi
+          ücretsiz kargo limitini etkileyebilir.
         </p>
         {cart.hasIssues ? (
           <span className="rounded-theme bg-primary px-4 py-3 text-center text-primary-foreground opacity-50">

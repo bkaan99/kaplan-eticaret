@@ -266,6 +266,12 @@ export const product = sqliteTable(
       .default(true),
     desi: decimal("desi"),
     weightGram: integer("weightGram"),
+    /** İçindekiler listesi (serbest metin) */
+    ingredients: text("ingredients"),
+    /** Alerjen uyarısı (ör. "Hardal içerir") */
+    allergens: text("allergens"),
+    /** Raf ömrü / tüketim süresi (ör. "Açılmadan 12 ay") */
+    shelfLife: text("shelfLife"),
     isFeatured: integer("isFeatured", { mode: "boolean" })
       .notNull()
       .default(false),

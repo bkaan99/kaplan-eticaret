@@ -2,7 +2,9 @@ import Decimal from "decimal.js";
 import { describe, expect, it } from "vitest";
 import {
   ReportingService,
+  bucketRevenue,
   parseReportPeriod,
+  rankIngredients,
   percentChange,
   type ReportingRepository,
 } from "./reporting.service";
@@ -48,6 +50,10 @@ describe("ReportingService.dashboard", () => {
         buyers: 8,
         returningBuyers: 3,
       }),
+      revenueRows: async () => [
+        { createdAt: new Date("2026-06-29T10:00:00Z"), grandTotal: "250.00" },
+      ],
+      ingredientUsage: async () => [],
     };
   };
 
@@ -87,5 +93,84 @@ describe("parseReportPeriod", () => {
     expect(parseReportPeriod("15")).toBe(30);
     expect(parseReportPeriod(undefined)).toBe(30);
     expect(parseReportPeriod("abc")).toBe(30);
+  });
+});
+
+describe("bucketRevenue", () => {
+  const start = new Date("2026-06-01T00:00:00Z");
+  const end = new Date("2026-06-04T12:00:00Z");
+
+  it("satışsız günleri 0 ile doldurur ve Türkiye saatine göre gruplar", () => {
+    const buckets = bucketRevenue(
+      [
+        { createdAt: new Date("2026-06-02T08:00:00Z"), grandTotal: "100.10" },
+        { createdAt: new Date("2026-06-02T09:00:00Z"), grandTotal: "0.20" },
+        // 22:30 UTC = ertesi gün 01:30 TR → 4 Haziran
+        { createdAt: new Date("2026-06-03T22:30:00Z"), grandTotal: "50" },
+      ],
+      start,
+      end,
+      "day",
+    );
+
+    expect(buckets.map((b) => [b.key, b.revenue, b.orderCount])).toEqual([
+      ["2026-06-01", "0.00", 0],
+      ["2026-06-02", "100.30", 2],
+      ["2026-06-03", "0.00", 0],
+      ["2026-06-04", "50.00", 1],
+    ]);
+    expect(buckets[0]!.label).toBe("1 Haz");
+  });
+
+  it("aylık gruplamada ay sütunları üretir", () => {
+    const buckets = bucketRevenue(
+      [{ createdAt: new Date("2026-02-10T10:00:00Z"), grandTotal: "10" }],
+      new Date("2026-01-15T00:00:00Z"),
+      new Date("2026-03-02T00:00:00Z"),
+      "month",
+    );
+    expect(buckets.map((b) => [b.key, b.label, b.revenue])).toEqual([
+      ["2026-01", "Oca 2026", "0.00"],
+      ["2026-02", "Şub 2026", "10.00"],
+      ["2026-03", "Mar 2026", "0.00"],
+    ]);
+  });
+});
+
+describe("rankIngredients", () => {
+  const jar = (quantity: number, names: string[]) => ({
+    quantity,
+    customization: {
+      kind: "custom-pickle",
+      ingredients: names.map((name, i) => ({
+        id: String(i),
+        name,
+        unitExtra: "0",
+      })),
+    },
+  });
+
+  it("malzemeleri bidon adedine göre sıralar ve payını hesaplar", () => {
+    const result = rankIngredients(
+      [
+        jar(2, ["Salatalık", "Biber"]),
+        jar(1, ["Salatalık", "Lahana"]),
+        { quantity: 5, customization: { kind: "gift-box" } },
+      ],
+      10,
+    );
+    expect(result.totalJars).toBe(3);
+    expect(result.items).toEqual([
+      { name: "Salatalık", jarCount: 3, sharePercent: 100 },
+      { name: "Biber", jarCount: 2, sharePercent: 67 },
+      { name: "Lahana", jarCount: 1, sharePercent: 33 },
+    ]);
+  });
+
+  it("aynı bidonda tekrarlanan malzemeyi bir kez sayar ve limiti uygular", () => {
+    const result = rankIngredients([jar(1, ["Biber", "Biber", "Havuç"])], 1);
+    expect(result.items).toEqual([
+      { name: "Biber", jarCount: 1, sharePercent: 100 },
+    ]);
   });
 });

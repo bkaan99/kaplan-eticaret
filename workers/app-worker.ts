@@ -9,12 +9,18 @@ import type {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — `.open-next/worker.js` build sırasında üretilir; build öncesi tip denetimi de geçsin
 import { default as handler } from "../.open-next/worker.js";
+import {
+  normalizeTrMobile,
+  sendNetgsmSms,
+} from "../src/integrations/notification/netgsm-sms";
 
 type JobBody = {
   name?: string;
   data?: unknown;
   retryLimit?: number;
 };
+
+type SmsPayload = { to?: string; text?: string };
 
 type EmailPayload = {
   to?: string;
@@ -117,6 +123,44 @@ const worker: ExportedHandler<CloudflareEnv> = {
           message.ack();
         } catch (error) {
           console.error("email.send başarısız; yeniden denenecek", error);
+          message.retry();
+        }
+        continue;
+      }
+
+      if (name === "sms.send") {
+        const payload = (body.data ?? {}) as SmsPayload;
+        const to = normalizeTrMobile(payload.to);
+        if (
+          !env.NETGSM_USERCODE ||
+          !env.NETGSM_PASSWORD ||
+          !env.NETGSM_MSGHEADER ||
+          !to ||
+          !payload.text
+        ) {
+          // Ayar veya numara eksikken kuyruğu zehirleme; log + ack.
+          console.warn(
+            "Netgsm ayarı ya da SMS gövdesi eksik; sms.send atlandı",
+            {
+              hasConfig: Boolean(env.NETGSM_USERCODE && env.NETGSM_PASSWORD),
+            },
+          );
+          message.ack();
+          continue;
+        }
+        try {
+          await sendNetgsmSms(
+            {
+              usercode: env.NETGSM_USERCODE,
+              password: env.NETGSM_PASSWORD,
+              msgheader: env.NETGSM_MSGHEADER,
+            },
+            { to, text: payload.text },
+          );
+          console.log("sms.send gönderildi");
+          message.ack();
+        } catch (error) {
+          console.error("sms.send başarısız; yeniden denenecek", error);
           message.retry();
         }
         continue;
