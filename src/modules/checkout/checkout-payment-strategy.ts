@@ -1,4 +1,5 @@
 import type { EventBus } from "@/shared/events/event-bus";
+import { CARD_UNAVAILABLE_MESSAGE } from "@/integrations/payment/payment-mode";
 import { ForbiddenError, ValidationError } from "@/shared/errors";
 import { toDecimal } from "@/shared/money";
 import { CreditLimitPolicy } from "../b2b/credit-limit.policy";
@@ -49,8 +50,11 @@ export interface CheckoutPaymentStrategy {
 export class CardPaymentStrategy implements CheckoutPaymentStrategy {
   readonly method: PaymentMethod = "CARD";
 
-  async validate(_params: CheckoutPaymentValidationParams): Promise<void> {
-    // Kredi kartı tüm müşterilere ve misafirlere açıktır
+  async validate(params: CheckoutPaymentValidationParams): Promise<void> {
+    // Kredi kartı tüm müşterilere ve misafirlere açıktır; ancak ödeme sağlayıcısı kullanılabilir olmalı.
+    if (params.settings.cardPaymentAvailable === false) {
+      throw new ValidationError(CARD_UNAVAILABLE_MESSAGE);
+    }
   }
 
   getReservationMinutes(settings: CheckoutSettings): number {
