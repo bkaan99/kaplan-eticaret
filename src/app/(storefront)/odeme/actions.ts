@@ -6,7 +6,7 @@ import { getCartIdentity } from "@/modules/cart/cart.session";
 import { checkoutSchema } from "@/modules/checkout/checkout.schema";
 import { getCheckoutService } from "@/modules/checkout/container";
 import { getDevPaymentProvider } from "@/integrations/payment/container";
-import { orderAccessPath } from "@/modules/orders/order-access";
+import { setOrderAccessCookie } from "@/modules/orders/order-access";
 import { getPaymentService } from "@/modules/orders/container";
 import { isAppError } from "@/shared/errors";
 import { reportError } from "@/shared/error-reporter";
@@ -106,13 +106,11 @@ export async function placeOrderAction(
   }
 
   // Kart ödemesi güvenli ödeme sayfasına, havale/vadeli sipariş detay sayfasına gider.
-  // Token query'de kalmaz; /erisim çereze alır.
+  // Erişim token'ı çereze burada yazılır: sunucu eylemi yönlendirmesi istemci tarafında
+  // yürüdüğü için /erisim route handler'ına yönlendirmek 404 gösteriyordu.
+  await setOrderAccessCookie(orderNumber, lookupToken);
   redirect(
-    method === "CARD"
-      ? orderAccessPath(orderNumber, lookupToken, {
-          next: `/odeme/ode/${orderNumber}`,
-        })
-      : orderAccessPath(orderNumber, lookupToken),
+    method === "CARD" ? `/odeme/ode/${orderNumber}` : `/siparis/${orderNumber}`,
   );
 }
 
@@ -135,5 +133,6 @@ export async function devPaymentAction(formData: FormData): Promise<void> {
   };
 
   await getPaymentService().handleCallback(payload);
-  redirect(orderAccessPath(orderNumber, lookupToken));
+  await setOrderAccessCookie(orderNumber, lookupToken);
+  redirect(`/siparis/${orderNumber}`);
 }
