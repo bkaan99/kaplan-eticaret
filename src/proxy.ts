@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isFeatureEnabled } from "@/config/features";
+import { siteConfig } from "@/config/site.config";
 import {
   CACHE_PRIVATE,
   CACHE_PUBLIC_HTML,
@@ -16,6 +18,13 @@ import { CART_COOKIE_NAME } from "@/modules/cart/cart-cookie";
 
 const SESSION_COOKIES = [SESSION_COOKIE_NAME, SECURE_SESSION_COOKIE_NAME];
 const PERSONALIZATION_COOKIES = [...SESSION_COOKIES, CART_COOKIE_NAME];
+
+/**
+ * Vitrin HTML'i herkese aynıysa (perakende, bayi fiyatı yok) edge'te paylaşılabilir.
+ * Bayi fiyatları/B2B açıkken HTML kişiye göre değişir ve edge önbelleği çerez bilmez: hiç paylaşılmaz.
+ */
+const SHARED_HTML_IS_SAFE =
+  !isFeatureEnabled("b2b") && siteConfig.salesMode === "retail";
 
 function hasSessionCookie(request: NextRequest): boolean {
   return SESSION_COOKIES.some((name) => request.cookies.has(name));
@@ -71,7 +80,7 @@ export function proxy(request: NextRequest) {
     if (pathname === "/ara" && request.nextUrl.searchParams.has("q")) {
       return withCacheHeaders({ "Cache-Control": CACHE_PRIVATE });
     }
-    if (personalized) {
+    if (personalized || !SHARED_HTML_IS_SAFE) {
       return withCacheHeaders({ "Cache-Control": CACHE_PRIVATE });
     }
     return withCacheHeaders({

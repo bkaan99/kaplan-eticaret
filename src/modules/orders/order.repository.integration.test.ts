@@ -463,3 +463,115 @@ describe("D1OrderRepository: vadeli sipariş", () => {
     expect(order?.status).toBe("CANCELLED");
   });
 });
+
+describe("D1OrderRepository: atomik stok rezervasyonu", () => {
+  const tag = randomUUID().slice(0, 8);
+  let t: TestDb;
+  let db: Db;
+  let repo: D1OrderRepository;
+  let a: { id: string; sku: string };
+  let b: { id: string; sku: string };
+
+  beforeAll(async () => {
+    t = await createTestDb();
+    db = t.db;
+    repo = new D1OrderRepository(() => db);
+
+    const category = await makeCategory(db, {
+      name: "Atomik",
+      slug: `atomik-${tag}`,
+    });
+    const product = await makeProduct(
+      db,
+      {
+        name: `Atomik ${tag}`,
+        slug: `atomik-${tag}`,
+        status: "ACTIVE",
+        categoryId: category.id,
+      },
+      [
+        { sku: `ATM-A-${tag}`, price: "10.00", stockQuantity: 5 },
+        { sku: `ATM-B-${tag}`, price: "10.00", stockQuantity: 1 },
+      ],
+    );
+    const [first, second] = [...product.variants].sort((x, y) =>
+      x.sku.localeCompare(y.sku),
+    );
+    a = { id: first!.id, sku: first!.sku };
+    b = { id: second!.id, sku: second!.sku };
+  });
+
+  afterAll(async () => {
+    await t.close();
+  });
+
+  const line = (variant: { id: string; sku: string }, quantity: number) => ({
+    variantId: variant.id,
+    productName: `Ürün ${variant.sku}`,
+    variantName: null,
+    sku: variant.sku,
+    unitPrice: "10.00",
+    taxRate: "20.00",
+    quantity,
+    lineTotal: (10 * quantity).toFixed(2),
+    trackInventory: true,
+  });
+
+  const order = (items: ReturnType<typeof line>[]): NewOrder => ({
+    userId: null,
+    email: `atomik-${tag}@example.com`,
+    cartId: null,
+    currency: "TRY",
+    subtotal: "30.00",
+    discountTotal: "0.00",
+    shippingTotal: "0.00",
+    taxTotal: "0.00",
+    grandTotal: "30.00",
+    couponCode: null,
+    shippingAddress: address,
+    billingAddress: address,
+    customerNote: null,
+    reservationMinutes: 15,
+    paymentProvider: "paytr",
+    paymentMethod: "CARD",
+    items,
+  });
+
+  it("çok kalemli siparişte bir kalem yetmezse hiçbir kalem rezerve edilmez", async () => {
+    // A yeterli (2/5) ama B yetersiz (3/1): A'nın rezervasyonu da geri alınmalı.
+    await expect(
+      repo.createPendingOrder(order([line(a, 2), line(b, 3)])),
+    ).rejects.toThrow(`Ürün ${b.sku}`);
+
+    expect((await variantById(db, a.id)).reservedQuantity).toBe(0);
+    expect((await variantById(db, b.id)).reservedQuantity).toBe(0);
+  });
+
+  it("pasif varyantı rezerve etmez", async () => {
+    await db
+      .update(productVariant)
+      .set({ isActive: false })
+      .where(eq(productVariant.id, a.id));
+
+    await expect(repo.createPendingOrder(order([line(a, 1)]))).rejects.toThrow(
+      "yeterli stok yok",
+    );
+    expect((await variantById(db, a.id)).reservedQuantity).toBe(0);
+
+    await db
+      .update(productVariant)
+      .set({ isActive: true })
+      .where(eq(productVariant.id, a.id));
+  });
+
+  it("yönetici stoğu rezervasyonun altına indirebilir (trigger yalnızca rezervasyon artışını denetler)", async () => {
+    await repo.createPendingOrder(order([line(a, 3)]));
+    expect((await variantById(db, a.id)).reservedQuantity).toBe(3);
+
+    await db
+      .update(productVariant)
+      .set({ stockQuantity: 1 })
+      .where(eq(productVariant.id, a.id));
+    expect((await variantById(db, a.id)).stockQuantity).toBe(1);
+  });
+});

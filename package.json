@@ -15,7 +15,7 @@
     "format:check": "prettier --check .",
     "db:seed": "tsx scripts/seed.ts",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "node scripts/guard-deploy.mjs && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
