@@ -1,5 +1,6 @@
 import { formatMoney } from "@/shared/money";
 import { trackingUrl } from "@/shared/shipping/carriers";
+import { orderAccessUrl } from "@/modules/orders/order-access-path";
 import type { OrderView } from "@/modules/orders/order.types";
 import { escapeHtml, wrapInLayout, type RenderedEmail } from "./layout";
 
@@ -9,7 +10,7 @@ export interface EmailContext {
 }
 
 function orderLink(order: OrderView, context: EmailContext): string {
-  return `${context.baseUrl}/siparis/${order.orderNumber}?t=${order.lookupToken}`;
+  return orderAccessUrl(context.baseUrl, order.orderNumber, order.lookupToken);
 }
 
 function itemsTableHtml(order: OrderView): string {

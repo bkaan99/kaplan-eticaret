@@ -97,7 +97,7 @@ describe("NotificationService", () => {
     )[1].html;
     expect(html).not.toContain("<script>");
     expect(html).toContain("Tişört &lt;script&gt;");
-    expect(html).toContain("https://site.test/siparis/SABC123?t=tok");
+    expect(html).toContain("https://site.test/siparis/SABC123/erisim?t=tok");
   });
 
   it("iade edilen iptalde iade bilgisini yazar", async () => {

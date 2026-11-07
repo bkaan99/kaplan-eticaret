@@ -156,7 +156,7 @@ describe("PaymentService", () => {
       merchantOid: "SABC123",
       amount: "200.00",
       customerIp: "1.2.3.4",
-      okUrl: "https://site.test/siparis/SABC123?t=token-123",
+      okUrl: "https://site.test/siparis/SABC123/erisim?t=token-123",
     });
   });
 

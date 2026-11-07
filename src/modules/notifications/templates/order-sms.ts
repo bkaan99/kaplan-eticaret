@@ -1,4 +1,5 @@
 import { trackingUrl } from "@/shared/shipping/carriers";
+import { orderAccessUrl } from "@/modules/orders/order-access-path";
 import type { OrderView } from "@/modules/orders/order.types";
 
 /**
@@ -19,7 +20,7 @@ export function renderOrderShippedSms(
     : "";
   const link =
     trackingUrl(order.carrier, order.trackingNumber) ??
-    `${context.baseUrl}/siparis/${order.orderNumber}?t=${order.lookupToken}`;
+    orderAccessUrl(context.baseUrl, order.orderNumber, order.lookupToken);
 
   return `${context.siteName}: ${order.orderNumber} numaralı siparişiniz ${carrier}kargoya verildi.${tracking} ${link}`;
 }

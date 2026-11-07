@@ -29,6 +29,11 @@ export interface CheckoutSettings {
   reservationMinutes: number;
   shippingTaxRate: number;
   paymentProvider: string;
+  /**
+   * Kart ödemesi alınabiliyor mu? Panelde canlı/PayTR test seçili ama PayTR anahtarı yoksa false
+   * (kart kapanır, sahte ödemeye düşülmez). Verilmezse true sayılır.
+   */
+  cardPaymentAvailable?: boolean;
   /** true ise yalnızca onaylı bayiler sipariş verebilir (salesMode: b2b) */
   requireDealer?: boolean;
   /** Havale/EFT seçeneği için hesap tanımlı mı? */

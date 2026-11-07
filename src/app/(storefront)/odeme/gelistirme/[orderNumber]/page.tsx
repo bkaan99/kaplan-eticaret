@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { getDevPaymentProvider } from "@/integrations/payment/container";
+import {
+  orderAccessPath,
+  readOrderAccessToken,
+} from "@/modules/orders/order-access";
 import { getOrderService } from "@/modules/orders/container";
 import { getCurrentUser } from "@/modules/auth/session";
 import { Price } from "@/components/storefront/price";
 import { devPaymentAction } from "../../actions";
 
 export const metadata: Metadata = {
-  title: "Geliştirme ödeme sayfası",
+  title: "Test ödeme sayfası",
   robots: { index: false },
 };
 
-/** Yalnızca PayTR anahtarı olmayan geliştirme ortamında görünür. */
+/** Yalnızca panelde ödeme modu "Test modu" iken görünür; canlıda 404. */
 async function DevPaymentContent({
   params,
   searchParams,
@@ -22,11 +26,19 @@ async function DevPaymentContent({
   "params" | "searchParams"
 >) {
   await connection();
-  if (!getDevPaymentProvider()) notFound();
+  if (!(await getDevPaymentProvider())) notFound();
 
   const { orderNumber } = await params;
   const query = await searchParams;
-  const token = typeof query["t"] === "string" ? query["t"] : "";
+  if (typeof query["t"] === "string" && query["t"]) {
+    redirect(
+      orderAccessPath(orderNumber, query["t"], {
+        next: `/odeme/gelistirme/${orderNumber}`,
+      }),
+    );
+  }
+
+  const token = (await readOrderAccessToken(orderNumber)) ?? "";
   const user = await getCurrentUser();
 
   const order = await getOrderService()
@@ -37,7 +49,7 @@ async function DevPaymentContent({
   return (
     <div className="flex max-w-md flex-col gap-4 rounded-theme border border-amber-300 bg-amber-50 p-6">
       <p className="text-sm text-amber-800">
-        Bu sayfa yalnızca geliştirme ortamında görünür. Gerçek ödeme alınmaz.
+        Test modu: bu sayfa sahte ödeme içindir, gerçek ödeme alınmaz.
       </p>
       <p>
         Sipariş <strong>{order.orderNumber}</strong> ·{" "}
