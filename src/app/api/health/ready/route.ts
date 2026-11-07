@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { connection } from "next/server";
+import { authorizeCronRequest } from "@/shared/cron-auth";
 import { getDb } from "@/shared/db";
 import { reportError } from "@/shared/error-reporter";
 import { getJobQueue } from "@/shared/queue";
@@ -20,9 +21,16 @@ async function checkQueue(): Promise<CheckResult> {
   return (await getJobQueue().healthCheck()) ? "ok" : "fail";
 }
 
-/** Readiness: trafik almaya hazır mı? Bağımlılıkları kontrol eder. */
-export async function GET() {
+/**
+ * Readiness: trafik almaya hazır mı? Bağımlılıkları kontrol eder.
+ * Altyapı sondaları CRON_SECRET Bearer ile yetkilendirilir (liveness açık kalır).
+ */
+export async function GET(request: Request) {
   await connection();
+
+  if (!authorizeCronRequest(request)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const [database, queue] = await Promise.all([checkDatabase(), checkQueue()]);
   const checks = { database, queue };

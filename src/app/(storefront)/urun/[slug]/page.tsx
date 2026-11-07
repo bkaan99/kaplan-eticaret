@@ -14,6 +14,7 @@ import { catalogService } from "@/modules/catalog/container";
 import { loadProduct } from "@/modules/catalog/loaders";
 import { CUSTOM_PICKLE_PRODUCT_SLUG } from "@/modules/custom-pickle/custom-pickle.types";
 import { TrackOnMount } from "@/shared/analytics/track-on-mount";
+import { validGtin } from "@/shared/seo/gtin";
 import { absoluteUrl } from "@/shared/site-url";
 
 function plainText(value: string | null, max: number): string | undefined {
@@ -33,6 +34,11 @@ export async function generateMetadata({
   const description =
     product.seoDescription ?? plainText(product.description, 160);
   const image = product.images[0];
+  const imageUrl = image
+    ? image.url.startsWith("/")
+      ? absoluteUrl(image.url)
+      : image.url
+    : undefined;
 
   return {
     title: product.seoTitle ?? product.name,
@@ -42,16 +48,20 @@ export async function generateMetadata({
       title: product.name,
       description,
       type: "website",
-      images: image
+      images: imageUrl
         ? [
             {
-              url: image.url.startsWith("/")
-                ? absoluteUrl(image.url)
-                : image.url,
-              alt: image.alt,
+              url: imageUrl,
+              alt: image?.alt ?? product.name,
             },
           ]
         : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
     },
   };
 }
@@ -166,6 +176,59 @@ async function ProductContent({
     ? "https://schema.org/InStock"
     : "https://schema.org/OutOfStock";
 
+  const nextYear = new Date();
+  nextYear.setFullYear(nextYear.getFullYear() + 1);
+  const priceValidUntil = nextYear.toISOString().split("T")[0];
+
+  const sharedOffer = {
+    priceValidUntil,
+    itemCondition: "https://schema.org/NewCondition",
+    url: absoluteUrl(`/urun/${product.slug}`),
+    seller: {
+      "@type": "Organization",
+      name: siteConfig.name,
+    },
+    hasMerchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: "TR",
+      returnPolicyCategory:
+        "https://schema.org/MerchantReturnFiniteReturnWindow",
+      merchantReturnDays: siteConfig.returns.withdrawalPeriodDays,
+      returnMethod: "https://schema.org/ReturnByMail",
+      returnFees: "https://schema.org/FreeReturn",
+    },
+    shippingDetails: {
+      "@type": "OfferShippingDetails",
+      shippingRate: {
+        "@type": "MonetaryAmount",
+        value:
+          lowPrice >= siteConfig.shipping.freeShippingThreshold
+            ? "0.00"
+            : siteConfig.shipping.flatRate.toFixed(2),
+        currency,
+      },
+      shippingDestination: {
+        "@type": "DefinedRegion",
+        addressCountry: "TR",
+      },
+      deliveryTime: {
+        "@type": "ShippingDeliveryTime",
+        handlingTime: {
+          "@type": "QuantitativeValue",
+          minValue: 1,
+          maxValue: 2,
+          unitCode: "DAY",
+        },
+        transitTime: {
+          "@type": "QuantitativeValue",
+          minValue: 1,
+          maxValue: 3,
+          unitCode: "DAY",
+        },
+      },
+    },
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <JsonLd
@@ -174,13 +237,32 @@ async function ProductContent({
           "@type": "Product",
           name: product.name,
           description: plainText(product.description, 500),
-          sku: product.variants[0]?.sku,
+          sku: product.variants[0]?.sku || product.slug,
+          gtin: validGtin(product.barcode) ?? undefined,
+          category:
+            breadcrumbs.map((crumb) => crumb.name).join(" > ") || undefined,
+          weight: product.weightGram
+            ? {
+                "@type": "QuantitativeValue",
+                value: product.weightGram,
+                unitCode: "GRM",
+              }
+            : undefined,
+          additionalProperty:
+            product.attributes.length > 0
+              ? product.attributes.map((attribute) => ({
+                  "@type": "PropertyValue",
+                  name: attribute.name,
+                  value: attribute.values.join(", "),
+                }))
+              : undefined,
           image: product.images.map((image) =>
             image.url.startsWith("http") ? image.url : absoluteUrl(image.url),
           ),
-          brand: product.brand
-            ? { "@type": "Brand", name: product.brand.name }
-            : undefined,
+          brand: {
+            "@type": "Brand",
+            name: product.brand?.name ?? siteConfig.name,
+          },
           offers: !product.priceVisible
             ? undefined
             : product.variants.length > 1 && lowPrice !== highPrice
@@ -191,14 +273,14 @@ async function ProductContent({
                   highPrice: highPrice.toFixed(2),
                   offerCount: product.variants.length,
                   availability,
-                  url: absoluteUrl(`/urun/${product.slug}`),
+                  ...sharedOffer,
                 }
               : {
                   "@type": "Offer",
                   priceCurrency: currency,
                   price: lowPrice.toFixed(2),
                   availability,
-                  url: absoluteUrl(`/urun/${product.slug}`),
+                  ...sharedOffer,
                 },
         }}
       />
@@ -206,12 +288,26 @@ async function ProductContent({
         data={{
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          itemListElement: breadcrumbs.map((crumb, index) => ({
-            "@type": "ListItem",
-            position: index + 1,
-            name: crumb.name,
-            item: absoluteUrl(`/kategori/${crumb.slug}`),
-          })),
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Ana Sayfa",
+              item: absoluteUrl("/"),
+            },
+            ...breadcrumbs.map((crumb, index) => ({
+              "@type": "ListItem",
+              position: index + 2,
+              name: crumb.name,
+              item: absoluteUrl(`/kategori/${crumb.slug}`),
+            })),
+            {
+              "@type": "ListItem",
+              position: breadcrumbs.length + 2,
+              name: product.name,
+              item: absoluteUrl(`/urun/${product.slug}`),
+            },
+          ],
         }}
       />
       <TrackOnMount

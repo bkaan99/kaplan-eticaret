@@ -236,7 +236,7 @@ function AuditDetailModal({ row, onClose }: AuditDetailModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/20 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-100 text-lg shadow-2xs">
               {actionMeta.icon}
             </span>
             <div>
@@ -537,7 +537,7 @@ function AuditDetailModal({ row, onClose }: AuditDetailModalProps) {
           <Button
             type="button"
             onClick={onClose}
-            className="h-10 bg-slate-900 px-6 text-xs font-bold text-white shadow-xs hover:bg-slate-800 cursor-pointer"
+            className="h-9 bg-slate-900 px-4 text-[13px] font-semibold text-white shadow-xs hover:bg-slate-800 cursor-pointer"
           >
             Kapat
           </Button>
@@ -657,7 +657,7 @@ export function AuditLogViewer({
                 value={searchAction}
                 onChange={(e) => setSearchAction(e.target.value)}
                 placeholder="İşlem ara (örn: order.ship, product.create)..."
-                className="h-10 pl-8.5 text-xs bg-slate-50/50"
+                className="h-9 pl-8.5 text-xs bg-slate-50/50"
               />
               {searchAction && (
                 <button
@@ -675,7 +675,7 @@ export function AuditLogViewer({
               <Select
                 value={selectedEntity}
                 onChange={(e) => setSelectedEntity(e.target.value)}
-                className="h-10 text-xs bg-slate-50/50"
+                className="h-9 text-xs bg-slate-50/50"
               >
                 <option value="">Tüm Varlıklar ({entityTypes.length})</option>
                 {entityTypes.map((type) => (
@@ -690,7 +690,7 @@ export function AuditLogViewer({
           <div className="flex items-center gap-2">
             <Button
               type="submit"
-              className="h-10 bg-slate-900 px-5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+              className="h-9 bg-slate-900 px-5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
             >
               Filtrele
             </Button>
@@ -700,7 +700,7 @@ export function AuditLogViewer({
                 type="button"
                 variant="outline"
                 onClick={handleClearFilters}
-                className="h-10 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="h-9 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Temizle
               </Button>

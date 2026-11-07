@@ -45,6 +45,9 @@ class FakeRepo implements ProductAdminRepository {
   async list() {
     return { items: [], total: 0, page: 1, totalPages: 1 };
   }
+  async countByStatus() {
+    return {};
+  }
   async findForEdit() {
     return this.existing;
   }
@@ -81,6 +84,9 @@ const existingProduct = (): EditableProduct => ({
   weightGram: null,
   seoTitle: null,
   seoDescription: null,
+  ingredients: null,
+  allergens: null,
+  shelfLife: null,
   attributeValueIds: [],
   options: [{ name: "Beden", values: ["S", "M"] }],
   variants: [

@@ -74,7 +74,7 @@ function GroupModal({
       <div className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
               👥
             </span>
             <div>
@@ -121,7 +121,7 @@ function GroupModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Örn: VIP Bayiler, Restoranlar..."
-              className="h-10 text-xs font-semibold bg-white"
+              className="h-9 text-xs font-semibold bg-white"
             />
           </div>
 
@@ -132,7 +132,7 @@ function GroupModal({
               onChange={(e) => setDiscount(e.target.value)}
               inputMode="decimal"
               placeholder="Örn: 15"
-              className="h-10 text-xs font-semibold bg-white"
+              className="h-9 text-xs font-semibold bg-white"
             />
             <span className="text-[11px] text-slate-400">
               Bu gruba dahil müşteriler ürünlerde bu oranda otomatik indirim alır.
@@ -146,7 +146,7 @@ function GroupModal({
             variant="outline"
             onClick={onClose}
             disabled={pending}
-            className="h-10 px-5 text-xs font-semibold text-slate-700 hover:bg-white cursor-pointer"
+            className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
           >
             Vazgeç
           </Button>
@@ -154,7 +154,7 @@ function GroupModal({
             type="button"
             disabled={pending || !name.trim()}
             onClick={onSave}
-            className="h-10 bg-emerald-700 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
+            className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
           >
             {pending ? (
               <div className="flex items-center gap-2">
@@ -359,9 +359,14 @@ export function GroupManager({
                   <Button
                     size="sm"
                     variant="ghost"
-                    disabled={pending}
+                    disabled={pending || group.customerCount > 0}
                     onClick={() => remove(group.id)}
-                    className="h-7.5 px-2 text-xs text-red-600 hover:bg-red-50 cursor-pointer"
+                    className="h-7.5 px-2 text-xs text-red-600 hover:bg-red-50 cursor-pointer disabled:opacity-40"
+                    title={
+                      group.customerCount > 0
+                        ? "Bayisi olan grup silinemez; önce bayileri başka gruba taşıyın"
+                        : "Grubu sil"
+                    }
                   >
                     Sil
                   </Button>

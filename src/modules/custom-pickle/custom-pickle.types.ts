@@ -1,4 +1,9 @@
 import type Decimal from "decimal.js";
+import type {
+  CustomizationQuote as BaseCustomizationQuote,
+  CustomizationLineItem,
+  ItemCustomizationHandler,
+} from "../cart/customization";
 
 /** "Kendi turşunu yap" bidonlarının katalogdaki ürünü; boyutlar bu ürünün varyantlarıdır. */
 export const CUSTOM_PICKLE_PRODUCT_SLUG = "kendi-tursunu-yap";
@@ -21,10 +26,22 @@ export function bidonWeightGram(
   return Math.round(unit === "g" || unit === "gr" ? amount : amount * 1000);
 }
 
-/** Bir bidona eklenebilecek en fazla malzeme */
+/** Bir bidona eklenebilecek mutlak üst sınır (10 kg). */
 export const MAX_INGREDIENTS = 8;
 /** Müşteri notunun en fazla uzunluğu */
 export const MAX_NOTE_LENGTH = 200;
+
+/**
+ * Bidon kilosuna göre çeşit üst sınırı:
+ * 3 kg → 4, 5 kg → 6, 10 kg → 8.
+ * Ağırlık yoksa en düşük limite düşer.
+ */
+export function maxIngredientsForSize(weightGram: number | null): number {
+  const kg = weightGram && weightGram > 0 ? weightGram / 1000 : 0;
+  if (kg <= 3) return 4;
+  if (kg <= 5) return 6;
+  return MAX_INGREDIENTS;
+}
 
 export type IngredientGroup = "VEGETABLE" | "AROMA";
 
@@ -149,6 +166,8 @@ export type SpiceOption = string;
 export interface StoredCustomization {
   kind: "custom-pickle";
   ingredientIds: string[];
+  /** Sebze oranları (%10 adım, toplam 100). Eski sepet satırlarında yoktur. */
+  shares?: Record<string, number>;
   brine: BrineOption;
   spice: SpiceOption;
   note: string | null;
@@ -157,10 +176,78 @@ export interface StoredCustomization {
 /** Siparişe yazılan kopya: malzeme değişse de sipariş içeriği korunur. */
 export interface CustomizationSnapshot {
   kind: "custom-pickle";
-  ingredients: { id: string; name: string; unitExtra: string }[];
+  ingredients: {
+    id: string;
+    name: string;
+    unitExtra: string;
+    share?: number;
+  }[];
   brine: string;
   spice: string;
   note: string | null;
+}
+
+export const MONTH_NAMES_TR = [
+  "Ocak",
+  "Şubat",
+  "Mart",
+  "Nisan",
+  "Mayıs",
+  "Haziran",
+  "Temmuz",
+  "Ağustos",
+  "Eylül",
+  "Ekim",
+  "Kasım",
+  "Aralık",
+] as const;
+
+export function formatSeasonRange(
+  start: number | null | undefined,
+  end: number | null | undefined,
+): string {
+  if (!start || !end) return "Tüm Yıl";
+  const startName = MONTH_NAMES_TR[start - 1] ?? "";
+  const endName = MONTH_NAMES_TR[end - 1] ?? "";
+  return `${startName} - ${endName}`;
+}
+
+/** Verilen ay (1-12) malzemenin mevsiminde mi? */
+export function isMonthInSeason(
+  startMonth: number | null | undefined,
+  endMonth: number | null | undefined,
+  month = new Date().getMonth() + 1,
+): boolean {
+  if (!startMonth || !endMonth) return true;
+  if (startMonth <= endMonth) {
+    return month >= startMonth && month <= endMonth;
+  }
+  // Yıl dönümünü aşan mevsimler (örn: Kasım (11) - Şubat (2))
+  return month >= startMonth || month <= endMonth;
+}
+
+/** Stok miktarı pozitif mi? (null/undefined = limitsiz stok) */
+export function isStockAvailable(
+  stockKg: Decimal.Value | null | undefined,
+): boolean {
+  if (stockKg === null || stockKg === undefined) return true;
+  return Number(stockKg) > 0;
+}
+
+/** Stok kritik seviyede veya altında mı? */
+export function isStockCritical(
+  stockKg: Decimal.Value | null | undefined,
+  minStockKg: Decimal.Value | null | undefined,
+): boolean {
+  if (
+    stockKg === null ||
+    stockKg === undefined ||
+    minStockKg === null ||
+    minStockKg === undefined
+  ) {
+    return false;
+  }
+  return Number(stockKg) <= Number(minStockKg);
 }
 
 export interface IngredientView {
@@ -171,12 +258,20 @@ export interface IngredientView {
   description: string | null;
   imageUrl: string | null;
   pricePerKg: string;
+  stockKg: string | null;
+  minStockKg: string | null;
+  seasonStartMonth: number | null;
+  seasonEndMonth: number | null;
+  inStock: boolean;
+  inSeason: boolean;
+  isAvailable: boolean;
+  isCriticalStock: boolean;
   isActive: boolean;
   sortOrder: number;
 }
 
-/** Bir özelleştirmenin fiyatlandırılmış hâli (sepet/checkout). */
-export interface CustomizationQuote {
+/** Bir turşu özelleştirmesinin fiyatlandırılmış hâli (sepet/checkout). */
+export interface CustomizationQuote extends BaseCustomizationQuote {
   /** Bidon başına ek ücret (KDV dahil) */
   extra: Decimal;
   /** Malzemelerden biri satıştan kalktıysa false */
@@ -186,9 +281,5 @@ export interface CustomizationQuote {
   snapshot: CustomizationSnapshot;
 }
 
-/** Sepet ve checkout'un özelleştirmeden yalnızca ihtiyaç duyduğu parça. */
-export interface CustomizationPricer {
-  quote(
-    lines: { customization: StoredCustomization; weightGram: number | null }[],
-  ): Promise<CustomizationQuote[]>;
-}
+/** Geriye dönük uyumluluk için özelleştirme işleyicisi tipi. */
+export type CustomizationPricer = ItemCustomizationHandler;

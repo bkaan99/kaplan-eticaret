@@ -14,7 +14,7 @@ export interface ReorderResult {
 
 interface CustomizationSnapshotLike {
   kind?: string;
-  ingredients?: { id: string }[];
+  ingredients?: { id: string; share?: number }[];
   brine?: string;
   spice?: string;
   note?: string | null;
@@ -75,9 +75,16 @@ export class ReorderService {
           Array.isArray(snap.ingredients) &&
           this.cart.addCustomItem
         ) {
+          const shares = Object.fromEntries(
+            snap.ingredients.flatMap((i) =>
+              i.share === undefined ? [] : [[i.id, i.share] as const],
+            ),
+          );
+          const hasShares = Object.keys(shares).length > 0;
           const stored: StoredCustomization = {
             kind: "custom-pickle",
             ingredientIds: snap.ingredients.map((i) => i.id),
+            ...(hasShares ? { shares } : {}),
             brine: snap.brine ?? "VINEGAR",
             spice: snap.spice ?? "MEDIUM",
             note: snap.note ?? null,

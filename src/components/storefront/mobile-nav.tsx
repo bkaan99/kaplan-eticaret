@@ -6,9 +6,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { EASE_OUT } from "@/components/motion/motion";
 import {
+  BagIcon,
   ChevronRightIcon,
+  ClockIcon,
   HeartIcon,
+  InstagramIcon,
+  BidonThumb,
   MailIcon,
+  MapPinIcon,
   MenuIcon,
   PhoneIcon,
   TruckIcon,
@@ -16,6 +21,7 @@ import {
   XIcon,
 } from "./icons";
 import { Logo } from "./logo";
+import { storefrontContact } from "@/config/storefront-contact";
 import { formatMoney } from "@/shared/money";
 
 export interface MobileNavCategory {
@@ -33,7 +39,9 @@ export interface MobileNavProps {
   categories: MobileNavCategory[];
   extraItems?: MobileNavExtraItem[];
   sitePhone: string;
+  sitePhoneTel?: string;
   siteEmail: string;
+  workingHours?: string;
   freeShippingThreshold: number;
   wishlistEnabled?: boolean;
   b2bEnabled?: boolean;
@@ -47,7 +55,9 @@ export function MobileNav({
   categories,
   extraItems = [],
   sitePhone,
+  sitePhoneTel,
   siteEmail,
+  workingHours,
   freeShippingThreshold,
   wishlistEnabled = true,
   b2bEnabled = false,
@@ -87,7 +97,7 @@ export function MobileNav({
         aria-label="Menüyü aç"
         aria-expanded={isOpen}
         aria-controls="mobile-nav-drawer"
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden"
+        className="ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-primary text-primary transition-colors hover:bg-primary/5 md:hidden"
       >
         <MenuIcon width={22} height={22} />
       </button>
@@ -141,20 +151,27 @@ export function MobileNav({
                 {/* Öne Çıkan Eylem: Kendi Turşunu Yap */}
                 <Link
                   href="/kendi-tursunu-yap"
-                  className="group flex items-center justify-between gap-3 rounded-2xl bg-amber-400 p-4 font-semibold text-slate-950 shadow-sm shadow-amber-500/20 transition hover:bg-amber-300"
+                  className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-brand-dark p-4 text-[#f6efe0] shadow-[0_8px_24px_-8px_rgba(11,35,24,0.5)] ring-1 ring-brand-gold/20 transition-all duration-200 hover:ring-brand-gold/40"
                 >
-                  <div className="flex flex-col">
-                    <span className="flex items-center gap-1.5 text-xs font-bold tracking-wider uppercase text-amber-950/70">
-                      <span>✦</span> Özel Üretim
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-gold/10 blur-2xl transition-opacity group-hover:bg-brand-gold/20"
+                  />
+                  <div className="relative flex flex-col gap-1">
+                    <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-gold">
+                      Özel Üretim
                     </span>
-                    <span className="text-base font-bold text-slate-950">
+                    <span className="inline-flex items-center gap-2.5 text-base font-semibold">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-gold/15 ring-1 ring-brand-gold/30">
+                        <BidonThumb width={22} height={26} />
+                      </span>
                       Kendi Turşunu Yap
                     </span>
-                    <span className="text-xs text-amber-950/80">
+                    <span className="text-xs text-[#f6efe0]/75">
                       Damak tadına göre bidonunu kendin hazırla
                     </span>
                   </div>
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white transition-transform group-hover:translate-x-0.5">
+                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-[#f6efe0] ring-1 ring-white/15 transition-transform group-hover:translate-x-0.5">
                     <ChevronRightIcon width={16} height={16} />
                   </span>
                 </Link>
@@ -254,6 +271,14 @@ export function MobileNav({
                         <span>Bayi Başvurusu</span>
                       </Link>
                     ) : null}
+
+                    <Link
+                      href="/iletisim"
+                      className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                    >
+                      <MapPinIcon width={18} height={18} className="text-slate-400" />
+                      <span>İletişim & Mağazamız</span>
+                    </Link>
                   </div>
                 </div>
 
@@ -266,21 +291,54 @@ export function MobileNav({
                     </span>
                   </div>
 
-                  <div className="space-y-1.5 border-t border-slate-200/70 pt-2.5">
+                  <div className="space-y-2.5 border-t border-slate-200/70 pt-2.5">
                     <a
-                      href={`tel:${sitePhone.replace(/\s/g, "")}`}
-                      className="flex items-center gap-2 font-medium text-slate-700 transition hover:text-primary"
+                      href={`tel:${sitePhoneTel ?? sitePhone.replace(/\s/g, "")}`}
+                      className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
                     >
-                      <PhoneIcon width={14} height={14} className="text-slate-400" />
+                      <PhoneIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
                       <span>{sitePhone}</span>
                     </a>
                     <a
                       href={`mailto:${siteEmail}`}
-                      className="flex items-center gap-2 font-medium text-slate-700 transition hover:text-primary"
+                      className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
                     >
-                      <MailIcon width={14} height={14} className="text-slate-400" />
+                      <MailIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
                       <span>{siteEmail}</span>
                     </a>
+                    <a
+                      href={storefrontContact.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2.5 text-sm leading-snug text-slate-600 transition hover:text-primary"
+                    >
+                      <MapPinIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <span>{storefrontContact.address}</span>
+                    </a>
+                    <a
+                      href={storefrontContact.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
+                    >
+                      <InstagramIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <span>Instagram</span>
+                    </a>
+                    <a
+                      href={storefrontContact.trendyolUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
+                    >
+                      <BagIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <span>Trendyol Mağazası</span>
+                    </a>
+                    {workingHours ? (
+                      <p className="flex items-start gap-2.5 text-sm leading-snug text-slate-600">
+                        <ClockIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                        <span>{workingHours}</span>
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </div>

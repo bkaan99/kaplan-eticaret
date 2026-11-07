@@ -1,11 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { connection } from "next/server";
 import { getCachedBanners } from "@/modules/content/cached";
 
 /** Ana sayfa bannerları; yalnızca aktif ve tarih aralığı uygun olanlar. */
 export async function BannerGrid() {
-  await connection();
   const banners = (await getCachedBanners()).slice(0, 4);
   if (banners.length === 0) return null;
 

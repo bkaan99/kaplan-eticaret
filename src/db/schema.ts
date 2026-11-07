@@ -266,6 +266,12 @@ export const product = sqliteTable(
       .default(true),
     desi: decimal("desi"),
     weightGram: integer("weightGram"),
+    /** İçindekiler listesi (serbest metin) */
+    ingredients: text("ingredients"),
+    /** Alerjen uyarısı (ör. "Hardal içerir") */
+    allergens: text("allergens"),
+    /** Raf ömrü / tüketim süresi (ör. "Açılmadan 12 ay") */
+    shelfLife: text("shelfLife"),
     isFeatured: integer("isFeatured", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -839,6 +845,10 @@ export const pickleIngredient = sqliteTable(
     description: text("description"),
     imageUrl: text("imageUrl"),
     pricePerKg: decimal("pricePerKg").notNull(),
+    stockKg: decimal("stockKg"),
+    minStockKg: decimal("minStockKg"),
+    seasonStartMonth: integer("seasonStartMonth"),
+    seasonEndMonth: integer("seasonEndMonth"),
     isActive: integer("isActive", { mode: "boolean" }).notNull().default(true),
     sortOrder: integer("sortOrder").notNull().default(0),
     createdAt: timestamp("createdAt")

@@ -1,4 +1,4 @@
-import { connection } from "next/server";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -6,23 +6,25 @@ import { BannerGrid } from "@/components/storefront/banner-grid";
 import { ProductGrid } from "@/components/storefront/product-grid";
 import { HeroSlider } from "@/components/storefront/hero-slider";
 import { JsonLd } from "@/components/storefront/json-ld";
-import {
-  ArrowRightIcon,
-  ClockIcon,
-  JarIcon,
-  LeafIcon,
-  TruckIcon,
-} from "@/components/storefront/icons";
+import { ArrowRightIcon } from "@/components/storefront/icons";
 import { siteConfig } from "@/config/site.config";
+import { storefrontContact } from "@/config/storefront-contact";
 import { formatMoney } from "@/shared/money";
-import { getSiteUrl } from "@/shared/site-url";
+import { absoluteUrl, getSiteUrl } from "@/shared/site-url";
 import { getCategoryTree } from "@/modules/catalog/cached";
 import { getCachedContactSettings } from "@/modules/settings/cached";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { catalogService } from "@/modules/catalog/container";
+import { customPickleService } from "@/modules/custom-pickle/container";
+import { maxIngredientsForSize } from "@/modules/custom-pickle/custom-pickle.types";
+
+export const metadata: Metadata = {
+  title: "Geleneksel Ev Yapımı Çubuk Turşuları ve Şalgam Suyu",
+  description: siteConfig.description,
+  alternates: { canonical: absoluteUrl("/") },
+};
 
 async function FeaturedProducts() {
-  await connection();
   const products = await catalogService.getHomepageProducts(
     8,
     await getRequestPricing(),
@@ -31,38 +33,32 @@ async function FeaturedProducts() {
 }
 
 async function CategoryTiles() {
-  await connection();
   const tree = await getCategoryTree();
 
   return (
-    <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
       {tree.map((category) => (
         <li key={category.id}>
           <Link
             href={`/kategori/${category.slug}`}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5"
+            className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100"
           >
-            <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
-              <Image
-                src={category.imageUrl ?? "/placeholder.svg"}
-                alt={category.name}
-                fill
-                sizes="(min-width: 1024px) 25vw, 50vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
+            <Image
+              src={category.imageUrl ?? "/placeholder.svg"}
+              alt={`${category.name} Çeşitleri`}
+              fill
+              sizes="(min-width: 1024px) 25vw, 50vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/85 via-brand-dark/15 to-transparent" />
+            <h3 className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 p-3 text-sm font-bold text-white sm:p-4 sm:text-base">
+              {category.name}
+              <ArrowRightIcon
+                width={16}
+                height={16}
+                className="shrink-0 transition-transform group-hover:translate-x-1"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-40" />
-            </div>
-            <div className="flex items-center justify-between p-4">
-              <div>
-                <h3 className="font-semibold text-slate-900 transition-colors group-hover:text-primary sm:text-base">
-                  {category.name}
-                </h3>
-                <span className="text-xs text-slate-400">Ürünleri Keşfet</span>
-              </div>
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition-colors group-hover:bg-primary group-hover:text-white">
-                <ArrowRightIcon width={14} height={14} />
-              </span>
-            </div>
+            </h3>
           </Link>
         </li>
       ))}
@@ -71,7 +67,6 @@ async function CategoryTiles() {
 }
 
 async function SiteJsonLd() {
-  await connection();
   const [url, contact] = await Promise.all([
     Promise.resolve(getSiteUrl()),
     getCachedContactSettings(),
@@ -82,12 +77,37 @@ async function SiteJsonLd() {
       <JsonLd
         data={{
           "@context": "https://schema.org",
-          "@type": "Organization",
+          "@type": ["Organization", "Store"],
           name: siteConfig.name,
           url,
+          logo: absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+          image: [
+            absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg"),
+            absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+          ],
+          description: siteConfig.description,
           email: contact.email,
-          telephone: contact.phone,
-          ...(contact.address ? { address: contact.address } : {}),
+          telephone: storefrontContact.phoneTel,
+          priceRange: "₺₺",
+          address: {
+            "@type": "PostalAddress",
+            ...storefrontContact.postalAddress,
+          },
+          geo: {
+            "@type": "GeoCoordinates",
+            ...storefrontContact.geo,
+          },
+          hasMap: storefrontContact.mapsUrl,
+          sameAs: [
+            storefrontContact.instagramUrl,
+            storefrontContact.trendyolUrl,
+          ],
+          openingHoursSpecification: {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: [...storefrontContact.openingHours.daysOfWeek],
+            opens: storefrontContact.openingHours.opens,
+            closes: storefrontContact.openingHours.closes,
+          },
         }}
       />
       <JsonLd
@@ -108,30 +128,23 @@ async function SiteJsonLd() {
 }
 
 function SectionHeading({
-  eyebrow,
   title,
   action,
 }: {
-  eyebrow: string;
   title: string;
   action?: { href: string; label: string };
 }) {
   return (
     <div className="flex items-end justify-between gap-4">
-      <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase">
-          {eyebrow}
-        </span>
-        <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          {title}
-        </h2>
-      </div>
+      <h2 className="font-display text-2xl font-bold tracking-tight text-primary sm:text-3xl">
+        {title}
+      </h2>
       {action ? (
         <Link
           href={action.href}
-          className="group hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-slate-900 sm:inline-flex"
+          className="group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-brand-dark"
         >
-          <span>{action.label}</span>
+          {action.label}
           <ArrowRightIcon
             width={15}
             height={15}
@@ -143,35 +156,70 @@ function SectionHeading({
   );
 }
 
+const BUILDER_STEPS = [
+  "Bidonunu seç",
+  "Sebze ve baharatları ekle",
+  "Salamura ve acılığa karar ver",
+];
 
-
-function Marquee() {
-  const items = [
-    "🌿 %100 Doğal Fermantasyon",
-    "🥒 Çıtır Kornişon & Ev Usulü Salatalık",
-    "🍷 Adana Usulü Acılı Şalgam",
-    "🧂 Çankırı Kaya Tuzu & Kaynak Suyu",
-    "📦 Kırılmaz Özel Ambalaj Garantisi",
-    "⚡ 48 Saatte Kapınızda",
-  ];
+/** "Kendi Turşunu Yap" bandı: boyutlar ve malzeme sınırları gerçek ürün verisinden gelir. */
+async function BuilderBand() {
+  const pricing = await getRequestPricing();
+  const data = await customPickleService.getBuilder({
+    customerGroupId: pricing.customerGroupId,
+  });
+  if (!data || data.sizes.length === 0) return null;
 
   return (
-    <div
-      aria-hidden="true"
-      className="full-bleed border-y border-slate-100 bg-slate-50/70 py-3 text-slate-700"
-    >
-      <div className="animate-marquee flex w-max gap-8 pr-8">
-        {[...items, ...items, ...items].map((item, index) => (
-          <span
-            key={index}
-            className="flex items-center gap-8 text-xs font-semibold tracking-wider uppercase text-slate-600 whitespace-nowrap"
-          >
-            {item}
-            <span className="text-amber-500 font-bold">✦</span>
+    <section className="rounded-3xl bg-primary p-6 text-white sm:p-10">
+      <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-12">
+        <div>
+          <span className="text-[11px] font-bold tracking-[0.14em] text-amber-300 uppercase">
+            Sana özel bidon
           </span>
-        ))}
+          <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            Turşunu kendin tasarla
+          </h2>
+          <ol className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-x-5">
+            {BUILDER_STEPS.map((step, index) => (
+              <li
+                key={step}
+                className="flex items-center gap-2 text-sm font-medium"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-300 text-xs font-bold text-brand-dark">
+                  {index + 1}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </div>
+        <div className="flex flex-col gap-3">
+          <ul className="grid grid-cols-3 gap-2 sm:gap-3">
+            {data.sizes.map((size) => (
+              <li
+                key={size.variantId}
+                className="flex flex-col items-center rounded-xl bg-white px-3 py-3 text-center text-primary sm:px-6"
+              >
+                <span className="text-sm font-bold sm:text-base">
+                  {size.label.replace(/\s*bidon$/i, "")}
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  {maxIngredientsForSize(size.weightGram)} malzeme
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/kendi-tursunu-yap"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-amber-400 px-7 text-sm font-bold text-brand-dark transition hover:bg-amber-300"
+          >
+            Bidonunu hazırla
+            <ArrowRightIcon width={16} height={16} />
+          </Link>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -187,7 +235,9 @@ function Process() {
             İyi turşunun sırrı sabır ve saflıktır
           </h2>
           <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
-            Fabrikasyon hızlandırıcı yok, koruyucu asitler yok. Her kavanoz, büyüklerimizden öğrendiğimiz asırlık usullerle, kendi doğal fermantasyon sürecinde olgunlaşır.
+            Fabrikasyon hızlandırıcı yok, koruyucu asitler yok. Her kavanoz,
+            büyüklerimizden öğrendiğimiz asırlık usullerle, kendi doğal
+            fermantasyon sürecinde olgunlaşır.
           </p>
         </div>
         <div className="grid gap-5 sm:grid-cols-3 lg:col-span-7">
@@ -215,8 +265,12 @@ function Process() {
               <span className="font-display text-3xl font-bold text-amber-500">
                 {item.num}
               </span>
-              <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
-              <p className="text-xs leading-relaxed text-slate-500">{item.desc}</p>
+              <h3 className="text-base font-bold text-slate-900">
+                {item.title}
+              </h3>
+              <p className="text-xs leading-relaxed text-slate-500">
+                {item.desc}
+              </p>
             </div>
           ))}
         </div>
@@ -235,10 +289,14 @@ function GiftCallout() {
           </span>
           <h2 className="font-display text-3xl font-bold sm:text-5xl leading-tight">
             Sevdiklerinize bir kutu dolusu{" "}
-            <span className="italic text-amber-400 font-normal">sağlık ve lezzet</span>
+            <span className="italic text-amber-400 font-normal">
+              sağlık ve lezzet
+            </span>
           </h2>
           <p className="max-w-lg text-sm text-slate-300 sm:text-base leading-relaxed">
-            En sevilen çıtır kornişonlar, tombul biberler ve acılı şalgam suyu özel koruyucu kraft kutusunda bir araya geldi. Sofralara samimi bir hediye.
+            En sevilen çıtır kornişonlar, tombul biberler ve acılı şalgam suyu
+            özel koruyucu kraft kutusunda bir araya geldi. Sofralara samimi bir
+            hediye.
           </p>
           <div className="pt-2">
             <Link
@@ -269,21 +327,24 @@ function CustomerReviews() {
     {
       name: "Elif Demir",
       city: "İstanbul",
-      comment: "Kavanozu açtığınız an o çıtırlık ve sarımsak kokusu çocukluğuma götürdü. Asla sirke kokusu genzi yakmıyor, tam kıvamında ev turşusu.",
+      comment:
+        "Kavanozu açtığınız an o çıtırlık ve sarımsak kokusu çocukluğuma götürdü. Asla sirke kokusu genzi yakmıyor, tam kıvamında ev turşusu.",
       stars: 5,
       product: "Ev Usulü Salatalık Turşusu",
     },
     {
       name: "Murat Korkmaz",
       city: "Ankara",
-      comment: "Şalgam suyu efsane, acısı tam ayarında ve dibinde yapay tortu yok. Kargo o kadar sağlam paketlenmişti ki straforu açmak 5 dakikamı aldı, tebrikler.",
+      comment:
+        "Şalgam suyu efsane, acısı tam ayarında ve dibinde yapay tortu yok. Kargo o kadar sağlam paketlenmişti ki straforu açmak 5 dakikamı aldı, tebrikler.",
       stars: 5,
       product: "Adana Acılı Şalgam Suyu",
     },
     {
       name: "Selin Yılmaz",
       city: "İzmir",
-      comment: "Tadım kutusunu hediye olarak arkadaşıma yolladım, kutulama ve kavanoz kalitesi çok şık duruyor. Şimdi kendime aile boyu kutu siparişi verdim.",
+      comment:
+        "Tadım kutusunu hediye olarak arkadaşıma yolladım, kutulama ve kavanoz kalitesi çok şık duruyor. Şimdi kendime aile boyu kutu siparişi verdim.",
       stars: 5,
       product: "Turşu Tadım Kutusu",
     },
@@ -318,7 +379,9 @@ function CustomerReviews() {
                 <span className="font-bold text-slate-900">{r.name}</span>
                 <span className="text-slate-400"> · {r.city}</span>
               </div>
-              <span className="font-semibold text-emerald-800">{r.product}</span>
+              <span className="font-semibold text-emerald-800">
+                {r.product}
+              </span>
             </div>
           </div>
         ))}
@@ -327,43 +390,63 @@ function CustomerReviews() {
   );
 }
 
-function Benefits() {
-  const items = [
-    {
-      icon: TruckIcon,
-      title: "Ücretsiz Kargo",
-      text: `${formatMoney(siteConfig.shipping.freeShippingThreshold)} üzeri siparişlerde`,
-    },
-    {
-      icon: JarIcon,
-      title: "Kırılmaz Güvence",
-      text: "Hava yastıklı koruyucu ambalaj",
-    },
-    {
-      icon: LeafIcon,
-      title: "%100 Katkısız",
-      text: "Kimyasal koruyucu ve asit yok",
-    },
-    {
-      icon: ClockIcon,
-      title: "Kolay İade",
-      text: `${siteConfig.returns.withdrawalPeriodDays} gün içinde koşulsuz iade`,
-    },
-  ];
+const FAQ_ITEMS = [
+  {
+    q: "Turşularınızda koruyucu veya katkı maddesi var mı?",
+    a: "Hayır. Turşularımız kaya tuzu, kaynak suyu ve doğal fermantasyonla hazırlanır; kimyasal koruyucu kullanılmaz.",
+  },
+  {
+    q: "Turşuyu açtıktan sonra nasıl saklamalıyım?",
+    a: "Açılan kavanozu buzdolabında saklayın, ürünü temiz ve kuru bir kaşıkla alın, turşunun suyunun üzerini örtmesine dikkat edin.",
+  },
+  {
+    q: "Kargo ücreti ne kadar?",
+    a: `${formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri siparişlerde kargo ücretsizdir. Altındaki siparişlerde ücret ödeme adımında gösterilir.`,
+  },
+  {
+    q: "Ürünüm hasarlı gelirse ne yapmalıyım?",
+    a: `Ürünün fotoğrafıyla birlikte ${storefrontContact.phone} numarasından bize ulaşın. Yasal cayma süresi ${siteConfig.returns.withdrawalPeriodDays} gündür.`,
+  },
+  {
+    q: "Kendi turşumu nasıl hazırlatabilirim?",
+    a: "Kendi Turşunu Yap sayfasından bidon boyutunu seçip malzemeleri ekleyin, salamura ve acılığı belirleyin; siparişinizi tarifinize göre hazırlayalım.",
+  },
+];
 
+function Faq() {
   return (
-    <section aria-label="Avantajlar" className="border-t border-slate-100 pt-8">
-      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-        {items.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="flex items-start gap-3.5">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-primary">
-              <Icon width={22} height={22} />
-            </span>
-            <div className="flex flex-col gap-0.5">
-              <h3 className="text-sm font-bold text-slate-900">{title}</h3>
-              <p className="text-xs text-slate-500">{text}</p>
-            </div>
-          </div>
+    <section className="flex flex-col gap-6">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: FAQ_ITEMS.map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.a,
+            },
+          })),
+        }}
+      />
+      <SectionHeading title="Sıkça Sorulan Sorular" />
+      <div className="divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white">
+        {FAQ_ITEMS.map((item) => (
+          <details key={item.q} className="group px-5 sm:px-6">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm font-semibold text-slate-900 sm:text-base [&::-webkit-details-marker]:hidden">
+              {item.q}
+              <span
+                aria-hidden="true"
+                className="shrink-0 text-xl leading-none text-primary transition-transform group-open:rotate-45"
+              >
+                +
+              </span>
+            </summary>
+            <p className="pb-4 text-sm leading-relaxed text-slate-600">
+              {item.a}
+            </p>
+          </details>
         ))}
       </div>
     </section>
@@ -378,13 +461,11 @@ export default function HomePage() {
       </Suspense>
 
       <HeroSlider />
-      <Marquee />
 
       <section className="flex flex-col gap-6">
         <SectionHeading
-          eyebrow="Geleneksel Çeşitler"
-          title="Kategorileri Keşfedin"
-          action={{ href: "/ara", label: "Tüm Ürünler" }}
+          title="Turşu Çeşitleri"
+          action={{ href: "/ara", label: "Tümünü gör" }}
         />
         <Suspense fallback={<div className="h-64" />}>
           <CategoryTiles />
@@ -393,16 +474,17 @@ export default function HomePage() {
 
       <section className="flex flex-col gap-6">
         <SectionHeading
-          eyebrow="En Çok Tercih Edilenler"
-          title="Öne Çıkan Gurme Turşular"
-          action={{ href: "/ara", label: "Tümünü Gör" }}
+          title="En Sevilenler"
+          action={{ href: "/ara", label: "Tümünü gör" }}
         />
-        <Suspense
-          fallback={<p className="text-slate-400">Yükleniyor...</p>}
-        >
+        <Suspense fallback={<p className="text-slate-400">Yükleniyor...</p>}>
           <FeaturedProducts />
         </Suspense>
       </section>
+
+      <Suspense fallback={null}>
+        <BuilderBand />
+      </Suspense>
 
       <Suspense fallback={null}>
         <BannerGrid />
@@ -411,7 +493,7 @@ export default function HomePage() {
       <Process />
       <GiftCallout />
       <CustomerReviews />
-      <Benefits />
+      <Faq />
     </div>
   );
 }

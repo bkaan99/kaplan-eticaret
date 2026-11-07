@@ -256,7 +256,7 @@ function InviteStaffModal({
       <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
               👥
             </span>
             <div>
@@ -304,7 +304,7 @@ function InviteStaffModal({
                   value={firstName}
                   onChange={(event) => setFirstName(event.target.value)}
                   placeholder="Örn: Ahmet"
-                  className="h-10 text-xs font-semibold bg-white"
+                  className="h-9 text-xs font-semibold bg-white"
                 />
               </div>
 
@@ -317,7 +317,7 @@ function InviteStaffModal({
                   value={lastName}
                   onChange={(event) => setLastName(event.target.value)}
                   placeholder="Örn: Yılmaz"
-                  className="h-10 text-xs font-semibold bg-white"
+                  className="h-9 text-xs font-semibold bg-white"
                 />
               </div>
             </div>
@@ -332,7 +332,7 @@ function InviteStaffModal({
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="ahmet@kaplangurme.com"
-                className="h-10 text-xs font-semibold bg-white"
+                className="h-9 text-xs font-semibold bg-white"
               />
             </div>
 
@@ -359,14 +359,14 @@ function InviteStaffModal({
               variant="outline"
               onClick={onClose}
               disabled={pending}
-              className="h-10 px-5 text-xs font-semibold text-slate-700 hover:bg-white cursor-pointer"
+              className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
             >
               Vazgeç
             </Button>
             <Button
               type="submit"
               disabled={pending || !email.trim() || !firstName.trim()}
-              className="h-10 bg-emerald-700 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
+              className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
             >
               {pending ? (
                 <div className="flex items-center gap-2">

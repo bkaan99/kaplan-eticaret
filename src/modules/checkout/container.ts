@@ -1,6 +1,6 @@
 import { siteConfig } from "@/config/site.config";
 import { features } from "@/config/features";
-import { getPaymentProvider } from "@/integrations/payment/container";
+import { getCardProviderKind } from "@/integrations/payment/container";
 import { getDb } from "@/shared/db";
 import { getEventBus } from "@/shared/events";
 import { cartService } from "../cart/container";
@@ -12,18 +12,22 @@ import { D1CheckoutRepository } from "./checkout.repository";
 import { CheckoutService } from "./checkout.service";
 import { ConfiguredShippingRateCalculator } from "./shipping";
 
-export function getCheckoutService(): CheckoutService {
+export async function getCheckoutService(): Promise<CheckoutService> {
+  // Ödeme modu panelden seçilir; kart ödemesi kullanılamıyorsa checkout bunu bilir.
+  const cardProvider = await getCardProviderKind();
+
   return new CheckoutService({
     carts: cartService,
     priceResolver,
     checkout: new D1CheckoutRepository(getDb),
     orders: orderRepository,
-    shipping: new ConfiguredShippingRateCalculator(),
+    shipping: new ConfiguredShippingRateCalculator(siteConfig.shipping),
     settings: {
       guestCheckoutEnabled: features.guestCheckout,
       reservationMinutes: siteConfig.inventory.reservationMinutes,
       shippingTaxRate: siteConfig.shipping.taxRate,
-      paymentProvider: getPaymentProvider().name,
+      paymentProvider: cardProvider === "paytr" ? "paytr" : "dev",
+      cardPaymentAvailable: cardProvider !== "unavailable",
       requireDealer: siteConfig.salesMode === "b2b",
       bankTransferConfigured: siteConfig.b2b.bankAccounts.length > 0,
       bankTransferHoldHours: siteConfig.b2b.bankTransferHoldHours,

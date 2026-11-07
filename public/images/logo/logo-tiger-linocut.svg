@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 145" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="linocutDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#052e16" />
+      <stop offset="100%" stop-color="#021d0d" />
+    </linearGradient>
+    <linearGradient id="warmOchre" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="60%" stop-color="#ca8a04" />
+      <stop offset="100%" stop-color="#854d0e" />
+    </linearGradient>
+    <filter id="shadowLinocut" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.14" />
+    </filter>
+  </defs>
+
+  <!-- AMBLEM: Dairesel Gravür Mührü (120x120) -->
+  <g transform="translate(15, 12)" filter="url(#shadowLinocut)">
+    <circle cx="60" cy="60" r="58" fill="#fcfbf7" stroke="#ca8a04" stroke-width="2.5" />
+    <circle cx="60" cy="60" r="53" fill="url(#linocutDark)" />
+    <!-- İç halat desenli çerçeve -->
+    <circle cx="60" cy="60" r="49" stroke="#ca8a04" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.8" />
+
+    <!-- ASİL KAPLAN VE TURŞU HARMANI (WOODBLOCK / LINOCUT) -->
+    <!-- Merkezde Asil Kaplan Başı ve Gövdesi -->
+    <!-- Kaplan Yanakları ve Çene: Çıtır Kornişon Yayları -->
+    <path d="M 60 22 C 65 17, 73 21, 70 28 C 77 27, 85 34, 82 43 C 86 48, 85 57, 80 62 C 75 68, 71 67, 65 72 C 61 75, 59 75, 55 72 C 49 67, 45 68, 40 62 C 35 57, 34 48, 38 43 C 35 34, 43 27, 50 28 C 47 21, 55 17, 60 22 Z" 
+          fill="url(#warmOchre)" />
+
+    <!-- Kaplanın içindeki negatif alan turşu desenleri (Linocut Çizikler) -->
+    <!-- Alın: Kornişon Çizgileri -->
+    <path d="M 60 27 C 58 35, 58 40, 60 45 C 62 40, 62 35, 60 27 Z" fill="#052e16" />
+    <path d="M 52 30 C 49 36, 50 41, 54 44 C 52 39, 51 34, 52 30 Z" fill="#052e16" />
+    <path d="M 68 30 C 71 36, 70 41, 66 44 C 68 39, 69 34, 68 30 Z" fill="#052e16" />
+
+    <!-- Gözler (Asil, keskin) -->
+    <polygon points="48,47 54,49 49,52" fill="#052e16" />
+    <polygon points="72,47 66,49 71,52" fill="#052e16" />
+
+    <!-- Bıyıklar ve Yanak Çizgileri (Dereotu dalları gibi açılan çizgiler) -->
+    <path d="M 46 54 C 38 52, 30 48, 26 44 C 32 51, 40 55, 46 56 Z" fill="#052e16" />
+    <path d="M 46 58 C 36 59, 29 57, 25 54 C 32 60, 40 62, 46 60 Z" fill="#052e16" />
+    <path d="M 74 54 C 82 52, 90 48, 94 44 C 88 51, 80 55, 74 56 Z" fill="#052e16" />
+    <path d="M 74 58 C 84 59, 91 57, 95 54 C 88 60, 80 62, 74 60 Z" fill="#052e16" />
+
+    <!-- Burun ve Ağız -->
+    <polygon points="57,55 63,55 60,60" fill="#052e16" />
+    <path d="M 60 60 L 60 67 C 56 68, 52 66, 50 64" stroke="#052e16" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <path d="M 60 60 L 60 67 C 64 68, 68 66, 70 64" stroke="#052e16" stroke-width="1.8" stroke-linecap="round" fill="none" />
+
+    <!-- ALT KISIM: İki yana açılan çıtır kornişonlar ve dereotu taç -->
+    <path d="M 32 82 C 40 73, 52 71, 60 78 C 55 83, 42 87, 32 82 Z" fill="#16a34a" />
+    <circle cx="39" cy="78" r="1.5" fill="#fcfbf7" opacity="0.6" />
+    <circle cx="48" cy="76" r="1.3" fill="#fcfbf7" opacity="0.6" />
+
+    <path d="M 88 82 C 80 73, 68 71, 60 78 C 65 83, 78 87, 88 82 Z" fill="#15803d" />
+    <circle cx="81" cy="78" r="1.5" fill="#fcfbf7" opacity="0.6" />
+    <circle cx="72" cy="76" r="1.3" fill="#fcfbf7" opacity="0.6" />
+
+    <!-- Merkez Sarımsak / Çiçek düğümü -->
+    <circle cx="60" cy="79" r="3.2" fill="#ca8a04" />
+    <text x="60" y="99" font-family="'Cinzel', serif" font-size="8.5" font-weight="900" fill="#ca8a04" text-anchor="middle" letter-spacing="2">USTA YAPIMI</text>
+  </g>
+
+  <!-- TİPOGRAFİ (Sağ Taraf) -->
+  <g transform="translate(155, 28)">
+    <text x="0" y="44" 
+          font-family="'Baskerville', 'Playfair Display', Georgia, serif" 
+          font-size="44" 
+          font-weight="800" 
+          letter-spacing="3" 
+          fill="#052e16">
+      KAPLAN
+    </text>
+
+    <text x="2" y="74" 
+          font-family="system-ui, -apple-system, sans-serif" 
+          font-size="14.5" 
+          font-weight="800" 
+          letter-spacing="8" 
+          fill="#ca8a04">
+      GURME TURŞU
+    </text>
+
+    <line x1="2" y1="85" x2="320" y2="85" stroke="#cbd5e1" stroke-width="1.5" />
+
+    <text x="2" y="100" 
+          font-family="system-ui, -apple-system, sans-serif" 
+          font-size="11" 
+          font-weight="600" 
+          letter-spacing="2" 
+          fill="#475569">
+      GELENEKSEL MEŞE FIÇI &amp; GEDELEK FERMENTESİ
+    </text>
+  </g>
+</svg>
+

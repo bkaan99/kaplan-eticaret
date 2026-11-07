@@ -14,6 +14,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-fraunces);
+  --font-storefront: var(--font-montserrat);
 }
 
 /* Marka renkleri (vitrin): modern orman yeşili, taze yaprak, sıcak altın, canlı biber */
@@ -53,4 +54,28 @@ body {
   .animate-marquee {
     animation: none;
   }
+}
+
+@keyframes login-pan {
+  from {
+    transform: scale(1.05) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(-1.5%, -1%, 0);
+  }
+}
+
+@utility animate-login-pan {
+  animation: login-pan 18s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-login-pan {
+    animation: none;
+  }
+}
+
+/* Kendi Turşunu Yap: sabit alt çubuk sayfa sonunu kapatmasın */
+body:has([data-builder-bar]) {
+  padding-bottom: 8rem;
 }

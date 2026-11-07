@@ -1,56 +1,38 @@
 import { siteConfig } from "@/config/site.config";
 import { ValidationError } from "@/shared/errors";
-import { eq } from "drizzle-orm";
-import { setting, type Db } from "@/db";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import {
   contactSettingsSchema,
   type ContactSettingsInput,
 } from "./settings.schema";
+import type { SettingsRepository } from "./settings.repository";
 import type { ContactSettings } from "./settings.types";
 
-const CONTACT_SETTINGS_KEY = "contact_settings";
 const DEFAULT_ADDRESS = "Çubuk, Ankara / Türkiye";
+
+function toContactSettings(
+  raw: Partial<ContactSettingsInput> | null,
+): ContactSettings {
+  return {
+    phone: raw?.phone?.trim() || siteConfig.contact.phone,
+    whatsapp: raw?.whatsapp?.trim() || null,
+    email: raw?.email?.trim() || siteConfig.contact.email,
+    address: raw?.address?.trim() || DEFAULT_ADDRESS,
+    workingHours: raw?.workingHours?.trim() || "Hafta içi 08:30 - 18:00",
+    instagramUrl: raw?.instagramUrl?.trim() || null,
+    facebookUrl: raw?.facebookUrl?.trim() || null,
+  };
+}
 
 export class SettingsService {
   constructor(
-    private readonly db: () => Db,
+    private readonly settings: SettingsRepository,
     private readonly audit?: AuditLogger,
   ) {}
 
   async getContactSettings(): Promise<ContactSettings> {
-    try {
-      const [record] = await this.db()
-        .select()
-        .from(setting)
-        .where(eq(setting.key, CONTACT_SETTINGS_KEY))
-        .limit(1);
-
-      if (record && record.value && typeof record.value === "object") {
-        const val = record.value as Partial<ContactSettings>;
-        return {
-          phone: val.phone?.trim() || siteConfig.contact.phone,
-          whatsapp: val.whatsapp?.trim() || null,
-          email: val.email?.trim() || siteConfig.contact.email,
-          address: val.address?.trim() || DEFAULT_ADDRESS,
-          workingHours: val.workingHours?.trim() || "Hafta içi 08:30 - 18:00",
-          instagramUrl: val.instagramUrl?.trim() || null,
-          facebookUrl: val.facebookUrl?.trim() || null,
-        };
-      }
-    } catch {
-      // Veritabanı okunamadığında siteConfig varsayılanlarına dön
-    }
-
-    return {
-      phone: siteConfig.contact.phone,
-      whatsapp: null,
-      email: siteConfig.contact.email,
-      address: DEFAULT_ADDRESS,
-      workingHours: "Hafta içi 08:30 - 18:00",
-      instagramUrl: null,
-      facebookUrl: null,
-    };
+    const raw = await this.settings.getContactSettingsRaw();
+    return toContactSettings(raw);
   }
 
   async saveContactSettings(raw: unknown, actor: Actor): Promise<void> {
@@ -62,13 +44,7 @@ export class SettingsService {
     }
 
     const before = await this.getContactSettings();
-    await this.db()
-      .insert(setting)
-      .values({ key: CONTACT_SETTINGS_KEY, value: parsed.data })
-      .onConflictDoUpdate({
-        target: setting.key,
-        set: { value: parsed.data, updatedAt: new Date() },
-      });
+    await this.settings.saveContactSettings(parsed.data);
 
     await this.audit?.log({
       actorId: actor.userId,

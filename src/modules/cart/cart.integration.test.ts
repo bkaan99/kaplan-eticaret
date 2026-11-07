@@ -127,4 +127,57 @@ describe("Cart (veritabanı)", () => {
       .where(eq(cart.sessionToken, guest.sessionToken!));
     expect(remaining!.n).toBe(0);
   });
+
+  it("terk edilmiş eski anonim sepetleri ve satırlarını temizler", async () => {
+    // 1. Eski anonim sepet
+    const oldGuest = await service.addItem(
+      { userId: null, sessionToken: null },
+      variantId,
+      1,
+    );
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    await db
+      .update(cart)
+      .set({ updatedAt: sixtyDaysAgo })
+      .where(eq(cart.id, oldGuest.cart.id!));
+
+    // 2. Yeni anonim sepet (dokunulmamalı)
+    const freshGuest = await service.addItem(
+      { userId: null, sessionToken: null },
+      variantId,
+      1,
+    );
+
+    // 3. Üye sepeti (dokunulmamalı)
+    const userCart = await service.addItem(
+      { userId, sessionToken: null },
+      variantId,
+      1,
+    );
+
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const removed = await service.purgeAbandoned(cutoff);
+
+    expect(removed).toBeGreaterThanOrEqual(1);
+
+    // Eski anonim sepet silinmiş olmalı
+    const [oldRow] = await db
+      .select({ id: cart.id })
+      .from(cart)
+      .where(eq(cart.id, oldGuest.cart.id!));
+    expect(oldRow).toBeUndefined();
+
+    // Yeni anonim sepet ve üye sepeti durmalı
+    const [freshRow] = await db
+      .select({ id: cart.id })
+      .from(cart)
+      .where(eq(cart.id, freshGuest.cart.id!));
+    expect(freshRow).toBeDefined();
+
+    const [userRow] = await db
+      .select({ id: cart.id })
+      .from(cart)
+      .where(eq(cart.id, userCart.cart.id!));
+    expect(userRow).toBeDefined();
+  });
 });

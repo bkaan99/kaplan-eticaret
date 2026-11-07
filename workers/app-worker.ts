@@ -9,12 +9,18 @@ import type {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — `.open-next/worker.js` build sırasında üretilir; build öncesi tip denetimi de geçsin
 import { default as handler } from "../.open-next/worker.js";
+import {
+  normalizeTrMobile,
+  sendNetgsmSms,
+} from "../src/integrations/notification/netgsm-sms";
 
 type JobBody = {
   name?: string;
   data?: unknown;
   retryLimit?: number;
 };
+
+type SmsPayload = { to?: string; text?: string };
 
 type EmailPayload = {
   to?: string;
@@ -26,8 +32,7 @@ type EmailPayload = {
 async function callCron(env: CloudflareEnv, path: string): Promise<void> {
   const secret = env.CRON_SECRET;
   if (!secret) {
-    console.warn("CRON_SECRET yok; cron atlandı", path);
-    return;
+    throw new Error(`CRON_SECRET tanımlı değil; cron çalıştırılamaz: ${path}`);
   }
 
   const base = env.APP_URL ?? "https://kaplan-eticaret.workers.dev";
@@ -122,6 +127,44 @@ const worker: ExportedHandler<CloudflareEnv> = {
         continue;
       }
 
+      if (name === "sms.send") {
+        const payload = (body.data ?? {}) as SmsPayload;
+        const to = normalizeTrMobile(payload.to);
+        if (
+          !env.NETGSM_USERCODE ||
+          !env.NETGSM_PASSWORD ||
+          !env.NETGSM_MSGHEADER ||
+          !to ||
+          !payload.text
+        ) {
+          // Ayar veya numara eksikken kuyruğu zehirleme; log + ack.
+          console.warn(
+            "Netgsm ayarı ya da SMS gövdesi eksik; sms.send atlandı",
+            {
+              hasConfig: Boolean(env.NETGSM_USERCODE && env.NETGSM_PASSWORD),
+            },
+          );
+          message.ack();
+          continue;
+        }
+        try {
+          await sendNetgsmSms(
+            {
+              usercode: env.NETGSM_USERCODE,
+              password: env.NETGSM_PASSWORD,
+              msgheader: env.NETGSM_MSGHEADER,
+            },
+            { to, text: payload.text },
+          );
+          console.log("sms.send gönderildi");
+          message.ack();
+        } catch (error) {
+          console.error("sms.send başarısız; yeniden denenecek", error);
+          message.retry();
+        }
+        continue;
+      }
+
       console.warn("Bilinmeyen kuyruk işi", name);
       message.ack();
     }
@@ -138,8 +181,20 @@ const worker: ExportedHandler<CloudflareEnv> = {
       case "0 * * * *":
         await callCron(env, "/api/cron/purge-rate-limits");
         break;
-      case "30 3 * * *":
-        await callCron(env, "/api/cron/purge-audit-log");
+      case "30 3 * * *": {
+        const results = await Promise.allSettled([
+          callCron(env, "/api/cron/purge-audit-log"),
+          callCron(env, "/api/cron/purge-abandoned-carts"),
+        ]);
+        for (const res of results) {
+          if (res.status === "rejected") {
+            console.error("Gece bakım cronu hatası:", res.reason);
+          }
+        }
+        break;
+      }
+      case "0 4 * * *":
+        await callCron(env, "/api/cron/purge-abandoned-carts");
         break;
       default:
         console.warn("Tanımsız cron", controller.cron);

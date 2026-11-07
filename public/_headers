@@ -1,0 +1,9 @@
+# OpenNext / Cloudflare static asset cache (Worker CPU’suz kenar önbelleği)
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/images/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/favicon.ico
+  Cache-Control: public, max-age=86400

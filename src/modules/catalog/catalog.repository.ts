@@ -26,6 +26,7 @@ import {
   relatedProduct,
   type Db,
 } from "@/db";
+import type { BadgeAttribute } from "./product-badges";
 import type { CategoryNode } from "./catalog.types";
 
 export interface ProductFilter {
@@ -62,6 +63,8 @@ export interface ProductCardRecord {
   imageUrl: string | null;
   imageAlt: string | null;
   variants: VariantRecord[];
+  /** Kart rozetleri için nitelik değerleri */
+  attributes: BadgeAttribute[];
 }
 
 export interface AttributeFacetRecord {
@@ -103,6 +106,12 @@ export interface ProductDetailRecord {
   }[];
   variants: VariantRecord[];
   attributes: { name: string; value: string }[];
+  ingredients: string | null;
+  allergens: string | null;
+  shelfLife: string | null;
+  /** İlk aktif varyantın barkodu (GTIN) */
+  barcode: string | null;
+  weightGram: number | null;
 }
 
 export interface CatalogRepository {
@@ -317,6 +326,14 @@ export class D1CatalogRepository implements CatalogRepository {
           columns: { url: true, alt: true },
         },
         variants: activeVariants,
+        attributes: {
+          with: {
+            attributeValue: {
+              columns: { slug: true, value: true },
+              with: { attribute: { columns: { slug: true } } },
+            },
+          },
+        },
       },
     });
 
@@ -329,6 +346,11 @@ export class D1CatalogRepository implements CatalogRepository {
       imageUrl: row.images[0]?.url ?? null,
       imageAlt: row.images[0]?.alt ?? null,
       variants: row.variants.map(toVariantRecord),
+      attributes: row.attributes.map((item) => ({
+        attributeSlug: item.attributeValue.attribute.slug,
+        valueSlug: item.attributeValue.slug,
+        value: item.attributeValue.value,
+      })),
     }));
   }
 
@@ -428,6 +450,11 @@ export class D1CatalogRepository implements CatalogRepository {
         name: item.attributeValue.attribute.name,
         value: item.attributeValue.value,
       })),
+      ingredients: row.ingredients,
+      allergens: row.allergens,
+      shelfLife: row.shelfLife,
+      barcode: row.variants.find((variant) => variant.barcode)?.barcode ?? null,
+      weightGram: row.weightGram,
     };
   }
 

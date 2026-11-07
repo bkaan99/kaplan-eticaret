@@ -1,21 +1,20 @@
-import { connection } from "next/server";
 import Link from "next/link";
 import { Suspense } from "react";
 import { isFeatureEnabled } from "@/config/features";
 import { siteConfig } from "@/config/site.config";
+import { storefrontContact } from "@/config/storefront-contact";
 import { getCategoryTree } from "@/modules/catalog/cached";
 import { getCachedMenu } from "@/modules/content/cached";
 import { getCachedContactSettings } from "@/modules/settings/cached";
 import { formatMoney } from "@/shared/money";
-import { AccountLink } from "./account-link";
-import { CartBadge } from "./cart-badge";
-import { HeaderNav, MobileSearch } from "./header-nav";
-import { HeartIcon, SearchIcon } from "./icons";
+import { HeaderNav } from "./header-nav";
+import { BidonThumb, HeartIcon, TruckIcon } from "./icons";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
+import { SearchForm } from "./search-form";
+import { StorefrontShellActions } from "./storefront-shell";
 
 async function MobileNavContainer() {
-  await connection();
   const [tree, extra, contact] = await Promise.all([
     getCategoryTree(),
     getCachedMenu("header"),
@@ -26,8 +25,10 @@ async function MobileNavContainer() {
     <MobileNav
       categories={tree}
       extraItems={extra.map((item) => ({ label: item.label, url: item.url }))}
-      sitePhone={contact.phone}
+      sitePhone={storefrontContact.phone}
+      sitePhoneTel={storefrontContact.phoneTel}
       siteEmail={contact.email}
+      workingHours={storefrontContact.workingHours}
       freeShippingThreshold={siteConfig.shipping.freeShippingThreshold}
       wishlistEnabled={isFeatureEnabled("wishlist")}
       b2bEnabled={isFeatureEnabled("b2b")}
@@ -36,7 +37,6 @@ async function MobileNavContainer() {
 }
 
 async function CategoryNav() {
-  await connection();
   const [tree, extra] = await Promise.all([
     getCategoryTree(),
     getCachedMenu("header"),
@@ -56,104 +56,98 @@ async function CategoryNav() {
   );
 }
 
-function SearchForm({ className = "" }: { className?: string }) {
-  return (
-    <form action="/ara" role="search" className={`relative ${className}`}>
-      <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400" />
-      <input
-        name="q"
-        type="search"
-        placeholder="Çıtır kornişon, acılı şalgam, hediye kutusu ara…"
-        aria-label="Ürün ara"
-        className="h-10 w-full rounded-full border border-slate-200 bg-slate-50/70 pr-4 pl-10 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-3 focus:ring-primary/10"
-      />
-    </form>
-  );
-}
-
-function BuilderLink({ className = "" }: { className?: string }) {
+function BuilderLink() {
   return (
     <Link
       href="/kendi-tursunu-yap"
-      className={`group inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm shadow-amber-500/20 transition hover:bg-amber-300 ${className}`}
+      className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-primary py-1 pr-4 pl-2 text-[13px] font-extrabold whitespace-nowrap text-white transition-colors hover:bg-brand-dark"
     >
-      <span
-        aria-hidden="true"
-        className="transition-transform duration-300 group-hover:rotate-90"
-      >
-        ✦
-      </span>
+      <BidonThumb width={16} height={20} />
       Kendi Turşunu Yap
     </Link>
   );
 }
 
 const iconLinkClass =
-  "inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900";
+  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/5";
+
+const secondaryLinkClass =
+  "rounded-full px-2.5 py-2 text-[13px] font-bold whitespace-nowrap text-primary transition-colors hover:text-brand-dark hover:underline";
 
 export function SiteHeader() {
   return (
-    <header className="relative z-40 md:sticky md:top-0">
-      {/* Üst Duyuru Bandı */}
-      <div className="bg-[#0b2318] text-white">
-        <p className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 py-2 text-center text-xs tracking-wide">
-          <span className="flex h-1.5 w-1.5 rounded-full bg-amber-400"></span>
-          <span>
-            {formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri
-            siparişlerde <strong>ücretsiz kargo</strong> & kırılmaz ambalaj
-            güvencesi
-          </span>
+    <>
+      {/* Üst duyuru bandı: sayfayla birlikte kayar */}
+      <div className="bg-primary text-white">
+        <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs font-medium sm:text-sm">
+          {formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri
+          siparişlerde{" "}
+          <strong className="font-extrabold">kargo ücretsiz!</strong>
         </p>
       </div>
 
-      {/* Ana Başlık Alanı */}
-      <div className="relative border-b border-slate-100 bg-white/95 backdrop-blur-md">
-        {/* Satır 1: logo · arama · aksiyonlar (sağ/sol içeriğe göre, arama kalan alanı alır) */}
-        <div className="mx-auto grid h-16 max-w-6xl grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-4">
-          <div className="flex min-w-0 items-center gap-1.5 justify-self-start whitespace-nowrap">
-            <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
-              <MobileNavContainer />
-            </Suspense>
-            <Logo />
+      <header className="relative z-40 border-b border-slate-200 bg-white md:sticky md:top-0">
+        {/* Satır 1: logo (sol) · arama (orta) · aksiyonlar (sağ). Tam genişlik;
+            dar ekranda arama alt satıra iner. */}
+        <div className="mx-auto grid w-full max-w-[1600px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,40rem)_minmax(0,1fr)] md:gap-x-6 lg:px-8 2xl:px-12">
+          <div className="justify-self-start">
+            <Logo showBadge />
           </div>
-          <SearchForm className="hidden min-w-0 w-full md:block" />
-          <div className="flex shrink-0 items-center gap-1 justify-self-end">
-            <MobileSearch />
+          <SearchForm className="order-last col-span-2 w-full min-w-0 md:order-none md:col-span-1" />
+          <div className="flex shrink-0 items-center gap-0.5 justify-self-end sm:gap-1">
+            <Link
+              href="/siparis-sorgula"
+              className={`${iconLinkClass} max-md:hidden`}
+              aria-label="Sipariş takibi"
+              title="Sipariş takibi"
+            >
+              <TruckIcon />
+            </Link>
             {isFeatureEnabled("wishlist") ? (
               <Link
                 href="/favoriler"
-                className={iconLinkClass}
+                className={`${iconLinkClass} max-md:hidden`}
                 aria-label="Favoriler"
+                title="Favoriler"
               >
-                <HeartIcon className="text-slate-600" />
-                <span className="sr-only xl:not-sr-only">Favoriler</span>
+                <HeartIcon />
               </Link>
             ) : null}
-            <Suspense fallback={<span className={iconLinkClass}>&nbsp;</span>}>
-              <AccountLink className={iconLinkClass} />
-            </Suspense>
-            <Suspense fallback={<span className={iconLinkClass}>Sepet</span>}>
-              <CartBadge />
+            {/* Sepet/hesap istemci kabuğu — HTML edge cache için SSR kişiselleştirme yok */}
+            <div className="flex items-center gap-0.5 sm:gap-1 max-sm:[&>div:first-child]:hidden">
+              <StorefrontShellActions accountClassName={iconLinkClass} />
+            </div>
+            <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
+              <MobileNavContainer />
             </Suspense>
           </div>
         </div>
 
-        {/* Satır 2: kategoriler ortada, öne çıkan bağlantı sağda */}
-        <div className="border-t border-slate-100/80">
-          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 xl:grid xl:grid-cols-[1fr_auto_1fr]">
-            <span aria-hidden="true" className="hidden xl:block" />
-            <BuilderLink className="xl:hidden" />
+        {/* Satır 2: öne çıkan bağlantı · kategoriler · mağaza ve iletişim */}
+        <div className="hidden border-t border-slate-100 md:block">
+          <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 px-4 py-1.5 lg:px-8 2xl:px-12">
+            <BuilderLink />
             <div className="min-w-0 flex-1">
               <Suspense fallback={<div className="h-9" />}>
                 <CategoryNav />
               </Suspense>
             </div>
-            <div className="hidden justify-self-end xl:block">
-              <BuilderLink />
+            <div className="hidden shrink-0 items-center lg:flex">
+              <a
+                href={storefrontContact.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={secondaryLinkClass}
+              >
+                Mağazamız
+              </a>
+              <Link href="/iletisim" className={secondaryLinkClass}>
+                İletişim
+              </Link>
             </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }

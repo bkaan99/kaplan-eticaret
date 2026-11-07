@@ -11,7 +11,12 @@ export type Db = DrizzleD1Database<typeof schema>;
 
 /** D1 binding'inden Drizzle istemcisi. */
 export function createDb(d1: D1Database): Db {
-  return drizzle(d1, { schema });
+  // DB_QUERY_LOG=1: her SQL ifadesini konsola yazar (sayfa başına sorgu sayısını ölçmek için).
+  const logger =
+    typeof process !== "undefined" && process.env?.["DB_QUERY_LOG"] === "1"
+      ? { logQuery: (query: string) => console.log(`[sql] ${query.slice(0, 90)}`) }
+      : undefined;
+  return drizzle(d1, { schema, logger });
 }
 
 type BatchQuery = Parameters<Db["batch"]>[0][number];

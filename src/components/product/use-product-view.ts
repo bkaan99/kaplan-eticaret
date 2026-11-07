@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { addToCartAction } from "@/app/(storefront)/sepet/actions";
+import { refreshStorefrontShell } from "@/components/storefront/shell-events";
 import type { ProductDetail } from "@/modules/catalog/catalog.types";
 import {
   defaultSelection,
@@ -85,6 +86,7 @@ export function useProductView(product: ProductDetail) {
 
       setMessage({ text: "Ürün sepete eklendi", error: false });
       setJustAdded(true);
+      refreshStorefrontShell();
       const unit = Number(variant.price);
       trackEvent("add_to_cart", {
         currency: variant.currency,

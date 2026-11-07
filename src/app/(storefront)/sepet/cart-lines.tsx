@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Price } from "@/components/storefront/price";
+import { refreshStorefrontShell } from "@/components/storefront/shell-events";
 import type { CartLine, CartView } from "@/modules/cart/cart.types";
 import { removeCartItemAction, updateCartQuantityAction } from "./actions";
 
@@ -31,12 +32,14 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
         line.lineKey,
       );
       setError(result.ok ? null : (result.error ?? "Güncellenemedi"));
+      if (result.ok) refreshStorefrontShell();
     });
   }
 
   function remove() {
     startTransition(async () => {
       await removeCartItemAction(line.variantId, line.lineKey);
+      refreshStorefrontShell();
     });
   }
 
@@ -52,14 +55,21 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
         />
       </div>
       <div className="flex flex-1 flex-col gap-1">
-        <Link
-          href={
-            line.isCustom ? "/kendi-tursunu-yap" : `/urun/${line.productSlug}`
-          }
-          className="font-medium"
-        >
-          {line.productName}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={
+              line.isCustom ? "/kendi-tursunu-yap" : `/urun/${line.productSlug}`
+            }
+            className="font-medium hover:text-primary transition-colors"
+          >
+            {line.productName}
+          </Link>
+          {line.isCustom ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+              🥒 Özel Reçete
+            </span>
+          ) : null}
+        </div>
         {line.variantLabel ? (
           <span className="text-sm text-muted-foreground">
             {line.variantLabel}

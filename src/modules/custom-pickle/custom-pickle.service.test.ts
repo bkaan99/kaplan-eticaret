@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { describe, expect, it } from "vitest";
+import { ConflictError } from "@/shared/errors";
 import { RetailPriceResolver } from "../catalog/pricing";
 import type {
   BuilderProductRecord,
@@ -16,6 +17,11 @@ import {
   bidonWeightGram,
   DEFAULT_BRINE_CONFIG,
   DEFAULT_SPICE_CONFIG,
+  formatSeasonRange,
+  isMonthInSeason,
+  isStockAvailable,
+  isStockCritical,
+  maxIngredientsForSize,
   type CustomPickleConfig,
   type StoredCustomization,
 } from "./custom-pickle.types";
@@ -32,6 +38,10 @@ function ingredient(
     description: null,
     imageUrl: null,
     pricePerKg: new Decimal("4"),
+    stockKg: null,
+    minStockKg: null,
+    seasonStartMonth: null,
+    seasonEndMonth: null,
     isActive: true,
     sortOrder: 0,
     ...overrides,
@@ -120,6 +130,15 @@ describe("bidonWeightGram", () => {
   });
 });
 
+describe("maxIngredientsForSize", () => {
+  it("3/5/10 kg bidonlara göre 4/6/8 çeşit limiti döner", () => {
+    expect(maxIngredientsForSize(3000)).toBe(4);
+    expect(maxIngredientsForSize(5000)).toBe(6);
+    expect(maxIngredientsForSize(10000)).toBe(8);
+    expect(maxIngredientsForSize(null)).toBe(4);
+  });
+});
+
 describe("ingredientExtra", () => {
   it("kg başı ücreti bidon kilosuyla çarpar, ağırlık yoksa 1 kg sayar", () => {
     expect(ingredientExtra("4", 5000).toFixed(2)).toBe("20.00");
@@ -181,6 +200,24 @@ describe("CustomPickleService.prepare", () => {
     expect(prepared.key).toHaveLength(24);
   });
 
+  it("oran gönderilmezse sebzeleri eşit dağıtır, aromaya oran vermez", async () => {
+    const prepared = await service(new FakeRepository(ingredients)).prepare({
+      ...VALID_INPUT,
+      ingredientIds: ["salatalik", "sarimsak"],
+    });
+    expect(prepared.customization.shares).toEqual({ salatalik: 100 });
+  });
+
+  it("bidonu tam doldurmayan oranı reddeder", async () => {
+    await expect(
+      service(new FakeRepository(ingredients)).prepare({
+        ...VALID_INPUT,
+        ingredientIds: ["salatalik"],
+        shares: { salatalik: 80 },
+      }),
+    ).rejects.toThrow(/toplam %100/);
+  });
+
   it("en az bir sebze ister", async () => {
     await expect(
       service(new FakeRepository(ingredients)).prepare({
@@ -210,6 +247,68 @@ describe("CustomPickleService.prepare", () => {
         ingredientIds: Array.from({ length: 9 }, (_, i) => `m${i}`),
       }),
     ).rejects.toThrow(/En fazla 8/);
+  });
+
+  it("bidon boyutuna göre çeşit üst sınırını uygular", async () => {
+    const threeKg: BuilderProductRecord = {
+      ...PRODUCT,
+      variants: [
+        {
+          ...PRODUCT.variants[0]!,
+          id: "v3",
+          label: "3 kg bidon",
+          weightGram: 3000,
+        },
+      ],
+    };
+    const pickle = service(new FakeRepository(ingredients, threeKg));
+    await expect(
+      pickle.prepare({
+        ...VALID_INPUT,
+        variantId: "v3",
+        ingredientIds: Array.from({ length: 5 }, (_, i) => `m${i}`),
+      }),
+    ).rejects.toThrow(/en fazla 4 malzeme/i);
+
+    // 5 kg (etiketten) → en fazla 6
+    const fiveKgPickle = service(new FakeRepository(ingredients));
+    await expect(
+      fiveKgPickle.prepare({
+        ...VALID_INPUT,
+        ingredientIds: Array.from({ length: 7 }, (_, i) => `m${i}`),
+      }),
+    ).rejects.toThrow(/en fazla 6 malzeme/i);
+  });
+});
+
+describe("ingredientExtra (oranlı)", () => {
+  it("malzeme ücretini bidondaki payı kadar hesaplar", () => {
+    expect(ingredientExtra("10", 5000, 30).toFixed(2)).toBe("15.00");
+    expect(ingredientExtra("10", 5000).toFixed(2)).toBe("50.00");
+  });
+});
+
+describe("customizationKey (oranlı)", () => {
+  const base: StoredCustomization = {
+    kind: "custom-pickle",
+    ingredientIds: ["a", "b"],
+    brine: "VINEGAR",
+    spice: "MILD",
+    note: null,
+  };
+
+  it("oran değişince anahtar değişir, oran sırası etkilemez", () => {
+    const first = customizationKey({ ...base, shares: { a: 60, b: 40 } });
+    expect(customizationKey({ ...base, shares: { b: 40, a: 60 } })).toBe(first);
+    expect(customizationKey({ ...base, shares: { a: 50, b: 50 } })).not.toBe(
+      first,
+    );
+  });
+
+  it("oransız eski satırların anahtarı oranlıdan farklı kalır", () => {
+    expect(customizationKey(base)).not.toBe(
+      customizationKey({ ...base, shares: { a: 50, b: 50 } }),
+    );
   });
 });
 
@@ -331,8 +430,152 @@ describe("CustomPickleService.quote", () => {
         weightGram: 5000,
       },
     ]);
-    expect(quote!.summary).toBe("Salatalık · Elma Sirkeli · Çok Acılı (Atom)");
+    expect(quote!.summary).toBe(
+      "Salatalık %100 · Elma Sirkeli · Çok Acılı (Atom)",
+    );
     expect(quote!.snapshot.brine).toBe("Elma Sirkeli");
     expect(quote!.snapshot.spice).toBe("Çok Acılı (Atom)");
+  });
+
+  it("stok ve mevsimsellik yardımcı fonksiyonları doğru çalışır", () => {
+    // Limitsiz veya pozitif stok
+    expect(isStockAvailable(null)).toBe(true);
+    expect(isStockAvailable(undefined)).toBe(true);
+    expect(isStockAvailable(new Decimal("10"))).toBe(true);
+    expect(isStockAvailable(new Decimal("0"))).toBe(false);
+    expect(isStockAvailable(new Decimal("-1"))).toBe(false);
+
+    // Kritik stok
+    expect(isStockCritical(new Decimal("5"), new Decimal("10"))).toBe(true);
+    expect(isStockCritical(new Decimal("10"), new Decimal("10"))).toBe(true);
+    expect(isStockCritical(new Decimal("15"), new Decimal("10"))).toBe(false);
+    expect(isStockCritical(null, new Decimal("10"))).toBe(false);
+    expect(isStockCritical(new Decimal("5"), null)).toBe(false);
+
+    // Mevsimsellik (tek yıl)
+    expect(isMonthInSeason(6, 9, 7)).toBe(true);
+    expect(isMonthInSeason(6, 9, 5)).toBe(false);
+    expect(isMonthInSeason(6, 9, 10)).toBe(false);
+
+    // Mevsimsellik (yıl aşan kış sebzesi, örn. Kasım - Şubat: 11 - 2)
+    expect(isMonthInSeason(11, 2, 12)).toBe(true);
+    expect(isMonthInSeason(11, 2, 1)).toBe(true);
+    expect(isMonthInSeason(11, 2, 5)).toBe(false);
+
+    // Tüm yıl
+    expect(isMonthInSeason(null, null, 5)).toBe(true);
+
+    // Format
+    expect(formatSeasonRange(null, null)).toBe("Tüm Yıl");
+    expect(formatSeasonRange(6, 9)).toBe("Haziran - Eylül");
+  });
+
+  it("tükenen malzeme prepare'de ConflictError fırlatır ve quote'da available: false olur", async () => {
+    const repository = new FakeRepository([
+      ingredient("salatalik", {
+        name: "Salatalık",
+        stockKg: new Decimal("0"), // Tükendi
+      }),
+    ]);
+    const s = service(repository);
+
+    // prepare ConflictError fırlatmalı
+    await expect(
+      s.prepare({
+        variantId: "v5",
+        ingredientIds: ["salatalik"],
+        brine: "VINEGAR",
+        spice: "MILD",
+        note: null,
+      }),
+    ).rejects.toThrow(ConflictError);
+
+    // quote'da available: false olmalı
+    const [quote] = await s.quote([
+      {
+        customization: {
+          kind: "custom-pickle",
+          ingredientIds: ["salatalik"],
+          brine: "VINEGAR",
+          spice: "MILD",
+          note: null,
+        },
+        weightGram: 5000,
+      },
+    ]);
+    expect(quote!.available).toBe(false);
+  });
+
+  it("mevsim dışı malzeme prepare'de ConflictError fırlatır ve quote'da available: false olur", async () => {
+    const currentMonth = new Date().getMonth() + 1;
+    // Mevcut aydan farklı bir aralık belirleyelim
+    const outStart = currentMonth === 1 ? 2 : 1;
+    const outEnd = currentMonth === 1 ? 2 : 1;
+
+    const repository = new FakeRepository([
+      ingredient("karnabahar", {
+        name: "Karnabahar",
+        seasonStartMonth: outStart,
+        seasonEndMonth: outEnd,
+      }),
+    ]);
+    const s = service(repository);
+
+    // prepare ConflictError fırlatmalı
+    await expect(
+      s.prepare({
+        variantId: "v5",
+        ingredientIds: ["karnabahar"],
+        brine: "VINEGAR",
+        spice: "MILD",
+        note: null,
+      }),
+    ).rejects.toThrow(ConflictError);
+
+    // quote'da available: false olmalı
+    const [quote] = await s.quote([
+      {
+        customization: {
+          kind: "custom-pickle",
+          ingredientIds: ["karnabahar"],
+          brine: "VINEGAR",
+          spice: "MILD",
+          note: null,
+        },
+        weightGram: 5000,
+      },
+    ]);
+    expect(quote!.available).toBe(false);
+  });
+
+  it("builder listesinde malzeme stok ve mevsim bilgileri view modeline aktarılır", async () => {
+    const repository = new FakeRepository([
+      ingredient("salatalik", {
+        name: "Salatalık",
+        stockKg: new Decimal("50"),
+        minStockKg: new Decimal("10"),
+        seasonStartMonth: 6,
+        seasonEndMonth: 9,
+      }),
+      ingredient("tukenen", {
+        name: "Tükenen Sebze",
+        stockKg: new Decimal("0"),
+      }),
+    ]);
+    const s = service(repository);
+
+    const builder = await s.getBuilder({ customerGroupId: null });
+    expect(builder).not.toBeNull();
+
+    const salatalik = builder!.ingredients.find((i) => i.id === "salatalik");
+    expect(salatalik).toBeDefined();
+    expect(salatalik!.stockKg).toBe("50.00");
+    expect(salatalik!.minStockKg).toBe("10.00");
+    expect(salatalik!.inStock).toBe(true);
+
+    const tukenen = builder!.ingredients.find((i) => i.id === "tukenen");
+    expect(tukenen).toBeDefined();
+    expect(tukenen!.inStock).toBe(false);
+    expect(tukenen!.isAvailable).toBe(false);
   });
 });

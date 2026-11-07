@@ -33,6 +33,19 @@ export function NewProductButton({
   return (
     <>
       <Button type="button" onClick={() => setOpen(true)}>
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
         Yeni ürün
       </Button>
 
@@ -65,10 +78,9 @@ export function NewProductButton({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                aria-label="Kapat"
+                className="inline-flex h-9 items-center rounded-xl px-3 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
               >
-                ✕
+                Kapat
               </button>
             </div>
 

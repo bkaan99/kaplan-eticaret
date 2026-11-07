@@ -43,9 +43,26 @@ const envSchema = z
     TURNSTILE_SECRET_KEY: optionalString,
     /** Workers queue consumer; yerelde SMTP kullanılır */
     RESEND_API_KEY: optionalString,
+    /** Netgsm SMS (features.sms): abone no, şifre ve onaylı SMS başlığı */
+    NETGSM_USERCODE: optionalString,
+    NETGSM_PASSWORD: optionalString,
+    NETGSM_MSGHEADER: optionalString,
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;
+
+    // Derleme sırasında secret'lar yoktur (Cloudflare'de çalışma zamanında verilir);
+    // cron uçları secret yokken zaten 401 verir (fail-closed).
+    if (
+      !env.CRON_SECRET &&
+      process.env.NEXT_PHASE !== "phase-production-build"
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["CRON_SECRET"],
+        message: "production ortamında CRON_SECRET zorunludur",
+      });
+    }
 
     const paytr = [
       env.PAYTR_MERCHANT_ID,

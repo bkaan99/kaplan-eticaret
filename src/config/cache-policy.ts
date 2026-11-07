@@ -3,21 +3,23 @@
 export const CACHE_PRIVATE =
   "private, no-store, no-cache, max-age=0, must-revalidate";
 
-/** Anonim ürün/kategori HTML — edge kısa TTL + SWR. */
-export const CACHE_CATALOG_HTML =
-  "public, s-maxage=60, stale-while-revalidate=300";
+/**
+ * Anonim vitrin HTML — edge kısa TTL + SWR.
+ * Yönetim paneli değişiklikleri edge önbelleğini temizleyemez (workers.dev'de purge yok),
+ * bu yüzden bayat süre en fazla ~2 dk tutulur: s-maxage 60 + SWR 60.
+ */
+export const CACHE_PUBLIC_HTML =
+  "public, s-maxage=60, stale-while-revalidate=60";
 
 /** Public katalog API (varsa) — daha kısa edge TTL. */
 export const CACHE_CATALOG_API =
   "public, s-maxage=30, stale-while-revalidate=120";
 
 /** R2 /uploads görselleri — içerik adresi değişmez (uuid). */
-export const CACHE_UPLOAD_ASSET =
-  "public, max-age=31536000, immutable";
+export const CACHE_UPLOAD_ASSET = "public, max-age=31536000, immutable";
 
 /** Edge-only TTL; tarayıcıya sızmaz (Workers Caching). */
-export const CDN_CACHE_UPLOAD =
-  "public, max-age=31536000, immutable";
+export const CDN_CACHE_UPLOAD = "public, max-age=31536000, immutable";
 
 const PRIVATE_PREFIXES = [
   "/admin",
@@ -34,9 +36,16 @@ const PRIVATE_PREFIXES = [
   "/api/auth",
   "/api/cron",
   "/api/payments",
+  "/api/storefront",
+  "/api/cart",
+  "/api/account",
+  "/api/wishlist",
 ] as const;
 
-const CATALOG_PREFIXES = ["/urun/", "/kategori/"] as const;
+/** Anonimken edge cache’lenebilir vitrin yolları. */
+const PUBLIC_HTML_PREFIXES = ["/urun/", "/kategori/", "/sayfa/"] as const;
+
+const PUBLIC_HTML_EXACT = ["/", "/iletisim", "/ara"] as const;
 
 export function isPrivatePath(pathname: string): boolean {
   return PRIVATE_PREFIXES.some(
@@ -45,7 +54,15 @@ export function isPrivatePath(pathname: string): boolean {
 }
 
 export function isCatalogPath(pathname: string): boolean {
-  return CATALOG_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  return (
+    PUBLIC_HTML_EXACT.includes(
+      pathname as (typeof PUBLIC_HTML_EXACT)[number],
+    ) || PUBLIC_HTML_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
+}
+
+export function isPublicHtmlPath(pathname: string): boolean {
+  return isCatalogPath(pathname);
 }
 
 export function isUploadPath(pathname: string): boolean {

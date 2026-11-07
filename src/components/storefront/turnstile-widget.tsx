@@ -4,13 +4,18 @@ import { getEnv } from "@/shared/env";
 
 /**
  * Cloudflare Turnstile bileşeni. `features.captcha` kapalıysa hiçbir şey çizmez.
+ * Açıkken site key yoksa sessizce atlanmaz (fail-closed).
  * Doğrulama belirteci formda `cf-turnstile-response` alanı olarak gönderilir.
  */
 export function TurnstileWidget() {
   if (!isFeatureEnabled("captcha")) return null;
 
   const siteKey = getEnv().TURNSTILE_SITE_KEY;
-  if (!siteKey) return null;
+  if (!siteKey) {
+    throw new Error(
+      "TURNSTILE_SITE_KEY tanımlı değil (captcha özelliği açık)",
+    );
+  }
 
   return (
     <>
@@ -18,7 +23,11 @@ export function TurnstileWidget() {
         src="https://challenges.cloudflare.com/turnstile/v0/api.js"
         strategy="afterInteractive"
       />
-      <div className="cf-turnstile" data-sitekey={siteKey} />
+      <div
+        className="cf-turnstile"
+        data-sitekey={siteKey}
+        data-theme="light"
+      />
     </>
   );
 }

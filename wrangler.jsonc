@@ -19,7 +19,8 @@
     "enabled": true,
     "traces": {
       "enabled": true,
-      "head_sampling_rate": 1
+      // Prod maliyet/overhead: %5 örnekleme (staging’de geçici olarak 1 yapılabilir)
+      "head_sampling_rate": 0.05
     }
   },
   "workers_dev": true,
@@ -36,7 +37,6 @@
     "MAIL_FROM": "Kaplan Turşu <no-reply@kaplantursu.com>",
     // R2 public (r2.dev). Kendi alan adında R2 custom domain bağlayınca burayı güncelleyin.
     "UPLOADS_PUBLIC_BASE_URL": "https://pub-dd08ce634607423dbc1eca3011d2c210.r2.dev",
-    "PAYTR_TEST_MODE": "true",
     "TURNSTILE_SITE_KEY": "0x4AAAAAAFvl5QAAi-Eo6q6D"
   },
   "d1_databases": [

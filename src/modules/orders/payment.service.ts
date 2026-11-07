@@ -2,6 +2,7 @@ import { ConflictError, NotFoundError } from "@/shared/errors";
 import type { EventBus } from "@/shared/events/event-bus";
 import { paymentLogger } from "@/shared/logger";
 import type { PaymentProvider } from "@/integrations/payment/payment-provider";
+import { orderAccessUrl } from "./order-access-path";
 import type {
   OrderPaymentRepository,
   OrderQueryRepository,
@@ -61,8 +62,17 @@ export class PaymentService {
       customerAddress: formatAddress(address),
       customerIp: context.customerIp,
       description: `Sipariş ${order.orderNumber}`,
-      okUrl: `${this.urls.baseUrl}/siparis/${order.orderNumber}?t=${order.lookupToken}`,
-      failUrl: `${this.urls.baseUrl}/siparis/${order.orderNumber}?t=${order.lookupToken}&durum=basarisiz`,
+      okUrl: orderAccessUrl(
+        this.urls.baseUrl,
+        order.orderNumber,
+        order.lookupToken,
+      ),
+      failUrl: orderAccessUrl(
+        this.urls.baseUrl,
+        order.orderNumber,
+        order.lookupToken,
+        { durum: "basarisiz" },
+      ),
     });
 
     return { paymentUrl: result.paymentUrl, mode: result.mode };
@@ -75,7 +85,7 @@ export class PaymentService {
   async handleCallback(
     payload: Record<string, string>,
   ): Promise<PaymentOutcome> {
-    const result = this.provider.verifyCallback(payload);
+    const result = await this.provider.verifyCallback(payload);
 
     const outcome = await this.orders.applyPaymentResult({
       merchantOid: result.merchantOid,

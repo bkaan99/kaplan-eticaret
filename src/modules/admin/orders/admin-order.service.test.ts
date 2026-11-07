@@ -43,6 +43,9 @@ class FakeRepo implements AdminOrderRepository {
   async list() {
     return { items: [], total: 0, page: 1, totalPages: 1 };
   }
+  async countByStatus() {
+    return {};
+  }
   async findDetail() {
     return this.current;
   }

@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
+import { buttonVariants } from "@/components/ui/button";
+import { features } from "@/config/features";
 import {
   getProductAdminService,
   getPromotionService,
@@ -66,6 +68,7 @@ async function PromotionsContent() {
       }))}
       campaigns={campaigns.map(toCampaignRow)}
       categories={references.categories}
+      now={new Date().toISOString()}
     />
   );
 }
@@ -74,27 +77,20 @@ export default function AdminPromotionsPage() {
   return (
     <>
       <PageHeader
-        title="Kupon ve Kampanya Yönetimi"
-        description="Müşteri indirim kuponları, sepet alt limit kampanyaları ve kategori bazlı otomatik promosyonlar."
+        title="Kuponlar ve kampanyalar"
+        description="İndirim kodları ve koşul sağlandığında sepete kendiliğinden uygulanan kampanyalar."
         actions={
-          <div className="flex items-center gap-2">
+          features.b2b ? (
             <Link
               href="/admin/bayi-gruplari"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
+              className={buttonVariants({ variant: "outline" })}
             >
-              <span>👥 Bayi Fiyatlandırması</span>
+              Bayi fiyatlandırması
             </Link>
-            <Link
-              href="/"
-              target="_blank"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-emerald-700 px-3.5 text-xs font-semibold text-white shadow-2xs hover:bg-emerald-800 transition"
-            >
-              <span>Mağazayı Gör ↗</span>
-            </Link>
-          </div>
+          ) : null
         }
       />
-      <Suspense fallback={<AdminLoading />}>
+      <Suspense fallback={<AdminLoading label="Kampanyalar yükleniyor..." />}>
         <PromotionsContent />
       </Suspense>
     </>

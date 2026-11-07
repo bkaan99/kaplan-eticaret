@@ -70,8 +70,9 @@ export class StaffService {
     }
 
     const role = await this.requireRole(id);
-    if (role.isSystem) {
-      throw new ForbiddenError("Sistem rolleri değiştirilemez");
+    // Sistem rolü: ad sabit; açıklama ve yetkiler güncellenebilir. Silme ayrı kuralda.
+    if (role.isSystem && input.name !== role.name) {
+      throw new ForbiddenError("Sistem rolünün adı değiştirilemez");
     }
     // Yetkisi olmadığı izinleri ne ekleyebilir ne de başkasından çıkarabilir.
     this.assertCanGrant(actor, [...input.permissions, ...role.permissions]);
@@ -83,7 +84,10 @@ export class StaffService {
       await this.assertManagersRemain({ roleId: id });
     }
 
-    await this.repository.updateRole(id, input);
+    await this.repository.updateRole(id, {
+      ...input,
+      name: role.isSystem ? role.name : input.name,
+    });
     await this.audit.log({
       actorId: actor.userId,
       ip: actor.ip,
@@ -98,13 +102,14 @@ export class StaffService {
 
   async deleteRole(id: string, actor: StaffActor): Promise<void> {
     const role = await this.requireRole(id);
-    if (role.isSystem) {
-      throw new ForbiddenError("Sistem rolleri silinemez");
-    }
     if (role.userCount > 0) {
       throw new ConflictError(
         `Bu role atanmış ${role.userCount} personel var; önce rolü kaldırın`,
       );
+    }
+    // Rol yönetimi yetkisi taşıyan son rolü silmeyi engelle.
+    if (role.permissions.includes(PERMISSIONS.ROLE_MANAGE)) {
+      await this.assertManagersRemain({ roleId: id });
     }
 
     await this.repository.deleteRole(id);
@@ -114,7 +119,7 @@ export class StaffService {
       action: "role.delete",
       entityType: "Role",
       entityId: id,
-      before: { name: role.name },
+      before: { name: role.name, isSystem: role.isSystem },
     });
   }
 

@@ -5,7 +5,11 @@ import { requirePermission } from "@/modules/auth/session";
 import { isAppError } from "@/shared/errors";
 import { reportError } from "@/shared/error-reporter";
 import { PERMISSIONS } from "@/shared/permissions";
-import { getClientIp } from "@/shared/rate-limit";
+import {
+  RATE_LIMIT_POLICIES,
+  enforceRateLimit,
+  getClientIp,
+} from "@/shared/rate-limit";
 import { getFileStorage } from "@/shared/storage";
 import { validateImage } from "@/shared/storage/image-validation";
 
@@ -15,6 +19,13 @@ export async function POST(request: Request) {
 
   try {
     const user = await requirePermission(PERMISSIONS.PRODUCT_WRITE);
+    const ip = await getClientIp();
+    await enforceRateLimit("upload:ip", ip, RATE_LIMIT_POLICIES.upload);
+    await enforceRateLimit(
+      "upload:user",
+      user.id,
+      RATE_LIMIT_POLICIES.upload,
+    );
 
     const form = await request.formData();
     const file = form.get("file");

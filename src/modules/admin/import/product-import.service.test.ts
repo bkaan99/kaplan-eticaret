@@ -15,6 +15,9 @@ class FakeProducts implements ProductAdminRepository {
   async list() {
     return { items: [], total: 0, page: 1, totalPages: 1 };
   }
+  async countByStatus() {
+    return {};
+  }
   async findForEdit() {
     return null;
   }

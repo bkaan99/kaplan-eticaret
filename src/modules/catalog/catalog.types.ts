@@ -39,6 +39,10 @@ export interface ProductCard {
   hasPriceRange: boolean;
   currency: string;
   inStock: boolean;
+  /** Tek seçenekli ve stokta ise karttan doğrudan sepete eklenecek varyant */
+  quickAddVariantId: string | null;
+  /** Kartta gösterilen nitelik rozetleri (ör. "Doğal fermente", "Acılı") */
+  badges: string[];
 }
 
 export interface FacetValue {
@@ -121,4 +125,11 @@ export interface ProductDetail {
   variants: VariantView[];
   attributes: { name: string; values: string[] }[];
   taxRate: string;
+  /** Gıda bilgileri; boşsa ürün sayfasında gösterilmez */
+  ingredients: string | null;
+  allergens: string | null;
+  shelfLife: string | null;
+  /** Yapısal veri (GTIN) için ilk barkod */
+  barcode: string | null;
+  weightGram: number | null;
 }

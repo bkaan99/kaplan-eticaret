@@ -1,3 +1,8 @@
+import {
+  equalShares,
+  FULL_SHARE,
+  sharesAreValid,
+} from "./custom-pickle.shares";
 import { createHash } from "node:crypto";
 import type Decimal from "decimal.js";
 import type { Actor, AuditLogger } from "@/shared/audit";
@@ -10,6 +15,10 @@ import type {
   CustomPickleRepository,
   IngredientRecord,
 } from "./custom-pickle.repository";
+import type {
+  CustomizationLineItem,
+  ItemCustomizationHandler,
+} from "../cart/customization";
 import {
   customPickleInputSchema,
   ingredientInputSchema,
@@ -19,6 +28,10 @@ import {
   bidonWeightGram,
   BRINE_OPTIONS,
   CUSTOM_PICKLE_PRODUCT_SLUG,
+  isMonthInSeason,
+  isStockAvailable,
+  isStockCritical,
+  maxIngredientsForSize,
   SPICE_OPTIONS,
   type CustomPickleConfig,
   type CustomizationPricer,
@@ -41,11 +54,18 @@ export function bidonKg(weightGram: number | null): Decimal {
 }
 
 /** Malzemenin bu bidondaki ek ücreti: kg başı ücret × bidon kilosu. */
+/** Malzemenin bidondaki payı kadar ücreti; pay verilmezse bidonun tamamı üzerinden hesaplanır. */
 export function ingredientExtra(
   pricePerKg: Decimal.Value,
   weightGram: number | null,
+  share: number = FULL_SHARE,
 ): Decimal {
-  return roundMoney(toDecimal(pricePerKg).times(bidonKg(weightGram)));
+  return roundMoney(
+    toDecimal(pricePerKg)
+      .times(bidonKg(weightGram))
+      .times(share)
+      .dividedBy(FULL_SHARE),
+  );
 }
 
 /** Aynı seçim aynı anahtarı üretir; sepette aynı bidon tek satırda toplanır. */
@@ -55,6 +75,14 @@ export function customizationKey(customization: StoredCustomization): string {
     customization.brine,
     customization.spice,
     customization.note ?? "",
+    // Oransız eski satırların anahtarı değişmesin.
+    ...(customization.shares
+      ? [
+          Object.entries(customization.shares).sort(([a], [b]) =>
+            a.localeCompare(b),
+          ),
+        ]
+      : []),
   ]);
   return createHash("sha256").update(canonical).digest("hex").slice(0, 24);
 }
@@ -75,13 +103,32 @@ export function readStoredCustomization(
     ingredientIds: raw.ingredientIds.filter(
       (id): id is string => typeof id === "string",
     ),
+    ...(readShares(raw.shares) ? { shares: readShares(raw.shares) } : {}),
     brine: raw.brine,
     spice: raw.spice,
     note: typeof raw.note === "string" ? raw.note : null,
   };
 }
 
-function toView(record: IngredientRecord): IngredientView {
+function readShares(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, number] => typeof entry[1] === "number",
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function toView(record: IngredientRecord, now = new Date()): IngredientView {
+  const currentMonth = now.getMonth() + 1;
+  const inSeason = isMonthInSeason(
+    record.seasonStartMonth,
+    record.seasonEndMonth,
+    currentMonth,
+  );
+  const inStock = isStockAvailable(record.stockKg);
+  const isCriticalStock = isStockCritical(record.stockKg, record.minStockKg);
+  const isAvailable = record.isActive && inStock && inSeason;
+
   return {
     id: record.id,
     name: record.name,
@@ -90,6 +137,16 @@ function toView(record: IngredientRecord): IngredientView {
     description: record.description,
     imageUrl: record.imageUrl,
     pricePerKg: toDecimal(record.pricePerKg).toFixed(2),
+    stockKg: record.stockKg ? toDecimal(record.stockKg).toFixed(2) : null,
+    minStockKg: record.minStockKg
+      ? toDecimal(record.minStockKg).toFixed(2)
+      : null,
+    seasonStartMonth: record.seasonStartMonth,
+    seasonEndMonth: record.seasonEndMonth,
+    inStock,
+    inSeason,
+    isAvailable,
+    isCriticalStock,
     isActive: record.isActive,
     sortOrder: record.sortOrder,
   };
@@ -130,12 +187,38 @@ export interface PreparedCustomPickle {
   key: string;
 }
 
-export class CustomPickleService implements CustomizationPricer {
+export class CustomPickleService
+  implements CustomizationPricer, ItemCustomizationHandler
+{
   constructor(
     private readonly repository: CustomPickleRepository,
     private readonly priceResolver: PriceResolver,
     private readonly audit?: AuditLogger,
   ) {}
+
+  /** Bu ürün özelleştirilebilir mi? (Kendi Turşunu Yap bidonu) */
+  isCustomizable(productSlug: string): boolean {
+    return productSlug === CUSTOM_PICKLE_PRODUCT_SLUG;
+  }
+
+  /** Standart ekleme denenirse gösterilecek mesaj */
+  getStandardAddErrorMessage(productSlug: string): string {
+    if (productSlug === CUSTOM_PICKLE_PRODUCT_SLUG) {
+      return 'Bu bidon "Kendi Turşunu Yap" sayfasından malzeme seçilerek oluşturulur';
+    }
+    return "Bu ürün özelleştirilerek sepete eklenmelidir";
+  }
+
+  /** Özel satırın geçerli olduğunu doğrular */
+  validateCustomItem(productSlug: string, customization: unknown): void {
+    if (productSlug !== CUSTOM_PICKLE_PRODUCT_SLUG) {
+      throw new ValidationError("Bu ürün özelleştirilemez");
+    }
+    const read = readStoredCustomization(customization);
+    if (!read) {
+      throw new ValidationError("Geçersiz seçim");
+    }
+  }
 
   /** Yapıcı sayfası için bidon boyutları (müşteri fiyatıyla) ve aktif malzemeler. */
   async getBuilder(context: PricingContext): Promise<BuilderData | null> {
@@ -183,7 +266,7 @@ export class CustomPickleService implements CustomizationPricer {
           inStock: available === null || available > 0,
         };
       }),
-      ingredients: ingredients.map(toView),
+      ingredients: ingredients.map((item) => toView(item)),
       brines: options.brines
         .filter((item) => item.isActive)
         .sort((a, b) => a.sortOrder - b.sortOrder),
@@ -209,6 +292,14 @@ export class CustomPickleService implements CustomizationPricer {
       throw new NotFoundError("Bidon boyutu");
     }
 
+    const weightGram = bidonWeightGram(variant.weightGram, variant.label);
+    const maxIngredients = maxIngredientsForSize(weightGram);
+    if (input.ingredientIds.length > maxIngredients) {
+      throw new ValidationError(
+        `Bu bidon boyutunda en fazla ${maxIngredients} malzeme seçebilirsiniz`,
+      );
+    }
+
     const ingredients = await this.repository.findIngredients(
       input.ingredientIds,
     );
@@ -218,8 +309,39 @@ export class CustomPickleService implements CustomizationPricer {
         "Seçtiğiniz malzemelerden biri artık mevcut değil, lütfen seçiminizi güncelleyin",
       );
     }
+    const currentMonth = new Date().getMonth() + 1;
+    const unavailable = active.find(
+      (item) =>
+        !isStockAvailable(item.stockKg) ||
+        !isMonthInSeason(
+          item.seasonStartMonth,
+          item.seasonEndMonth,
+          currentMonth,
+        ),
+    );
+    if (unavailable) {
+      if (!isStockAvailable(unavailable.stockKg)) {
+        throw new ConflictError(
+          `"${unavailable.name}" malzemesi tükendiği için seçilemez`,
+        );
+      }
+      throw new ConflictError(
+        `"${unavailable.name}" malzemesi mevsim dışı olduğu için seçilemez`,
+      );
+    }
     if (!active.some((item) => item.group === "VEGETABLE")) {
       throw new ValidationError("Bidona en az bir sebze eklemelisiniz");
+    }
+
+    const vegetableIds = active
+      .filter((item) => item.group === "VEGETABLE")
+      .map((item) => item.id);
+    // Oran gönderilmediyse sebzeler eşit dağıtılır; gönderildiyse bidonu tam doldurmalı.
+    const shares = input.shares ?? equalShares(vegetableIds);
+    if (!sharesAreValid(shares, vegetableIds)) {
+      throw new ValidationError(
+        "Sebze oranları %10'luk adımlarla toplam %100 olmalıdır",
+      );
     }
 
     const options = await this.getOptions();
@@ -247,6 +369,7 @@ export class CustomPickleService implements CustomizationPricer {
     const customization: StoredCustomization = {
       kind: "custom-pickle",
       ingredientIds: input.ingredientIds,
+      shares,
       brine: input.brine,
       spice: input.spice,
       note: input.note,
@@ -262,10 +385,49 @@ export class CustomPickleService implements CustomizationPricer {
 
   /** Sepet/checkout satırları için güncel ek ücretleri ve özetleri hesaplar. */
   async quote(
-    lines: { customization: StoredCustomization; weightGram: number | null }[],
-  ): Promise<CustomizationQuote[]> {
+    lines: (
+      | CustomizationLineItem
+      | { customization: StoredCustomization; weightGram: number | null }
+    )[],
+  ): Promise<(CustomizationQuote | undefined)[]> {
+    const parsedLines = lines.map((line) => {
+      // Satır özelleştirme anahtarı boş string olarak verilmişse standart satırdır
+      if ("customizationKey" in line && line.customizationKey === "") {
+        return null;
+      }
+      if (!line.customization) return null;
+
+      const stored = readStoredCustomization(line.customization);
+      if (!stored) return null;
+
+      const weightGram =
+        line.weightGram !== undefined &&
+        line.weightGram !== null &&
+        line.weightGram > 0 &&
+        !("optionLabels" in line && line.optionLabels?.length)
+          ? line.weightGram
+          : bidonWeightGram(
+              line.weightGram ?? null,
+              "optionLabels" in line && line.optionLabels
+                ? line.optionLabels.join(" ")
+                : null,
+            );
+      return { stored, weightGram };
+    });
+
+    const activeEntries = parsedLines.filter(
+      (
+        entry,
+      ): entry is { stored: StoredCustomization; weightGram: number | null } =>
+        entry !== null,
+    );
+
+    if (activeEntries.length === 0) {
+      return lines.map(() => undefined);
+    }
+
     const ids = [
-      ...new Set(lines.flatMap((line) => line.customization.ingredientIds)),
+      ...new Set(activeEntries.flatMap((line) => line.stored.ingredientIds)),
     ];
     const [rawIngredients, options] = await Promise.all([
       this.repository.findIngredients(ids),
@@ -279,7 +441,9 @@ export class CustomPickleService implements CustomizationPricer {
       options.spices.map((item) => [item.key, item.label]),
     );
 
-    return lines.map(({ customization, weightGram }) => {
+    return parsedLines.map((entry) => {
+      if (!entry) return undefined;
+      const { stored: customization, weightGram } = entry;
       const found = customization.ingredientIds
         .map((id) => records.get(id))
         .filter((item): item is IngredientRecord => item !== undefined)
@@ -287,15 +451,29 @@ export class CustomPickleService implements CustomizationPricer {
           (a, b) =>
             a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "tr"),
         );
+      const currentMonth = new Date().getMonth() + 1;
       const available =
         found.length === customization.ingredientIds.length &&
-        found.every((item) => item.isActive);
+        found.every(
+          (item) =>
+            item.isActive &&
+            isStockAvailable(item.stockKg) &&
+            isMonthInSeason(
+              item.seasonStartMonth,
+              item.seasonEndMonth,
+              currentMonth,
+            ),
+        );
 
-      const priced = found.map((item) => ({
-        id: item.id,
-        name: item.name,
-        extra: ingredientExtra(item.pricePerKg, weightGram),
-      }));
+      const priced = found.map((item) => {
+        const share = customization.shares?.[item.id];
+        return {
+          id: item.id,
+          name: item.name,
+          share,
+          extra: ingredientExtra(item.pricePerKg, weightGram, share),
+        };
+      });
       const extra = priced.reduce(
         (sum, item) => sum.plus(item.extra),
         toDecimal(0),
@@ -309,7 +487,17 @@ export class CustomPickleService implements CustomizationPricer {
         spiceLabels.get(customization.spice) ??
         SPICE_OPTIONS[customization.spice] ??
         customization.spice;
-      const parts = [priced.map((item) => item.name).join(", "), brine, spice];
+      const parts = [
+        priced
+          .map((item) =>
+            item.share === undefined
+              ? item.name
+              : `${item.name} %${item.share}`,
+          )
+          .join(", "),
+        brine,
+        spice,
+      ];
       if (customization.note) parts.push(`Not: ${customization.note}`);
 
       return {
@@ -322,6 +510,7 @@ export class CustomPickleService implements CustomizationPricer {
             id: item.id,
             name: item.name,
             unitExtra: item.extra.toFixed(2),
+            ...(item.share === undefined ? {} : { share: item.share }),
           })),
           brine,
           spice,
@@ -343,7 +532,7 @@ export class CustomPickleService implements CustomizationPricer {
 
   async listIngredients(): Promise<IngredientView[]> {
     return (await this.repository.listIngredients({ activeOnly: false })).map(
-      toView,
+      (item) => toView(item),
     );
   }
 

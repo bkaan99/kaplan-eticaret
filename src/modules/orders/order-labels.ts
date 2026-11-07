@@ -18,6 +18,22 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   PARTIALLY_REFUNDED: "Kısmen iade edildi",
 };
 
+export const PAYMENT_METHOD_LABELS: Record<
+  "CARD" | "BANK_TRANSFER" | "DEFERRED",
+  string
+> = {
+  CARD: "Kredi kartı",
+  BANK_TRANSFER: "Havale / EFT",
+  DEFERRED: "Vadeli",
+};
+
+export const RETURN_STATUS_LABELS: Record<string, string> = {
+  REQUESTED: "Bekliyor",
+  APPROVED: "Onaylandı",
+  REJECTED: "Reddedildi",
+  COMPLETED: "Tamamlandı",
+};
+
 export type StatusTone = "neutral" | "success" | "warning" | "danger" | "info";
 
 export const ORDER_STATUS_TONES: Record<OrderStatus, StatusTone> = {

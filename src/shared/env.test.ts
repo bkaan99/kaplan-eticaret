@@ -37,9 +37,22 @@ describe("parseEnv", () => {
     expect(env.PAYTR_MERCHANT_ID).toBeUndefined();
   });
 
-  it("production'da PayTR tamamen boşsa staging için kabul eder", () => {
+  it("production'da CRON_SECRET yoksa reddeder", () => {
     expect(() =>
       parseEnv({ ...validSource, NODE_ENV: "production" }, captchaOff),
+    ).toThrow(/CRON_SECRET/);
+  });
+
+  it("production'da PayTR tamamen boşsa staging için kabul eder", () => {
+    expect(() =>
+      parseEnv(
+        {
+          ...validSource,
+          NODE_ENV: "production",
+          CRON_SECRET: "cron-secret-value",
+        },
+        captchaOff,
+      ),
     ).not.toThrow();
   });
 
@@ -49,6 +62,7 @@ describe("parseEnv", () => {
         {
           ...validSource,
           NODE_ENV: "production",
+          CRON_SECRET: "cron-secret-value",
           PAYTR_MERCHANT_ID: "1",
         },
         captchaOff,
@@ -61,6 +75,7 @@ describe("parseEnv", () => {
       {
         ...validSource,
         NODE_ENV: "production",
+        CRON_SECRET: "cron-secret-value",
         PAYTR_MERCHANT_ID: "1",
         PAYTR_MERCHANT_KEY: "k",
         PAYTR_MERCHANT_SALT: "s",

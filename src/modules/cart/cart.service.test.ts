@@ -1,5 +1,7 @@
 import Decimal from "decimal.js";
 import { beforeEach, describe, expect, it } from "vitest";
+import { ValidationError } from "@/shared/errors";
+import type { ItemCustomizationHandler } from "./customization";
 import type {
   CartItemRecord,
   CartRecord,
@@ -21,6 +23,7 @@ class FakeCartRepository implements CartRepository {
   carts = new Map<string, CartRecord>();
   items = new Map<string, Map<string, number>>();
   variants = new Map<string, FakeVariant>();
+  customLines = new Map<string, { key: string; customization: unknown }>();
   private seq = 0;
 
   async findByUserId(userId: string) {
@@ -49,9 +52,12 @@ class FakeCartRepository implements CartRepository {
     return [...(this.items.get(cartId) ?? new Map())].map(
       ([variantId, quantity]) => {
         const v = this.variants.get(variantId)!;
+        const custom = this.customLines.get(`${cartId}:${variantId}`);
         return {
           variantId,
           quantity,
+          customizationKey: custom?.key,
+          customization: custom?.customization,
           sku: `SKU-${variantId}`,
           price: new Decimal(v.price),
           currency: "TRY",
@@ -74,8 +80,16 @@ class FakeCartRepository implements CartRepository {
   async getItemQuantity(cartId: string, variantId: string) {
     return this.items.get(cartId)?.get(variantId) ?? 0;
   }
-  async setItemQuantity(cartId: string, variantId: string, quantity: number) {
+  async setItemQuantity(
+    cartId: string,
+    variantId: string,
+    quantity: number,
+    custom?: { key: string; customization: unknown },
+  ) {
     this.items.get(cartId)!.set(variantId, quantity);
+    if (custom) {
+      this.customLines.set(`${cartId}:${variantId}`, custom);
+    }
   }
   async removeItem(cartId: string, variantId: string) {
     this.items.get(cartId)?.delete(variantId);
@@ -104,6 +118,17 @@ class FakeCartRepository implements CartRepository {
       );
     }
     await this.delete(from);
+  }
+  async purgeAbandoned(olderThan: Date) {
+    let count = 0;
+    for (const [id, cart] of this.carts) {
+      if (!cart.userId) {
+        this.carts.delete(id);
+        this.items.delete(id);
+        count++;
+      }
+    }
+    return count;
   }
 }
 
@@ -252,6 +277,112 @@ describe("CartService", () => {
         result.cart.lines.map((l) => [l.variantId, l.quantity]),
       );
       expect(quantities).toEqual({ a: 3, b: 1 });
+    });
+  });
+
+  describe("Ürün Özelleştirme (ItemCustomizationHandler / OCP)", () => {
+    const fakeCustomizationHandler: ItemCustomizationHandler = {
+      isCustomizable: (slug) => slug === "ozellestirilebilir-urun",
+      getStandardAddErrorMessage: (slug) => `${slug} için malzeme seçmelisiniz`,
+      validateCustomItem: (slug, custom) => {
+        if (slug !== "ozellestirilebilir-urun")
+          throw new ValidationError("Bu ürün özelleştirilemez");
+        if (!custom || typeof custom !== "object")
+          throw new ValidationError("Geçersiz seçim");
+      },
+      quote: async (lines) => {
+        return lines.map((l) => {
+          if (!l.customization) return undefined;
+          return {
+            extra: new Decimal("15.00"),
+            available: true,
+            summary: "Özel Karışım",
+            snapshot: { note: "özel" },
+          };
+        });
+      },
+    };
+
+    it("özelleştirilebilir ürün standart addItem ile eklenemez", async () => {
+      repo.variants.set("custom-v1", { price: "100", stock: 10 });
+      const origFind = repo.findVariantStock.bind(repo);
+      repo.findVariantStock = async (id) => {
+        const res = await origFind(id);
+        if (id === "custom-v1" && res) {
+          return { ...res, productSlug: "ozellestirilebilir-urun" };
+        }
+        return res;
+      };
+
+      const customService = new CartService(
+        repo,
+        undefined,
+        fakeCustomizationHandler,
+      );
+
+      await expect(
+        customService.addItem(guest(), "custom-v1", 1),
+      ).rejects.toThrow("ozellestirilebilir-urun için malzeme seçmelisiniz");
+    });
+
+    it("özel ürün addCustomItem ile sepete eklenir ve fiyatlandırılır", async () => {
+      repo.variants.set("custom-v1", { price: "100", stock: 10 });
+      const origFind = repo.findVariantStock.bind(repo);
+      repo.findVariantStock = async (id) => {
+        const res = await origFind(id);
+        if (id === "custom-v1" && res) {
+          return { ...res, productSlug: "ozellestirilebilir-urun" };
+        }
+        return res;
+      };
+
+      const customService = new CartService(
+        repo,
+        undefined,
+        fakeCustomizationHandler,
+      );
+      const result = await customService.addCustomItem(
+        guest(),
+        "custom-v1",
+        { key: "custom-key-1", customization: { blend: "mix" } },
+        2,
+      );
+
+      expect(result.cart.lines).toHaveLength(1);
+      expect(result.cart.lines[0]!.isCustom).toBe(true);
+      expect(result.cart.lines[0]!.lineKey).toBe("custom-key-1");
+      expect(result.cart.lines[0]!.unitPrice).toBe("115.00");
+      expect(result.cart.lines[0]!.variantLabel).toContain("Özel Karışım");
+      expect(result.cart.subtotal).toBe("230.00");
+    });
+
+    it("özelleştirme işleyicisi yokken addCustomItem reddedilir", async () => {
+      repo.variants.set("custom-v1", { price: "100", stock: 10 });
+      const standardService = new CartService(repo);
+      await expect(
+        standardService.addCustomItem(
+          guest(),
+          "custom-v1",
+          { key: "custom-key-1", customization: { blend: "mix" } },
+          1,
+        ),
+      ).rejects.toThrow("Bu ürün özelleştirilemez");
+    });
+
+    it("terk edilmiş anonim sepetleri temizler, üye sepetlerine dokunmaz", async () => {
+      const guestCart = await service.addItem(guest(), "a", 1);
+      const userCart = await service.addItem(
+        { userId: "u-1", sessionToken: null },
+        "a",
+        1,
+      );
+
+      expect(repo.carts.size).toBe(2);
+
+      const removed = await service.purgeAbandoned(new Date());
+      expect(removed).toBe(1);
+      expect(repo.carts.has(guestCart.cart.id!)).toBe(false);
+      expect(repo.carts.has(userCart.cart.id!)).toBe(true);
     });
   });
 });

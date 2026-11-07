@@ -1,7 +1,7 @@
 import type Decimal from "decimal.js";
 import { toDecimal } from "@/shared/money";
 import type { PriceResolver } from "../catalog/pricing";
-import type { CustomizationPricer } from "../custom-pickle/custom-pickle.types";
+import type { ItemCustomizationHandler } from "../cart/customization";
 import type {
   CheckoutLineRecord,
   CheckoutRepository,
@@ -31,7 +31,7 @@ export interface CheckoutPricingDeps {
   checkout: Pick<CheckoutRepository, "listActiveCampaigns" | "findCoupon">;
   settings: Pick<CheckoutSettings, "shippingTaxRate">;
   validator: Pick<CheckoutValidator, "assertCouponUsable">;
-  customizations?: CustomizationPricer;
+  customizations?: ItemCustomizationHandler;
   now: () => Date;
 }
 

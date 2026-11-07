@@ -1,17 +1,35 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
+import { formatAdminDate } from "@/components/admin/order-status";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { cn } from "@/shared/cn";
+import { formatMoney } from "@/shared/money";
 import {
   deleteCampaignAction,
   deleteCouponAction,
   saveCampaignAction,
   saveCouponAction,
 } from "./actions";
+import {
+  PROMOTION_STATUS_LABELS,
+  endsSoon,
+  isoToLocalInput,
+  localInputToIso,
+  promotionStatus,
+  type PromotionStatus,
+} from "./promotion-status";
 
 export interface CouponRow {
   id: string;
@@ -41,31 +59,123 @@ export interface CampaignRow {
   isActive: boolean;
 }
 
-const toLocalInput = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
+type Category = { id: string; label: string };
+type Message = { text: string; error: boolean } | null;
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "Süresiz";
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString("tr-TR", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return iso;
-  }
+const integer = new Intl.NumberFormat("tr-TR");
+
+/* ------------------------------------------------------------------ */
+/* Küçük parçalar                                                      */
+/* ------------------------------------------------------------------ */
+
+const STATUS_STYLES: Record<PromotionStatus, { pill: string; dot: string }> = {
+  active: {
+    pill: "bg-emerald-50 text-emerald-800 ring-emerald-200/70",
+    dot: "bg-emerald-500",
+  },
+  scheduled: {
+    pill: "bg-sky-50 text-sky-800 ring-sky-200/70",
+    dot: "bg-sky-500",
+  },
+  expired: {
+    pill: "bg-slate-100 text-slate-600 ring-slate-200",
+    dot: "bg-slate-400",
+  },
+  exhausted: {
+    pill: "bg-amber-50 text-amber-800 ring-amber-200/70",
+    dot: "bg-amber-500",
+  },
+  inactive: {
+    pill: "bg-slate-100 text-slate-600 ring-slate-200",
+    dot: "bg-slate-300",
+  },
+};
+
+function StatusBadge({ status }: { status: PromotionStatus }) {
+  const style = STATUS_STYLES[status];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ring-1 ring-inset",
+        style.pill,
+      )}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full", style.dot)} />
+      {PROMOTION_STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+function discountLabel(type: "PERCENT" | "FIXED", value: number): string {
+  return type === "PERCENT"
+    ? `%${integer.format(value)}`
+    : formatMoney(value).replace(/,00$/, "");
+}
+
+function validity(startsAt: string | null, endsAt: string | null): string {
+  if (!startsAt && !endsAt) return "Süresiz";
+  if (!startsAt) return `${formatAdminDate(new Date(endsAt!))} tarihine kadar`;
+  if (!endsAt)
+    return `${formatAdminDate(new Date(startsAt))} tarihinden itibaren`;
+  return `${formatAdminDate(new Date(startsAt))} – ${formatAdminDate(new Date(endsAt))}`;
+}
+
+function Icon({ d, size = 15 }: { d: string[]; size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {d.map((path) => (
+        <path key={path} d={path} />
+      ))}
+    </svg>
+  );
+}
+
+const ICONS = {
+  copy: [
+    "M8 8h11a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1Z",
+    "M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3",
+  ],
+  check: ["M20 6 9 17l-5-5"],
+  edit: ["M12 20h9", "M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"],
+  trash: ["M3 6h18", "M8 6V4h8v2", "M19 6l-1 14H6L5 6"],
+  x: ["M18 6 6 18", "M6 6l12 12"],
+  plus: ["M12 5v14", "M5 12h14"],
+};
+
+function Alert({ message }: { message: Message }) {
+  if (!message) return null;
+  return (
+    <div
+      role={message.error ? "alert" : "status"}
+      className={cn(
+        "rounded-lg border px-3 py-2 text-[12px] font-medium",
+        message.error
+          ? "border-rose-200 bg-rose-50 text-rose-800"
+          : "border-emerald-200 bg-emerald-50 text-emerald-800",
+      )}
+    >
+      {message.text}
+    </div>
+  );
 }
 
 function useRunner() {
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{
-    text: string;
-    error: boolean;
-  } | null>(null);
+  const [message, setMessage] = useState<Message>(null);
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
+    successText: string,
     onDone?: () => void,
   ) {
     startTransition(async () => {
@@ -73,7 +183,7 @@ function useRunner() {
       const result = await action();
       setMessage(
         result.ok
-          ? { text: "İşlem başarıyla kaydedildi.", error: false }
+          ? { text: successText, error: false }
           : { text: result.error ?? "İşlem başarısız oldu.", error: true },
       );
       if (result.ok) onDone?.();
@@ -82,6 +192,210 @@ function useRunner() {
 
   return { pending, message, run, setMessage };
 }
+
+/* ------------------------------------------------------------------ */
+/* Modal kabuğu ve form alanları                                       */
+/* ------------------------------------------------------------------ */
+
+function Modal({
+  open,
+  title,
+  description,
+  onClose,
+  footer,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  onClose: () => void;
+  footer: ReactNode;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCloseRef.current();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-6">
+      <button
+        type="button"
+        aria-label="Kapat"
+        className="absolute inset-0 bg-slate-950/50 backdrop-blur-xs"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative z-10 flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <div>
+            <h2
+              id={titleId}
+              className="text-[15px] font-semibold text-slate-900"
+            >
+              {title}
+            </h2>
+            <p className="mt-0.5 text-[12px] text-slate-500">{description}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Kapat"
+            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            <Icon d={ICONS.x} size={16} />
+          </button>
+        </div>
+        <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5">
+          {children}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3.5">
+          {footer}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  required,
+  action,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  required?: boolean;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-[12px] font-medium text-slate-700">
+          {label}
+          {required ? <span className="ml-0.5 text-rose-500">*</span> : null}
+        </span>
+        {action}
+      </span>
+      {children}
+      {hint ? <span className="text-[11px] text-slate-400">{hint}</span> : null}
+    </label>
+  );
+}
+
+function AffixInput({
+  affix,
+  ...props
+}: React.ComponentProps<typeof Input> & { affix: string }) {
+  return (
+    <span className="relative block">
+      <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[12px] font-medium text-slate-400">
+        {affix}
+      </span>
+      <Input {...props} className={cn("pl-7", props.className)} />
+    </span>
+  );
+}
+
+function Switch({
+  checked,
+  onChange,
+  label,
+  description,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  label: string;
+  description: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg border border-slate-200 px-3.5 py-3 text-left transition hover:bg-slate-50"
+    >
+      <span>
+        <span className="block text-[13px] font-medium text-slate-800">
+          {label}
+        </span>
+        <span className="block text-[11px] text-slate-500">{description}</span>
+      </span>
+      <span
+        className={cn(
+          "relative h-5 w-9 shrink-0 rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-slate-300",
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
+            checked ? "translate-x-4.5" : "translate-x-0.5",
+          )}
+        />
+      </span>
+    </button>
+  );
+}
+
+function DateRange({
+  startsAt,
+  endsAt,
+  onStart,
+  onEnd,
+}: {
+  startsAt: string;
+  endsAt: string;
+  onStart: (value: string) => void;
+  onEnd: (value: string) => void;
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Field label="Başlangıç" hint="Boşsa hemen geçerli">
+        <Input
+          type="datetime-local"
+          value={startsAt}
+          onChange={(e) => onStart(e.target.value)}
+        />
+      </Field>
+      <Field label="Bitiş" hint="Boşsa süresiz">
+        <Input
+          type="datetime-local"
+          value={endsAt}
+          onChange={(e) => onEnd(e.target.value)}
+        />
+      </Field>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Kuponlar                                                            */
+/* ------------------------------------------------------------------ */
 
 type CouponFormState = {
   id: string | null;
@@ -109,6 +423,12 @@ const blankCoupon: CouponFormState = {
   isActive: true,
 };
 
+function randomCode(): string {
+  const prefixes = ["KAPLAN", "GURME", "TURSU", "YAZ", "BAHAR", "OZEL"];
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+  return `${prefix}${Math.floor(10 + Math.random() * 90)}`;
+}
+
 function CouponModal({
   open,
   form,
@@ -121,7 +441,7 @@ function CouponModal({
   open: boolean;
   form: CouponFormState;
   pending: boolean;
-  message: { text: string; error: boolean } | null;
+  message: Message;
   onClose: () => void;
   onChange: <K extends keyof CouponFormState>(
     key: K,
@@ -129,515 +449,275 @@ function CouponModal({
   ) => void;
   onSave: () => void;
 }) {
-  const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    if (!open) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCloseRef.current();
-    };
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  if (!open) return null;
-
-  function generateRandomCode() {
-    const prefixes = ["KAPLAN", "GURME", "TURSU", "YAZ", "BAHAR", "OZEL"];
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-    const num = Math.floor(10 + Math.random() * 90);
-    onChange("code", `${prefix}${num}`);
-  }
-
+  const percent = form.type === "PERCENT";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Kapat"
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-      />
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative z-10 flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
-      >
-        {/* Modal Başlığı */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-6 py-4.5">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-sm font-bold text-emerald-800">
-              🎟️
-            </span>
-            <div>
-              <h2 id={titleId} className="text-base font-bold text-slate-900">
-                {form.id ? "Kupon Kodunu Düzenle" : "Yeni İndirim Kuponu Oluştur"}
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Ödeme aşamasında müşterilerin girebileceği promosyon kodu
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 transition cursor-pointer"
-            aria-label="Kapat"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Modal Form İçeriği */}
-        <div className="flex flex-col gap-4.5 overflow-y-auto px-6 py-5">
-          {message && (
-            <div
-              role={message.error ? "alert" : "status"}
-              className={`rounded-xl border p-3 text-xs font-semibold ${
-                message.error
-                  ? "border-red-200 bg-red-50 text-red-800"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          {/* Kupon Kodu */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-bold text-slate-700">
-                Kupon Kodu <span className="text-red-500">*</span>
-              </Label>
-              <button
-                type="button"
-                onClick={generateRandomCode}
-                className="text-[11px] font-semibold text-emerald-700 hover:underline"
-              >
-                ⚡ Rastgele Kod Üret
-              </button>
-            </div>
-            <Input
-              value={form.code}
-              onChange={(e) => onChange("code", e.target.value.toUpperCase())}
-              placeholder="Örn: KAPLAN20"
-              className="h-10 font-mono text-sm uppercase tracking-wider font-bold text-slate-900"
-            />
-          </div>
-
-          {/* Tür & İndirim Değeri */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">İndirim Türü</Label>
-              <Select
-                value={form.type}
-                onChange={(e) => onChange("type", e.target.value)}
-                className="h-9.5 text-xs font-semibold"
-              >
-                <option value="PERCENT">% Yüzde İndirim</option>
-                <option value="FIXED">₺ Sabit Tutar İndirimi</option>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">İndirim Tutarı / Oranı</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                  {form.type === "PERCENT" ? "%" : "₺"}
-                </span>
-                <Input
-                  value={form.value}
-                  onChange={(e) => onChange("value", e.target.value)}
-                  inputMode="decimal"
-                  placeholder={form.type === "PERCENT" ? "20" : "50"}
-                  className="h-9.5 pl-7 text-xs font-bold"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Minimum Sepet Tutarı */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-bold text-slate-700">
-              Minimum Sepet Tutarı (₺)
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                ₺
-              </span>
-              <Input
-                value={form.minSubtotal}
-                onChange={(e) => onChange("minSubtotal", e.target.value)}
-                inputMode="decimal"
-                placeholder="Örn: 250 (Boşsa alt limitsiz uygulanır)"
-                className="h-9.5 pl-7 text-xs"
-              />
-            </div>
-          </div>
-
-          {/* Kullanım Limitleri */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">Toplam Kullanım Kotası</Label>
-              <Input
-                value={form.maxUses}
-                onChange={(e) => onChange("maxUses", e.target.value)}
-                inputMode="numeric"
-                placeholder="Örn: 100 (Boşsa sınırsız)"
-                className="h-9.5 text-xs font-mono"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">Müşteri Başına Sınır</Label>
-              <Input
-                value={form.perCustomerLimit}
-                onChange={(e) => onChange("perCustomerLimit", e.target.value)}
-                inputMode="numeric"
-                placeholder="Örn: 1 (Boşsa sınırsız)"
-                className="h-9.5 text-xs font-mono"
-              />
-            </div>
-          </div>
-
-          {/* Geçerlilik Tarihleri */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">Başlangıç Tarihi</Label>
-              <Input
-                type="datetime-local"
-                value={form.startsAt}
-                onChange={(e) => onChange("startsAt", e.target.value)}
-                className="h-9 text-xs"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">Bitiş Tarihi</Label>
-              <Input
-                type="datetime-local"
-                value={form.endsAt}
-                onChange={(e) => onChange("endsAt", e.target.value)}
-                className="h-9 text-xs"
-              />
-            </div>
-          </div>
-
-          {/* Aktiflik Toggle */}
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => onChange("isActive", !form.isActive)}
-              className={`flex h-9.5 w-full items-center justify-center gap-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                form.isActive
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                  : "border-slate-200 bg-slate-100 text-slate-500"
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  form.isActive ? "bg-emerald-500" : "bg-slate-400"
-                }`}
-              />
-              <span>{form.isActive ? "● Kupon Aktif (Kullanılabilir)" : "○ Kupon Pasif (Durduruldu)"}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Modal Alt Çubuk */}
-        <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
+    <Modal
+      open={open}
+      title={form.id ? "Kuponu düzenle" : "Yeni kupon"}
+      description="Müşterinin sepette veya ödemede gireceği indirim kodu"
+      onClose={onClose}
+      footer={
+        <>
+          <Button type="button" variant="ghost" onClick={onClose}>
             Vazgeç
           </Button>
           <Button
             type="button"
             disabled={pending || !form.code.trim() || !form.value.trim()}
             onClick={onSave}
-            className="bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
           >
-            {pending ? "Kaydediliyor..." : "Kuponu Kaydet"}
+            {pending
+              ? "Kaydediliyor…"
+              : form.id
+                ? "Değişiklikleri kaydet"
+                : "Kuponu oluştur"}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <Alert message={message} />
+
+      <Field
+        label="Kupon kodu"
+        required
+        hint="3–40 karakter; harf, rakam, - ve _"
+        action={
+          <button
+            type="button"
+            onClick={() => onChange("code", randomCode())}
+            className="cursor-pointer text-[11px] font-medium text-primary hover:underline"
+          >
+            Rastgele üret
+          </button>
+        }
+      >
+        <Input
+          value={form.code}
+          onChange={(e) => onChange("code", e.target.value.toUpperCase())}
+          placeholder="Örn. KAPLAN20"
+          className="font-mono font-semibold tracking-wider uppercase"
+        />
+      </Field>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="İndirim türü">
+          <Select
+            value={form.type}
+            onChange={(e) => onChange("type", e.target.value)}
+          >
+            <option value="PERCENT">Yüzde (%)</option>
+            <option value="FIXED">Sabit tutar (₺)</option>
+          </Select>
+        </Field>
+        <Field label={percent ? "İndirim oranı" : "İndirim tutarı"} required>
+          <AffixInput
+            affix={percent ? "%" : "₺"}
+            value={form.value}
+            onChange={(e) => onChange("value", e.target.value)}
+            inputMode="decimal"
+            placeholder={percent ? "20" : "50"}
+          />
+        </Field>
       </div>
-    </div>
+
+      <Field label="Minimum sepet tutarı" hint="Boşsa her sepette geçerli">
+        <AffixInput
+          affix="₺"
+          value={form.minSubtotal}
+          onChange={(e) => onChange("minSubtotal", e.target.value)}
+          inputMode="decimal"
+          placeholder="Örn. 250"
+        />
+      </Field>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Toplam kullanım kotası" hint="Boşsa sınırsız">
+          <Input
+            value={form.maxUses}
+            onChange={(e) => onChange("maxUses", e.target.value)}
+            inputMode="numeric"
+            placeholder="Örn. 100"
+          />
+        </Field>
+        <Field label="Müşteri başına" hint="Boşsa sınırsız">
+          <Input
+            value={form.perCustomerLimit}
+            onChange={(e) => onChange("perCustomerLimit", e.target.value)}
+            inputMode="numeric"
+            placeholder="Örn. 1"
+          />
+        </Field>
+      </div>
+
+      <DateRange
+        startsAt={form.startsAt}
+        endsAt={form.endsAt}
+        onStart={(v) => onChange("startsAt", v)}
+        onEnd={(v) => onChange("endsAt", v)}
+      />
+
+      <Switch
+        checked={form.isActive}
+        onChange={(v) => onChange("isActive", v)}
+        label="Kupon kullanıma açık"
+        description={
+          form.isActive
+            ? "Geçerlilik tarihleri içinde müşteri kullanabilir"
+            : "Kapalıyken kod hiçbir koşulda kabul edilmez"
+        }
+      />
+    </Modal>
   );
 }
 
-function CouponSection({ coupons }: { coupons: CouponRow[] }) {
-  const { pending, message, run } = useRunner();
-  const [form, setForm] = useState<CouponFormState>(blankCoupon);
-  const [open, setOpen] = useState(false);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+function CouponTable({
+  coupons,
+  now,
+  pending,
+  onEdit,
+  onDelete,
+}: {
+  coupons: CouponRow[];
+  now: Date;
+  pending: boolean;
+  onEdit: (coupon: CouponRow) => void;
+  onDelete: (coupon: CouponRow) => void;
+}) {
+  const [copied, setCopied] = useState<string | null>(null);
 
-  const set = <K extends keyof CouponFormState>(
-    key: K,
-    value: CouponFormState[K],
-  ) => setForm((current) => ({ ...current, [key]: value }));
-
-  function openCreate() {
-    setForm(blankCoupon);
-    setOpen(true);
-  }
-
-  function openEdit(coupon: CouponRow) {
-    setForm({
-      id: coupon.id,
-      code: coupon.code,
-      type: coupon.type,
-      value: String(Number(coupon.value)),
-      minSubtotal: coupon.minSubtotal ? String(Number(coupon.minSubtotal)) : "",
-      maxUses: coupon.maxUses ? String(coupon.maxUses) : "",
-      perCustomerLimit: coupon.perCustomerLimit
-        ? String(coupon.perCustomerLimit)
-        : "",
-      startsAt: toLocalInput(coupon.startsAt),
-      endsAt: toLocalInput(coupon.endsAt),
-      isActive: coupon.isActive,
-    });
-    setOpen(true);
-  }
-
-  function closeModal() {
-    setOpen(false);
-    setForm(blankCoupon);
-  }
-
-  function copyToClipboard(code: string) {
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(code);
-      setCopiedCode(code);
-      setTimeout(() => setCopiedCode(null), 2000);
-    }
+  function copy(code: string) {
+    if (!navigator?.clipboard?.writeText) return;
+    void navigator.clipboard.writeText(code);
+    setCopied(code);
+    setTimeout(() => setCopied(null), 1800);
   }
 
   return (
-    <>
-      <Card className="overflow-hidden shadow-xs">
-        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base">🎟️</span>
-              <CardTitle className="text-base font-bold text-slate-900">
-                İndirim Kupon Kodları
-              </CardTitle>
-            </div>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Müşterilerin sepet veya ödeme adımında manuel girebileceği indirim kodları
-            </p>
-          </div>
-          <Button
-            type="button"
-            onClick={openCreate}
-            className="bg-emerald-700 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 cursor-pointer"
+    <ul className="divide-y divide-slate-100">
+      {coupons.map((coupon) => {
+        const status = promotionStatus(coupon, now);
+        const soon = endsSoon(coupon, status, now);
+        const usage = coupon.maxUses
+          ? Math.min(100, Math.round((coupon.usedCount / coupon.maxUses) * 100))
+          : null;
+        const conditions = [
+          coupon.minSubtotal && Number(coupon.minSubtotal) > 0
+            ? `${formatMoney(coupon.minSubtotal)} ve üzeri sepet`
+            : "Alt limit yok",
+          coupon.perCustomerLimit
+            ? `müşteri başı ${coupon.perCustomerLimit} kez`
+            : null,
+        ].filter(Boolean);
+
+        return (
+          <li
+            key={coupon.id}
+            className="grid gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/60 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center md:gap-6"
           >
-            + Yeni Kupon Oluştur
-          </Button>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          {message && !open && (
-            <div
-              className={`m-4 p-3 rounded-xl border text-xs font-semibold ${
-                message.error
-                  ? "border-red-200 bg-red-50 text-red-800"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          {coupons.length > 0 ? (
-            <div className="divide-y divide-slate-100">
-              {coupons.map((coupon) => {
-                const isExpired =
-                  coupon.endsAt && new Date(coupon.endsAt) < new Date();
-                const usagePercent = coupon.maxUses
-                  ? Math.min(100, Math.round((coupon.usedCount / coupon.maxUses) * 100))
-                  : null;
-
-                return (
-                  <div
-                    key={coupon.id}
-                    className="group flex flex-col gap-3 p-4.5 sm:flex-row sm:items-center sm:justify-between transition hover:bg-slate-50/70"
+            {/* Kod + indirim */}
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[13px] font-semibold text-slate-800 tabular-nums">
+                {discountLabel(coupon.type, Number(coupon.value))}
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-[13px] font-semibold tracking-wider text-slate-900">
+                    {coupon.code}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => copy(coupon.code)}
+                    className="inline-flex cursor-pointer items-center gap-1 rounded text-[11px] font-medium text-slate-400 hover:text-slate-700"
+                    aria-label={`${coupon.code} kodunu kopyala`}
                   >
-                    {/* Sol Bilgiler: Kupon Kartı */}
-                    <div className="flex flex-1 items-start gap-3.5">
-                      {/* Kupon İndirim Rozeti */}
-                      <div
-                        className={`flex h-12 w-14 shrink-0 flex-col items-center justify-center rounded-2xl border font-bold shadow-2xs ${
-                          coupon.type === "PERCENT"
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                            : "border-amber-200 bg-amber-50 text-amber-900"
-                        }`}
-                      >
-                        <span className="text-sm font-extrabold leading-none">
-                          {coupon.type === "PERCENT"
-                            ? `%${Number(coupon.value)}`
-                            : `₺${Number(coupon.value)}`}
-                        </span>
-                        <span className="text-[9px] font-semibold text-slate-500 uppercase mt-0.5">
-                          İndirim
-                        </span>
-                      </div>
-
-                      {/* Kod ve Koşullar */}
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-sm font-bold tracking-wider text-slate-900 uppercase">
-                            {coupon.code}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(coupon.code)}
-                            className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-200 transition cursor-pointer"
-                            title="Kupon Kodunu Kopyala"
-                          >
-                            <span>{copiedCode === coupon.code ? "✓ Kopyalandı" : "Kopyala"}</span>
-                          </button>
-
-                          {!coupon.isActive ? (
-                            <span className="rounded-full bg-slate-100 px-2 py-0.2 text-[10px] font-bold text-slate-600">
-                              Pasif
-                            </span>
-                          ) : isExpired ? (
-                            <span className="rounded-full bg-red-100 px-2 py-0.2 text-[10px] font-bold text-red-700">
-                              Süresi Doldu
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-emerald-100 px-2 py-0.2 text-[10px] font-bold text-emerald-800">
-                              ● Aktif
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Detay Bilgileri */}
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                          <span>
-                            {coupon.minSubtotal
-                              ? `Min. sepet: ${coupon.minSubtotal} ₺`
-                              : "Alt limitsiz"}
-                          </span>
-                          <span>·</span>
-                          <span>
-                            {coupon.usedCount}
-                            {coupon.maxUses ? ` / ${coupon.maxUses}` : ""} kullanım
-                          </span>
-                          {coupon.perCustomerLimit && (
-                            <>
-                              <span>·</span>
-                              <span>Müşteri başı: {coupon.perCustomerLimit} adet</span>
-                            </>
-                          )}
-                          <span>·</span>
-                          <span className="text-slate-400">
-                            Geçerlilik: {formatDate(coupon.startsAt)} - {formatDate(coupon.endsAt)}
-                          </span>
-                        </div>
-
-                        {/* Kullanım İlerleme Çubuğu */}
-                        {coupon.maxUses && (
-                          <div className="mt-2 flex items-center gap-2 max-w-xs">
-                            <div className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                              <div
-                                className={`h-full transition-all ${
-                                  usagePercent! >= 100
-                                    ? "bg-red-500"
-                                    : usagePercent! >= 75
-                                    ? "bg-amber-500"
-                                    : "bg-emerald-500"
-                                }`}
-                                style={{ width: `${usagePercent}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-400">
-                              %{usagePercent}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Sağ Eylemler */}
-                    <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEdit(coupon)}
-                        className="h-8 text-xs font-semibold text-slate-700 cursor-pointer"
-                      >
-                        Düzenle
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={pending}
-                        onClick={() => {
-                          if (window.confirm(`"${coupon.code}" kuponunu silmek istediğinize emin misiniz?`)) {
-                            run(() => deleteCouponAction(coupon.id));
-                          }
-                        }}
-                        className="h-8 px-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
-                        title="Kuponu Sil"
-                      >
-                        ✕ Sil
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+                    <Icon
+                      d={copied === coupon.code ? ICONS.check : ICONS.copy}
+                      size={13}
+                    />
+                    {copied === coupon.code ? "Kopyalandı" : null}
+                  </button>
+                </div>
+                <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                  {conditions.join(" · ")}
+                </p>
+              </div>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <span className="text-3xl mb-2">🎟️</span>
-              <p className="text-sm font-bold text-slate-800">
-                Tanımlı indirim kuponu bulunmuyor
+
+            {/* Kullanım */}
+            <div className="min-w-0">
+              <p className="text-[12px] text-slate-700 tabular-nums">
+                <span className="font-semibold text-slate-900">
+                  {integer.format(coupon.usedCount)}
+                </span>
+                {coupon.maxUses
+                  ? ` / ${integer.format(coupon.maxUses)} kullanım`
+                  : " kullanım · sınırsız"}
               </p>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                Müşterilerinize özel indirimler sunmak için yukarıdaki &quot;Yeni Kupon Oluştur&quot; butonunu kullanın.
-              </p>
+              {usage !== null ? (
+                <div className="mt-1.5 h-1.5 max-w-40 rounded-full bg-slate-100">
+                  <div
+                    className={cn(
+                      "h-full rounded-full",
+                      usage >= 100 ? "bg-amber-500" : "bg-primary",
+                    )}
+                    style={{ width: `${Math.max(2, usage)}%` }}
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            {/* Geçerlilik + durum */}
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <StatusBadge status={status} />
+              <span
+                className={cn(
+                  "text-[11px]",
+                  soon ? "font-medium text-amber-700" : "text-slate-500",
+                )}
+              >
+                {soon ? "Yakında bitiyor · " : ""}
+                {validity(coupon.startsAt, coupon.endsAt)}
+              </span>
+            </div>
+
+            {/* İşlemler */}
+            <div className="flex items-center gap-1 justify-self-end">
               <Button
                 type="button"
+                variant="ghost"
                 size="sm"
-                onClick={openCreate}
-                className="mt-4 bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800 cursor-pointer"
+                onClick={() => onEdit(coupon)}
               >
-                İlk Kuponu Ekle
+                <Icon d={ICONS.edit} size={14} />
+                Düzenle
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={pending || coupon.usedCount > 0}
+                onClick={() => onDelete(coupon)}
+                className="text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                title={
+                  coupon.usedCount > 0
+                    ? "Kullanılmış kupon silinemez; pasife alabilirsiniz"
+                    : "Kuponu sil"
+                }
+                aria-label={`${coupon.code} kuponunu sil`}
+              >
+                <Icon d={ICONS.trash} size={14} />
               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <CouponModal
-        open={open}
-        form={form}
-        pending={pending}
-        message={message}
-        onClose={closeModal}
-        onChange={set}
-        onSave={() =>
-          run(
-            () => saveCouponAction(form.id, form),
-            () => closeModal(),
-          )
-        }
-      />
-    </>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Kampanyalar                                                         */
+/* ------------------------------------------------------------------ */
 
 type CampaignFormState = {
   id: string | null;
@@ -680,8 +760,8 @@ function CampaignModal({
   open: boolean;
   form: CampaignFormState;
   pending: boolean;
-  message: { text: string; error: boolean } | null;
-  categories: { id: string; label: string }[];
+  message: Message;
+  categories: Category[];
   onClose: () => void;
   onChange: <K extends keyof CampaignFormState>(
     key: K,
@@ -689,606 +769,595 @@ function CampaignModal({
   ) => void;
   onSave: () => void;
 }) {
-  const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    if (!open) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCloseRef.current();
-    };
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  if (!open) return null;
-
+  const percent = form.type === "PERCENT";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Kapat"
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-      />
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative z-10 flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
-      >
-        {/* Modal Başlığı */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-6 py-4.5">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-sm font-bold text-amber-900">
-              ⚡
-            </span>
-            <div>
-              <h2 id={titleId} className="text-base font-bold text-slate-900">
-                {form.id ? "Kampanyayı Düzenle" : "Yeni Otomatik Kampanya Tanımla"}
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Koşullu sepet veya kategori indirimi parametreleri
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 transition cursor-pointer"
-            aria-label="Kapat"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Modal Form İçeriği */}
-        <div className="flex flex-col gap-4 overflow-y-auto px-6 py-5">
-          {message && (
-            <div
-              className={`p-3 rounded-xl border text-xs font-semibold ${
-                message.error
-                  ? "border-red-200 bg-red-50 text-red-800"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          {/* Kampanya Adı */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-bold text-slate-700">
-              Kampanya Adı <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              value={form.name}
-              onChange={(e) => onChange("name", e.target.value)}
-              placeholder="Örn: 500 TL Üzeri %10 Sepet İndirimi"
-              className="h-10 text-xs font-semibold"
-            />
-          </div>
-
-          {/* Kural Türü */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-bold text-slate-700">Kampanya Kuralı</Label>
-            <Select
-              value={form.ruleType}
-              onChange={(e) => onChange("ruleType", e.target.value)}
-              className="h-9.5 text-xs font-semibold"
-            >
-              <option value="cart-threshold">🛒 Sepet Tutarına Göre İndirim</option>
-              <option value="category">📁 Seçili Kategorilere Özel İndirim</option>
-            </Select>
-          </div>
-
-          {/* İndirim Türü ve Değeri */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">İndirim Türü</Label>
-              <Select
-                value={form.type}
-                onChange={(e) => onChange("type", e.target.value)}
-                className="h-9.5 text-xs font-semibold"
-              >
-                <option value="PERCENT">% Yüzde</option>
-                <option value="FIXED">₺ Sabit Tutar</option>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">İndirim Tutarı</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                  {form.type === "PERCENT" ? "%" : "₺"}
-                </span>
-                <Input
-                  value={form.value}
-                  onChange={(e) => onChange("value", e.target.value)}
-                  inputMode="decimal"
-                  placeholder="10"
-                  className="h-9.5 pl-7 text-xs font-bold"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Koşul Detayı */}
-          {form.ruleType === "cart-threshold" ? (
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">
-                Minimum Sepet Tutarı (₺)
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                  ₺
-                </span>
-                <Input
-                  value={form.minSubtotal}
-                  onChange={(e) => onChange("minSubtotal", e.target.value)}
-                  inputMode="decimal"
-                  placeholder="Örn: 500"
-                  className="h-9.5 pl-7 text-xs"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-slate-700">
-                Uygulanacak Kategoriler
-              </Label>
-              <div className="flex max-h-40 flex-col gap-1.5 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs">
-                {categories.map((category) => {
-                  const isChecked = form.categoryIds.includes(category.id);
-                  return (
-                    <label
-                      key={category.id}
-                      className="flex items-center gap-2 font-medium text-slate-700 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() =>
-                          onChange(
-                            "categoryIds",
-                            isChecked
-                              ? form.categoryIds.filter((id) => id !== category.id)
-                              : [...form.categoryIds, category.id],
-                          )
-                        }
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span>{category.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Öncelik */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-bold text-slate-700">Kampanya Önceliği</Label>
-              <span className="text-[10px] text-slate-400">Yüksek olan önce uygulanır</span>
-            </div>
-            <Input
-              value={form.priority}
-              onChange={(e) => onChange("priority", e.target.value)}
-              inputMode="numeric"
-              placeholder="0"
-              className="h-9 text-xs font-mono"
-            />
-          </div>
-
-          {/* Tarihler */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1">
-              <Label className="text-[11px] font-bold text-slate-600">Başlangıç</Label>
-              <Input
-                type="datetime-local"
-                value={form.startsAt}
-                onChange={(e) => onChange("startsAt", e.target.value)}
-                className="h-9 text-xs"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label className="text-[11px] font-bold text-slate-600">Bitiş</Label>
-              <Input
-                type="datetime-local"
-                value={form.endsAt}
-                onChange={(e) => onChange("endsAt", e.target.value)}
-                className="h-9 text-xs"
-              />
-            </div>
-          </div>
-
-          {/* Aktiflik Durumu */}
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => onChange("isActive", !form.isActive)}
-              className={`flex h-9.5 w-full items-center justify-center gap-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                form.isActive
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                  : "border-slate-200 bg-slate-100 text-slate-500"
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  form.isActive ? "bg-emerald-500" : "bg-slate-400"
-                }`}
-              />
-              <span>{form.isActive ? "● Kampanya Aktif" : "○ Kampanya Pasif"}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Modal Alt Çubuk */}
-        <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
+    <Modal
+      open={open}
+      title={form.id ? "Kampanyayı düzenle" : "Yeni otomatik kampanya"}
+      description="Kod gerekmeden, koşul sağlandığında sepete kendiliğinden uygulanır"
+      onClose={onClose}
+      footer={
+        <>
+          <Button type="button" variant="ghost" onClick={onClose}>
             Vazgeç
           </Button>
           <Button
             type="button"
             disabled={pending || !form.name.trim() || !form.value.trim()}
             onClick={onSave}
-            className="bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
           >
-            {pending ? "Kaydediliyor..." : form.id ? "Değişiklikleri Güncelle" : "Kampanyayı Kaydet"}
+            {pending
+              ? "Kaydediliyor…"
+              : form.id
+                ? "Değişiklikleri kaydet"
+                : "Kampanyayı oluştur"}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <Alert message={message} />
+
+      <Field label="Kampanya adı" required hint="Müşteri sepette bu adı görür">
+        <Input
+          value={form.name}
+          onChange={(e) => onChange("name", e.target.value)}
+          placeholder="Örn. 500 TL üzeri %10 indirim"
+        />
+      </Field>
+
+      <Field label="Kural">
+        <Select
+          value={form.ruleType}
+          onChange={(e) => onChange("ruleType", e.target.value)}
+        >
+          <option value="cart-threshold">
+            Sepet tutarı belirli bir limiti geçince
+          </option>
+          <option value="category">Seçili kategorilerdeki ürünlere</option>
+        </Select>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="İndirim türü">
+          <Select
+            value={form.type}
+            onChange={(e) => onChange("type", e.target.value)}
+          >
+            <option value="PERCENT">Yüzde (%)</option>
+            <option value="FIXED">Sabit tutar (₺)</option>
+          </Select>
+        </Field>
+        <Field label={percent ? "İndirim oranı" : "İndirim tutarı"} required>
+          <AffixInput
+            affix={percent ? "%" : "₺"}
+            value={form.value}
+            onChange={(e) => onChange("value", e.target.value)}
+            inputMode="decimal"
+            placeholder="10"
+          />
+        </Field>
       </div>
+
+      {form.ruleType === "cart-threshold" ? (
+        <Field label="Minimum sepet tutarı">
+          <AffixInput
+            affix="₺"
+            value={form.minSubtotal}
+            onChange={(e) => onChange("minSubtotal", e.target.value)}
+            inputMode="decimal"
+            placeholder="Örn. 500"
+          />
+        </Field>
+      ) : (
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1.5 text-[12px] font-medium text-slate-700">
+            Geçerli kategoriler
+            <span className="ml-1.5 font-normal text-slate-400">
+              {form.categoryIds.length} seçili
+            </span>
+          </legend>
+          <div className="grid max-h-44 gap-0.5 overflow-y-auto rounded-lg border border-slate-200 p-1.5 sm:grid-cols-2">
+            {categories.map((category) => {
+              const checked = form.categoryIds.includes(category.id);
+              return (
+                <label
+                  key={category.id}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors",
+                    checked
+                      ? "bg-slate-100 text-slate-900"
+                      : "text-slate-600 hover:bg-slate-50",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() =>
+                      onChange(
+                        "categoryIds",
+                        checked
+                          ? form.categoryIds.filter((id) => id !== category.id)
+                          : [...form.categoryIds, category.id],
+                      )
+                    }
+                    className="h-3.5 w-3.5 rounded border-slate-300 accent-primary"
+                  />
+                  <span className="truncate">{category.label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      <Field
+        label="Öncelik"
+        hint="Birden fazla kampanya uygunsa yüksek öncelikli olan önce uygulanır"
+      >
+        <Input
+          value={form.priority}
+          onChange={(e) => onChange("priority", e.target.value)}
+          inputMode="numeric"
+          placeholder="0"
+          className="w-28"
+        />
+      </Field>
+
+      <DateRange
+        startsAt={form.startsAt}
+        endsAt={form.endsAt}
+        onStart={(v) => onChange("startsAt", v)}
+        onEnd={(v) => onChange("endsAt", v)}
+      />
+
+      <Switch
+        checked={form.isActive}
+        onChange={(v) => onChange("isActive", v)}
+        label="Kampanya devrede"
+        description={
+          form.isActive
+            ? "Geçerlilik tarihleri içinde sepetlere otomatik uygulanır"
+            : "Kapalıyken hiçbir sepete uygulanmaz"
+        }
+      />
+    </Modal>
+  );
+}
+
+function CampaignTable({
+  campaigns,
+  categories,
+  now,
+  pending,
+  onEdit,
+  onDelete,
+}: {
+  campaigns: CampaignRow[];
+  categories: Category[];
+  now: Date;
+  pending: boolean;
+  onEdit: (campaign: CampaignRow) => void;
+  onDelete: (campaign: CampaignRow) => void;
+}) {
+  const categoryName = new Map(categories.map((c) => [c.id, c.label]));
+  return (
+    <ul className="divide-y divide-slate-100">
+      {campaigns.map((campaign) => {
+        const status = promotionStatus(campaign, now);
+        const soon = endsSoon(campaign, status, now);
+        const names = campaign.categoryIds
+          .map((id) => categoryName.get(id))
+          .filter((name): name is string => Boolean(name));
+        const rule =
+          campaign.ruleType === "category"
+            ? names.length > 0
+              ? `Kategoriler: ${names.slice(0, 3).join(", ")}${names.length > 3 ? ` +${names.length - 3}` : ""}`
+              : "Kategori seçilmemiş"
+            : `${formatMoney(campaign.minSubtotal ?? 0)} ve üzeri sepet`;
+
+        return (
+          <li
+            key={campaign.id}
+            className="grid gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/60 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center md:gap-6"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[13px] font-semibold text-slate-800 tabular-nums">
+                {discountLabel(campaign.type, campaign.value)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-medium text-slate-900">
+                  {campaign.name}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                  {rule}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-[12px] text-slate-600">
+              {campaign.ruleType === "category"
+                ? "Kategori indirimi"
+                : "Sepet indirimi"}
+              <span className="text-slate-400">
+                {" "}
+                · öncelik {campaign.priority}
+              </span>
+            </div>
+
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <StatusBadge status={status} />
+              <span
+                className={cn(
+                  "text-[11px]",
+                  soon ? "font-medium text-amber-700" : "text-slate-500",
+                )}
+              >
+                {soon ? "Yakında bitiyor · " : ""}
+                {validity(campaign.startsAt, campaign.endsAt)}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 justify-self-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onEdit(campaign)}
+              >
+                <Icon d={ICONS.edit} size={14} />
+                Düzenle
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={() => onDelete(campaign)}
+                className="text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                title="Kampanyayı sil"
+                aria-label={`${campaign.name} kampanyasını sil`}
+              >
+                <Icon d={ICONS.trash} size={14} />
+              </Button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sayfa                                                               */
+/* ------------------------------------------------------------------ */
+
+function Stat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: ReactNode;
+  hint: ReactNode;
+}) {
+  return (
+    <Card className="p-4 sm:p-5">
+      <p className="text-[12px] font-medium text-slate-500">{label}</p>
+      <p className="mt-2 text-xl leading-none font-semibold tracking-tight text-slate-900 tabular-nums sm:text-[26px]">
+        {value}
+      </p>
+      <p className="mt-2 truncate text-[11px] text-slate-400">{hint}</p>
+    </Card>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description: string;
+  action: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1.5 px-6 py-14 text-center">
+      <p className="text-[13px] font-semibold text-slate-800">{title}</p>
+      <p className="max-w-sm text-[12px] text-slate-500">{description}</p>
+      <div className="mt-3">{action}</div>
     </div>
   );
 }
 
-function CampaignSection({
-  campaigns,
-  categories,
-}: {
-  campaigns: CampaignRow[];
-  categories: { id: string; label: string }[];
-}) {
-  const { pending, message, run } = useRunner();
-  const [form, setForm] = useState<CampaignFormState>(blankCampaign);
-  const [open, setOpen] = useState(false);
+const couponToForm = (coupon: CouponRow): CouponFormState => ({
+  id: coupon.id,
+  code: coupon.code,
+  type: coupon.type,
+  value: String(Number(coupon.value)),
+  minSubtotal: coupon.minSubtotal ? String(Number(coupon.minSubtotal)) : "",
+  maxUses: coupon.maxUses ? String(coupon.maxUses) : "",
+  perCustomerLimit: coupon.perCustomerLimit
+    ? String(coupon.perCustomerLimit)
+    : "",
+  startsAt: isoToLocalInput(coupon.startsAt),
+  endsAt: isoToLocalInput(coupon.endsAt),
+  isActive: coupon.isActive,
+});
 
-  const set = <K extends keyof CampaignFormState>(
-    key: K,
-    value: CampaignFormState[K],
-  ) => setForm((current) => ({ ...current, [key]: value }));
+const campaignToForm = (campaign: CampaignRow): CampaignFormState => ({
+  id: campaign.id,
+  name: campaign.name,
+  ruleType: campaign.ruleType,
+  type: campaign.type,
+  value: String(campaign.value),
+  categoryIds: campaign.categoryIds,
+  minSubtotal:
+    campaign.minSubtotal === null ? "" : String(campaign.minSubtotal),
+  priority: String(campaign.priority),
+  startsAt: isoToLocalInput(campaign.startsAt),
+  endsAt: isoToLocalInput(campaign.endsAt),
+  isActive: campaign.isActive,
+});
 
-  function openCreate() {
-    setForm(blankCampaign);
-    setOpen(true);
-  }
-
-  function openEdit(campaign: CampaignRow) {
-    setForm({
-      id: campaign.id,
-      name: campaign.name,
-      ruleType: campaign.ruleType,
-      type: campaign.type,
-      value: String(campaign.value),
-      categoryIds: campaign.categoryIds,
-      minSubtotal:
-        campaign.minSubtotal === null ? "" : String(campaign.minSubtotal),
-      priority: String(campaign.priority),
-      startsAt: toLocalInput(campaign.startsAt),
-      endsAt: toLocalInput(campaign.endsAt),
-      isActive: campaign.isActive,
-    });
-    setOpen(true);
-  }
-
-  function closeModal() {
-    setOpen(false);
-    setForm(blankCampaign);
-  }
-
-  return (
-    <>
-      <Card className="overflow-hidden shadow-xs">
-        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base">⚡</span>
-              <CardTitle className="text-base font-bold text-slate-900">
-                Otomatik Sepet Kampanyaları
-              </CardTitle>
-            </div>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Kupon kodu gerekmeksizin sepet koşulu sağlandığında otomatik uygulanan indirimler
-            </p>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            onClick={openCreate}
-            className="bg-emerald-700 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 cursor-pointer"
-          >
-            + Yeni Kampanya Tanımla
-          </Button>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          {message && !open && (
-            <div
-              className={`m-4 p-3 rounded-xl border text-xs font-semibold ${
-                message.error
-                  ? "border-red-200 bg-red-50 text-red-800"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          {campaigns.length > 0 ? (
-            <div className="divide-y divide-slate-100">
-              {campaigns.map((campaign) => {
-                const amount =
-                  campaign.type === "PERCENT"
-                    ? `%${campaign.value} İndirim`
-                    : `${campaign.value} ₺ İndirim`;
-
-                return (
-                  <div
-                    key={campaign.id}
-                    className="flex flex-col gap-3 p-4.5 transition-all sm:flex-row sm:items-center sm:justify-between hover:bg-slate-50/70"
-                  >
-                    <div className="flex items-start gap-3.5">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-base font-bold text-amber-900 shadow-2xs">
-                        ⚡
-                      </span>
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900">
-                            {campaign.name}
-                          </span>
-                          {!campaign.isActive ? (
-                            <span className="rounded-full bg-slate-100 px-2 py-0.2 text-[10px] font-bold text-slate-600">
-                              Pasif
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-emerald-100 px-2 py-0.2 text-[10px] font-bold text-emerald-800">
-                              ● Aktif
-                            </span>
-                          )}
-                          <span className="rounded-full bg-slate-100 px-2 py-0.2 text-[10px] font-bold text-slate-600">
-                            Öncelik: #{campaign.priority}
-                          </span>
-                        </div>
-
-                        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
-                          <span className="font-semibold text-emerald-800">
-                            {amount}
-                          </span>
-                          <span>·</span>
-                          <span>
-                            {campaign.ruleType === "category"
-                              ? `${campaign.categoryIds.length} kategoride geçerli`
-                              : `${campaign.minSubtotal ?? 0} ₺ ve üzeri sepet`}
-                          </span>
-                          <span>·</span>
-                          <span className="text-slate-400">
-                            {formatDate(campaign.startsAt)} - {formatDate(campaign.endsAt)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex shrink-0 items-center gap-1.5 self-end sm:self-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEdit(campaign)}
-                        className="h-8 text-xs font-semibold text-slate-700 cursor-pointer"
-                      >
-                        Düzenle
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={pending}
-                        onClick={() => {
-                          if (window.confirm(`"${campaign.name}" kampanyası silinsin mi?`)) {
-                            run(() => deleteCampaignAction(campaign.id));
-                          }
-                        }}
-                        className="h-8 px-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
-                      >
-                        ✕ Sil
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <span className="text-3xl mb-2">⚡</span>
-              <p className="text-sm font-bold text-slate-800">
-                Tanımlı otomatik kampanya bulunmuyor
-              </p>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                Sepet alt limit veya kategori bazlı otomatik indirimler tanımlamak için yukarıdaki butonu kullanın.
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                onClick={openCreate}
-                className="mt-4 bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800 cursor-pointer"
-              >
-                İlk Kampanyayı Ekle
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <CampaignModal
-        open={open}
-        form={form}
-        pending={pending}
-        message={message}
-        categories={categories}
-        onClose={closeModal}
-        onChange={set}
-        onSave={() =>
-          run(
-            () => saveCampaignAction(form.id, form),
-            () => closeModal(),
-          )
-        }
-      />
-    </>
-  );
+/** Formdaki yerel tarihleri saat dilimli ISO'ya çevirip gönderir. */
+function withIsoDates<T extends { startsAt: string; endsAt: string }>(
+  form: T,
+): T {
+  return {
+    ...form,
+    startsAt: localInputToIso(form.startsAt),
+    endsAt: localInputToIso(form.endsAt),
+  };
 }
 
 export function PromotionManager({
   coupons,
   campaigns,
   categories,
+  now: nowIso,
 }: {
   coupons: CouponRow[];
   campaigns: CampaignRow[];
-  categories: { id: string; label: string }[];
+  categories: Category[];
+  /** Sunucudaki an; durumlar sunucu ve tarayıcıda aynı hesaplansın diye */
+  now: string;
 }) {
-  const [activeTab, setActiveTab] = useState<"all" | "coupons" | "campaigns">("all");
+  const now = useMemo(() => new Date(nowIso), [nowIso]);
+  const [tab, setTab] = useState<"coupons" | "campaigns">("coupons");
+  const { pending, message, run, setMessage } = useRunner();
+
+  const [couponForm, setCouponForm] = useState<CouponFormState | null>(null);
+  const [campaignForm, setCampaignForm] = useState<CampaignFormState | null>(
+    null,
+  );
 
   const stats = useMemo(() => {
-    const activeCoupons = coupons.filter((c) => c.isActive).length;
-    const totalCouponUses = coupons.reduce((sum, c) => sum + c.usedCount, 0);
-    const activeCampaigns = campaigns.filter((c) => c.isActive).length;
+    const couponStatuses = coupons.map((c) => promotionStatus(c, now));
+    const campaignStatuses = campaigns.map((c) => promotionStatus(c, now));
+    const soon =
+      coupons.filter((c, i) => endsSoon(c, couponStatuses[i]!, now)).length +
+      campaigns.filter((c, i) => endsSoon(c, campaignStatuses[i]!, now)).length;
     return {
-      totalCoupons: coupons.length,
-      activeCoupons,
-      totalCouponUses,
-      totalCampaigns: campaigns.length,
-      activeCampaigns,
+      activeCoupons: couponStatuses.filter((s) => s === "active").length,
+      uses: coupons.reduce((sum, c) => sum + c.usedCount, 0),
+      activeCampaigns: campaignStatuses.filter((s) => s === "active").length,
+      soon,
     };
-  }, [coupons, campaigns]);
+  }, [coupons, campaigns, now]);
+
+  function openCoupon(form: CouponFormState) {
+    setMessage(null);
+    setCouponForm(form);
+  }
+  function openCampaign(form: CampaignFormState) {
+    setMessage(null);
+    setCampaignForm(form);
+  }
+
+  const tabs = [
+    { key: "coupons" as const, label: "Kupon kodları", count: coupons.length },
+    {
+      key: "campaigns" as const,
+      label: "Otomatik kampanyalar",
+      count: campaigns.length,
+    },
+  ];
+  const modalOpen = couponForm !== null || campaignForm !== null;
 
   return (
-    <div className="flex flex-col gap-7">
-      {/* İstatistik & Genel Bakış Kartları */}
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Kupon Kodları</span>
-            <span className="text-base">🎟️</span>
+    <div className="flex flex-col gap-5">
+      <section
+        aria-label="Özet"
+        className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4"
+      >
+        <Stat
+          label="Aktif kupon"
+          value={integer.format(stats.activeCoupons)}
+          hint={`Toplam ${integer.format(coupons.length)} kupon`}
+        />
+        <Stat
+          label="Kupon kullanımı"
+          value={integer.format(stats.uses)}
+          hint="Tüm kuponlarda toplam"
+        />
+        <Stat
+          label="Devrede kampanya"
+          value={integer.format(stats.activeCampaigns)}
+          hint={`Toplam ${integer.format(campaigns.length)} kampanya`}
+        />
+        <Stat
+          label="7 gün içinde bitiyor"
+          value={integer.format(stats.soon)}
+          hint={
+            stats.soon > 0 ? "Uzatmak isteyebilirsiniz" : "Yakında biten yok"
+          }
+        />
+      </section>
+
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 px-2 pt-2">
+          <div
+            role="tablist"
+            className="flex gap-1 overflow-x-auto [scrollbar-width:none]"
+          >
+            {tabs.map((item) => {
+              const active = tab === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTab(item.key)}
+                  className={cn(
+                    "-mb-px flex shrink-0 cursor-pointer items-center gap-1.5 border-b-2 px-3 pt-1.5 pb-2.5 text-[13px] font-medium whitespace-nowrap transition-colors",
+                    active
+                      ? "border-slate-900 text-slate-900"
+                      : "border-transparent text-slate-500 hover:text-slate-800",
+                  )}
+                >
+                  {item.label}
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
+                      active
+                        ? "bg-slate-900 text-white"
+                        : "bg-slate-100 text-slate-500",
+                    )}
+                  >
+                    {integer.format(item.count)}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
-            {stats.totalCoupons}
-          </p>
-          <span className="text-[11px] font-semibold text-emerald-700">
-            {stats.activeCoupons} tanesi aktif
-          </span>
+          <div className="pr-2 pb-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() =>
+                tab === "coupons"
+                  ? openCoupon(blankCoupon)
+                  : openCampaign(blankCampaign)
+              }
+            >
+              <Icon d={ICONS.plus} size={14} />
+              {tab === "coupons" ? "Yeni kupon" : "Yeni kampanya"}
+            </Button>
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Toplam Kupon Kullanımı</span>
-            <span className="text-base">🛒</span>
+        {!modalOpen && message ? (
+          <div className="border-b border-slate-100 px-4 py-3">
+            <Alert message={message} />
           </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-emerald-700">
-            {stats.totalCouponUses}
-          </p>
-          <span className="text-[11px] text-slate-400">
-            Siparişlerde uygulandı
-          </span>
-        </div>
+        ) : null}
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Otomatik Kampanyalar</span>
-            <span className="text-base">⚡</span>
-          </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
-            {stats.totalCampaigns}
-          </p>
-          <span className="text-[11px] font-semibold text-emerald-700">
-            {stats.activeCampaigns} tanesi devrede
-          </span>
-        </div>
+        {tab === "coupons" ? (
+          coupons.length === 0 ? (
+            <EmptyState
+              title="Henüz kupon yok"
+              description="Müşterilerinize özel indirim kodları oluşturup sosyal medyada veya e-postada paylaşabilirsiniz."
+              action={
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => openCoupon(blankCoupon)}
+                >
+                  İlk kuponu oluştur
+                </Button>
+              }
+            />
+          ) : (
+            <CouponTable
+              coupons={coupons}
+              now={now}
+              pending={pending}
+              onEdit={(c) => openCoupon(couponToForm(c))}
+              onDelete={(c) => {
+                if (window.confirm(`"${c.code}" kuponu silinsin mi?`)) {
+                  run(() => deleteCouponAction(c.id), "Kupon silindi.");
+                }
+              }}
+            />
+          )
+        ) : campaigns.length === 0 ? (
+          <EmptyState
+            title="Henüz otomatik kampanya yok"
+            description="Örneğin “500 TL üzeri %10 indirim” gibi, kod gerektirmeden sepete kendiliğinden uygulanan indirimler tanımlayın."
+            action={
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => openCampaign(blankCampaign)}
+              >
+                İlk kampanyayı oluştur
+              </Button>
+            }
+          />
+        ) : (
+          <CampaignTable
+            campaigns={campaigns}
+            categories={categories}
+            now={now}
+            pending={pending}
+            onEdit={(c) => openCampaign(campaignToForm(c))}
+            onDelete={(c) => {
+              if (window.confirm(`"${c.name}" kampanyası silinsin mi?`)) {
+                run(() => deleteCampaignAction(c.id), "Kampanya silindi.");
+              }
+            }}
+          />
+        )}
+      </Card>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Kampanya Kuralı</span>
-            <span className="text-base">🏷️</span>
-          </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
-            {categories.length}
-          </p>
-          <span className="text-[11px] text-slate-400">
-            Bağlanabilir kategori
-          </span>
-        </div>
-      </div>
+      {couponForm ? (
+        <CouponModal
+          open
+          form={couponForm}
+          pending={pending}
+          message={message}
+          onClose={() => setCouponForm(null)}
+          onChange={(key, value) =>
+            setCouponForm((current) =>
+              current ? { ...current, [key]: value } : current,
+            )
+          }
+          onSave={() =>
+            run(
+              () => saveCouponAction(couponForm.id, withIsoDates(couponForm)),
+              couponForm.id ? "Kupon güncellendi." : "Kupon oluşturuldu.",
+              () => setCouponForm(null),
+            )
+          }
+        />
+      ) : null}
 
-      {/* Görünüm Sekmeleri */}
-      <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1 w-fit">
-        <button
-          type="button"
-          onClick={() => setActiveTab("all")}
-          className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-            activeTab === "all"
-              ? "bg-white text-slate-900 shadow-2xs"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          Tüm Görünüm
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("coupons")}
-          className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-            activeTab === "coupons"
-              ? "bg-white text-slate-900 shadow-2xs"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <span>🎟️ Kupon Kodları</span>
-          <span className="rounded-full bg-slate-200/70 px-1.5 py-0.2 text-[10px]">
-            {coupons.length}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("campaigns")}
-          className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-            activeTab === "campaigns"
-              ? "bg-white text-slate-900 shadow-2xs"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <span>⚡ Otomatik Kampanyalar</span>
-          <span className="rounded-full bg-slate-200/70 px-1.5 py-0.2 text-[10px]">
-            {campaigns.length}
-          </span>
-        </button>
-      </div>
-
-      {/* Bölümler */}
-      {(activeTab === "all" || activeTab === "coupons") && (
-        <CouponSection coupons={coupons} />
-      )}
-
-      {(activeTab === "all" || activeTab === "campaigns") && (
-        <CampaignSection campaigns={campaigns} categories={categories} />
-      )}
+      {campaignForm ? (
+        <CampaignModal
+          open
+          form={campaignForm}
+          pending={pending}
+          message={message}
+          categories={categories}
+          onClose={() => setCampaignForm(null)}
+          onChange={(key, value) =>
+            setCampaignForm((current) =>
+              current ? { ...current, [key]: value } : current,
+            )
+          }
+          onSave={() =>
+            run(
+              () =>
+                saveCampaignAction(campaignForm.id, withIsoDates(campaignForm)),
+              campaignForm.id
+                ? "Kampanya güncellendi."
+                : "Kampanya oluşturuldu.",
+              () => setCampaignForm(null),
+            )
+          }
+        />
+      ) : null}
     </div>
   );
 }

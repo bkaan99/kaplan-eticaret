@@ -74,7 +74,7 @@ test.describe("vitrin", () => {
 
     await page.goto("/sepet");
     await expect(
-      page.getByText(/5 kg bidon · Salatalık, Sarımsak · Doğal fermente/),
+      page.getByText(/5 kg bidon · Salatalık %100, Sarımsak · Doğal fermente/),
     ).toBeVisible();
   });
 

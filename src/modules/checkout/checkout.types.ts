@@ -2,9 +2,9 @@ import type Decimal from "decimal.js";
 import type { CartIdentity, CartMutationResult } from "../cart/cart.types";
 import type { PriceResolver } from "../catalog/pricing";
 import type {
-  CustomizationPricer,
   CustomizationQuote,
-} from "../custom-pickle/custom-pickle.types";
+  ItemCustomizationHandler,
+} from "../cart/customization";
 import type { EventBus } from "@/shared/events/event-bus";
 import type {
   CouponUsageRepository,
@@ -29,6 +29,11 @@ export interface CheckoutSettings {
   reservationMinutes: number;
   shippingTaxRate: number;
   paymentProvider: string;
+  /**
+   * Kart ödemesi alınabiliyor mu? Panelde canlı/PayTR test seçili ama PayTR anahtarı yoksa false
+   * (kart kapanır, sahte ödemeye düşülmez). Verilmezse true sayılır.
+   */
+  cardPaymentAvailable?: boolean;
   /** true ise yalnızca onaylı bayiler sipariş verebilir (salesMode: b2b) */
   requireDealer?: boolean;
   /** Havale/EFT seçeneği için hesap tanımlı mı? */
@@ -104,8 +109,8 @@ export interface CheckoutDeps {
   priceResolver?: PriceResolver;
   dealers?: DealerTerms;
   events?: EventBus;
-  /** Kendi turşunu yap satırlarının ek ücretleri */
-  customizations?: CustomizationPricer;
+  /** Özelleştirilmiş satırların ek ücretleri ve doğrulaması */
+  customizations?: ItemCustomizationHandler;
   paymentStrategies?: CheckoutPaymentStrategyRegistry;
   now?: () => Date;
 }

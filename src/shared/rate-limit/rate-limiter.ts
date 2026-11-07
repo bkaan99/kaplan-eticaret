@@ -24,4 +24,6 @@ export const RATE_LIMIT_POLICIES = {
   couponAttempt: { limit: 20, windowSeconds: 10 * 60 },
   orderLookup: { limit: 10, windowSeconds: 10 * 60 },
   checkout: { limit: 20, windowSeconds: 60 * 60 },
+  /** Admin görsel yükleme — ele geçirilmiş oturumda depolama doldurmayı sınırlar. */
+  upload: { limit: 40, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitPolicy>;

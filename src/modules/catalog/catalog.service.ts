@@ -1,3 +1,4 @@
+import { productBadges } from "./product-badges";
 import type Decimal from "decimal.js";
 import { NotFoundError } from "@/shared/errors";
 import { toDecimal } from "@/shared/money";
@@ -286,6 +287,13 @@ export class CatalogService {
     const max = prices.reduce((a, b) => (b.gt(a) ? b : a));
     const cheapest = record.variants[prices.findIndex((p) => p.eq(min))]!;
     const priceVisible = identity.pricesVisible !== false;
+    const inStock = record.variants.some((variant) =>
+      isInStock({
+        trackInventory: record.trackInventory,
+        stockQuantity: variant.stockQuantity,
+        reservedQuantity: variant.reservedQuantity,
+      }),
+    );
 
     return {
       id: record.id,
@@ -302,13 +310,12 @@ export class CatalogService {
           : null,
       hasPriceRange: priceVisible && !min.eq(max),
       currency: cheapest.currency,
-      inStock: record.variants.some((variant) =>
-        isInStock({
-          trackInventory: record.trackInventory,
-          stockQuantity: variant.stockQuantity,
-          reservedQuantity: variant.reservedQuantity,
-        }),
-      ),
+      inStock,
+      quickAddVariantId:
+        priceVisible && inStock && record.variants.length === 1
+          ? record.variants[0]!.id
+          : null,
+      badges: productBadges(record.attributes),
     };
   }
 
@@ -375,6 +382,11 @@ export class CatalogService {
         values,
       })),
       taxRate: record.taxRate.toFixed(2),
+      ingredients: record.ingredients,
+      allergens: record.allergens,
+      shelfLife: record.shelfLife,
+      barcode: record.barcode,
+      weightGram: record.weightGram,
     };
   }
 }

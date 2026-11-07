@@ -9,6 +9,7 @@ import { getCartIdentity } from "@/modules/cart/cart.session";
 import { getAddressService } from "@/modules/account/container";
 import { getCachedLegalLinks } from "@/modules/content/cached";
 import { getCheckoutService } from "@/modules/checkout/container";
+import { getPaymentModeService } from "@/modules/settings/container";
 import { isAppError } from "@/shared/errors";
 import type { PaymentOption } from "@/modules/checkout/checkout.service";
 import { CheckoutForm } from "./checkout-form";
@@ -24,9 +25,10 @@ async function CheckoutContent({
   const params = await searchParams;
   const coupon = typeof params["kupon"] === "string" ? params["kupon"] : "";
 
-  const [user, identity] = await Promise.all([
+  const [user, identity, paymentMode] = await Promise.all([
     getCurrentUser(),
     getCartIdentity(),
+    getPaymentModeService().get(),
   ]);
 
   const [savedAddresses, legalLinks] = await Promise.all([
@@ -37,15 +39,13 @@ async function CheckoutContent({
   let quote;
   let paymentOptions: PaymentOption[] = [];
   try {
-    quote = await getCheckoutService().quote(
+    const checkout = await getCheckoutService();
+    quote = await checkout.quote(
       identity,
       coupon ? coupon.trim().toUpperCase() : null,
       { userId: user?.id ?? null, email: user?.email ?? null },
     );
-    paymentOptions = await getCheckoutService().paymentOptions(
-      identity,
-      quote.grandTotal,
-    );
+    paymentOptions = await checkout.paymentOptions(identity, quote.grandTotal);
   } catch (error) {
     if (isAppError(error) && error.message === "Sepetiniz boş")
       redirect("/sepet");
@@ -65,84 +65,98 @@ async function CheckoutContent({
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[1fr_360px]">
-      <TrackOnMount
-        name="begin_checkout"
-        payload={{
-          currency: quote.currency,
-          value: Number(quote.grandTotal),
-          items: quote.lines.map((line) => ({
-            id: line.variantId,
-            name: line.productName,
-            price: Number(line.unitPrice),
-            quantity: line.quantity,
-            variant: line.variantName,
-          })),
-        }}
-      />
-      <CheckoutForm
-        defaultEmail={user?.email ?? ""}
-        defaultCoupon={coupon}
-        paymentOptions={paymentOptions}
-        savedAddresses={savedAddresses}
-        legalLinks={legalLinks}
-      />
+    <div className="flex flex-col gap-6">
+      {paymentMode === "FAKE" ? (
+        <p
+          role="status"
+          className="rounded-theme border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          <strong>Test modu:</strong> Bu sitede şu an gerçek ödeme alınmaz. Kart
+          ile ödemede sahte bir ödeme sayfasına yönlendirilirsiniz.
+        </p>
+      ) : null}
+      <div className="grid gap-10 lg:grid-cols-[1fr_360px]">
+        <TrackOnMount
+          name="begin_checkout"
+          payload={{
+            currency: quote.currency,
+            value: Number(quote.grandTotal),
+            items: quote.lines.map((line) => ({
+              id: line.variantId,
+              name: line.productName,
+              price: Number(line.unitPrice),
+              quantity: line.quantity,
+              variant: line.variantName,
+            })),
+          }}
+        />
+        <CheckoutForm
+          defaultEmail={user?.email ?? ""}
+          defaultCoupon={coupon}
+          paymentOptions={paymentOptions}
+          savedAddresses={savedAddresses}
+          legalLinks={legalLinks}
+        />
 
-      <aside className="flex h-fit flex-col gap-3 rounded-theme border border-border p-5">
-        <h2 className="font-semibold">Sipariş özeti</h2>
-        <ul className="flex flex-col gap-2 text-sm">
-          {quote.lines.map((line, index) => (
-            <li
-              key={`${line.variantId}-${index}`}
-              className="flex justify-between gap-3"
-            >
-              <span>
-                {line.productName}
-                {line.variantName ? ` (${line.variantName})` : ""} ×{" "}
-                {line.quantity}
-              </span>
-              <Price value={line.lineTotal} currency={quote.currency} />
-            </li>
-          ))}
-        </ul>
-        <hr className="border-border" />
-        <dl className="flex flex-col gap-1 text-sm">
-          <div className="flex justify-between">
-            <dt>Ara toplam</dt>
-            <dd>
-              <Price value={quote.subtotal} currency={quote.currency} />
-            </dd>
-          </div>
-          {quote.discounts.map((discount) => (
-            <div
-              key={discount.label}
-              className="flex justify-between text-green-700"
-            >
-              <dt>{discount.label}</dt>
+        <aside className="flex h-fit flex-col gap-3 rounded-theme border border-border p-5">
+          <h2 className="font-semibold">Sipariş özeti</h2>
+          <ul className="flex flex-col gap-2 text-sm">
+            {quote.lines.map((line, index) => (
+              <li
+                key={`${line.variantId}-${index}`}
+                className="flex justify-between gap-3"
+              >
+                <span>
+                  {line.productName}
+                  {line.variantName ? ` (${line.variantName})` : ""} ×{" "}
+                  {line.quantity}
+                </span>
+                <Price value={line.lineTotal} currency={quote.currency} />
+              </li>
+            ))}
+          </ul>
+          <hr className="border-border" />
+          <dl className="flex flex-col gap-1 text-sm">
+            <div className="flex justify-between">
+              <dt>Ara toplam</dt>
               <dd>
-                -<Price value={discount.amount} currency={quote.currency} />
+                <Price value={quote.subtotal} currency={quote.currency} />
               </dd>
             </div>
-          ))}
-          <div className="flex justify-between">
-            <dt>Kargo</dt>
-            <dd>
-              {Number(quote.shippingTotal) === 0 ? (
-                "Ücretsiz"
-              ) : (
-                <Price value={quote.shippingTotal} currency={quote.currency} />
-              )}
-            </dd>
-          </div>
-          <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
-            <dt>Toplam</dt>
-            <dd>
-              <Price value={quote.grandTotal} currency={quote.currency} />
-            </dd>
-          </div>
-        </dl>
-        <p className="text-xs text-muted-foreground">KDV dahildir.</p>
-      </aside>
+            {quote.discounts.map((discount) => (
+              <div
+                key={discount.label}
+                className="flex justify-between text-green-700"
+              >
+                <dt>{discount.label}</dt>
+                <dd>
+                  -<Price value={discount.amount} currency={quote.currency} />
+                </dd>
+              </div>
+            ))}
+            <div className="flex justify-between">
+              <dt>Kargo</dt>
+              <dd>
+                {Number(quote.shippingTotal) === 0 ? (
+                  "Ücretsiz"
+                ) : (
+                  <Price
+                    value={quote.shippingTotal}
+                    currency={quote.currency}
+                  />
+                )}
+              </dd>
+            </div>
+            <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
+              <dt>Toplam</dt>
+              <dd>
+                <Price value={quote.grandTotal} currency={quote.currency} />
+              </dd>
+            </div>
+          </dl>
+          <p className="text-xs text-muted-foreground">KDV dahildir.</p>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -168,16 +168,29 @@ describe("StaffService", () => {
       expect(repo.calls).toEqual([]);
     });
 
-    it("sistem rolü değiştirilemez ve silinemez", async () => {
+    it("sistem rolünün adı değiştirilemez ama yetkileri güncellenir", async () => {
       await expect(
         service.saveRole(
           "r-editor",
-          { name: "editor", permissions: [PERMISSIONS.PRODUCT_READ] },
+          { name: "yeni-ad", permissions: [PERMISSIONS.PRODUCT_READ] },
           admin,
         ),
-      ).rejects.toThrow("Sistem rolleri");
+      ).rejects.toThrow("Sistem rolünün adı");
+
+      await service.saveRole(
+        "r-editor",
+        { name: "editor", permissions: [PERMISSIONS.PRODUCT_READ] },
+        admin,
+      );
+      expect(repo.calls).toContain("updateRole:r-editor");
+    });
+
+    it("atanmamış sistem rolü silinebilir; personelli rol silinemez", async () => {
+      await service.deleteRole("r-editor", admin);
+      expect(repo.calls).toContain("deleteRole:r-editor");
+
       await expect(service.deleteRole("r-admin", admin)).rejects.toThrow(
-        "Sistem rolleri",
+        "personel",
       );
     });
 

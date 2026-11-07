@@ -17,6 +17,10 @@ export interface IngredientRecord {
   description: string | null;
   imageUrl: string | null;
   pricePerKg: Decimal;
+  stockKg: Decimal | null;
+  minStockKg: Decimal | null;
+  seasonStartMonth: number | null;
+  seasonEndMonth: number | null;
   isActive: boolean;
   sortOrder: number;
 }
@@ -65,6 +69,10 @@ const ingredientColumns = {
   description: pickleIngredient.description,
   imageUrl: pickleIngredient.imageUrl,
   pricePerKg: pickleIngredient.pricePerKg,
+  stockKg: pickleIngredient.stockKg,
+  minStockKg: pickleIngredient.minStockKg,
+  seasonStartMonth: pickleIngredient.seasonStartMonth,
+  seasonEndMonth: pickleIngredient.seasonEndMonth,
   isActive: pickleIngredient.isActive,
   sortOrder: pickleIngredient.sortOrder,
 } as const;
@@ -117,6 +125,16 @@ export class D1CustomPickleRepository implements CustomPickleRepository {
         description: input.description,
         imageUrl: input.imageUrl,
         pricePerKg: dec(input.pricePerKg.toFixed(2)),
+        stockKg:
+          input.stockKg !== null && input.stockKg !== undefined
+            ? dec(input.stockKg.toFixed(2))
+            : null,
+        minStockKg:
+          input.minStockKg !== null && input.minStockKg !== undefined
+            ? dec(input.minStockKg.toFixed(2))
+            : null,
+        seasonStartMonth: input.seasonStartMonth ?? null,
+        seasonEndMonth: input.seasonEndMonth ?? null,
         sortOrder: input.sortOrder,
         isActive: input.isActive,
       })
@@ -133,6 +151,16 @@ export class D1CustomPickleRepository implements CustomPickleRepository {
         description: input.description,
         imageUrl: input.imageUrl,
         pricePerKg: dec(input.pricePerKg.toFixed(2)),
+        stockKg:
+          input.stockKg !== null && input.stockKg !== undefined
+            ? dec(input.stockKg.toFixed(2))
+            : null,
+        minStockKg:
+          input.minStockKg !== null && input.minStockKg !== undefined
+            ? dec(input.minStockKg.toFixed(2))
+            : null,
+        seasonStartMonth: input.seasonStartMonth ?? null,
+        seasonEndMonth: input.seasonEndMonth ?? null,
         sortOrder: input.sortOrder,
         isActive: input.isActive,
       })

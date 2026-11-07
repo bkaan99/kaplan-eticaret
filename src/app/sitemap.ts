@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import type { MetadataRoute } from "next";
 import { catalogService } from "@/modules/catalog/container";
 import { getContentService } from "@/modules/content/container";
+import { LEGAL_PAGE_TEMPLATES } from "@/modules/content/legal-templates";
 import { absoluteUrl } from "@/shared/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -14,20 +15,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getContentService().publishedPageSlugs(),
   ]);
 
+  const existingPageSlugs = new Set(pages.map((p) => p.slug));
+  const fallbackPages = LEGAL_PAGE_TEMPLATES.filter(
+    (t) => !existingPageSlugs.has(t.slug),
+  ).map((t) => ({
+    slug: t.slug,
+    updatedAt: new Date(),
+  }));
+  const allPages = [...pages, ...fallbackPages];
+
   return [
-    { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
+    {
+      url: absoluteUrl("/"),
+      changeFrequency: "daily",
+      priority: 1,
+      images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
+    },
     {
       url: absoluteUrl("/kendi-tursunu-yap"),
       changeFrequency: "weekly",
       priority: 0.9,
     },
-    { url: absoluteUrl("/ara"), changeFrequency: "daily", priority: 0.8 },
+    {
+      url: absoluteUrl("/iletisim"),
+      changeFrequency: "monthly",
+      priority: 0.6,
+      images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
+    },
     ...categories.map((category) => ({
       url: absoluteUrl(`/kategori/${category.slug}`),
       changeFrequency: "weekly" as const,
       priority: 0.7,
+      images: category.imageUrl
+        ? [
+            category.imageUrl.startsWith("http")
+              ? category.imageUrl
+              : absoluteUrl(category.imageUrl),
+          ]
+        : undefined,
     })),
-    ...pages.map((page) => ({
+    ...allPages.map((page) => ({
       url: absoluteUrl(`/sayfa/${page.slug}`),
       lastModified: page.updatedAt,
       changeFrequency: "monthly" as const,

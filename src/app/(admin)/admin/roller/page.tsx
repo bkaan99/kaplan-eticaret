@@ -24,7 +24,7 @@ export default function RolesPage() {
     <>
       <PageHeader
         title="Roller ve Yetkiler"
-        description="Özel yetki profilleri oluşturun; yalnızca kendinizde bulunan yetkileri devredebilirsiniz. Sistem rolleri güvenlik gereği değiştirilemez."
+        description="Yetki profillerini oluşturun veya düzenleyin; yalnızca sizde bulunan yetkileri devredebilirsiniz. Sistem rollerinin adı sabittir; kimseye atanmamış roller silinebilir."
         actions={
           <div className="flex items-center gap-2">
             <Link

@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DEFAULT_BRINE_CONFIG,
   DEFAULT_SPICE_CONFIG,
+  formatSeasonRange,
   INGREDIENT_GROUP_LABELS,
+  MONTH_NAMES_TR,
   type CustomPickleConfig,
   type IngredientGroup,
   type IngredientView,
@@ -21,6 +23,10 @@ interface FormState {
   name: string;
   group: IngredientGroup;
   pricePerKg: string;
+  stockKg: string;
+  minStockKg: string;
+  seasonStartMonth: string;
+  seasonEndMonth: string;
   sortOrder: string;
   description: string;
   imageUrl: string;
@@ -31,6 +37,10 @@ const EMPTY: FormState = {
   name: "",
   group: "VEGETABLE",
   pricePerKg: "",
+  stockKg: "",
+  minStockKg: "",
+  seasonStartMonth: "",
+  seasonEndMonth: "",
   sortOrder: "0",
   description: "",
   imageUrl: "",
@@ -42,6 +52,10 @@ function toForm(item: IngredientView): FormState {
     name: item.name,
     group: item.group,
     pricePerKg: item.pricePerKg,
+    stockKg: item.stockKg ?? "",
+    minStockKg: item.minStockKg ?? "",
+    seasonStartMonth: item.seasonStartMonth ? String(item.seasonStartMonth) : "",
+    seasonEndMonth: item.seasonEndMonth ? String(item.seasonEndMonth) : "",
     sortOrder: String(item.sortOrder),
     description: item.description ?? "",
     imageUrl: item.imageUrl ?? "",
@@ -54,6 +68,12 @@ function toPayload(form: FormState) {
     name: form.name,
     group: form.group,
     pricePerKg: form.pricePerKg,
+    stockKg: form.stockKg.trim() === "" ? null : form.stockKg.trim(),
+    minStockKg: form.minStockKg.trim() === "" ? null : form.minStockKg.trim(),
+    seasonStartMonth:
+      form.seasonStartMonth !== "" ? Number(form.seasonStartMonth) : null,
+    seasonEndMonth:
+      form.seasonEndMonth !== "" ? Number(form.seasonEndMonth) : null,
     sortOrder: form.sortOrder || "0",
     description: form.description,
     imageUrl: form.imageUrl,
@@ -62,7 +82,7 @@ function toPayload(form: FormState) {
 }
 
 const inputClass =
-  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-primary focus:ring-3 focus:ring-primary/10";
+  "h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10";
 
 /* -------------------------------------------------------------------------- */
 /*                              INGREDIENT MODAL                              */
@@ -129,7 +149,7 @@ function IngredientModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/30 px-6 py-4.5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
               🥒
             </span>
             <div>
@@ -233,6 +253,86 @@ function IngredientModal({
             </label>
           </div>
 
+          {/* Stok Yönetimi */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
+              Mevcut Stok (kg)
+              <input
+                className={inputClass}
+                inputMode="decimal"
+                value={form.stockKg}
+                onChange={(event) => update("stockKg", event.target.value)}
+                placeholder="Örn: 50 (Boş bırakılırsa limitsiz)"
+              />
+              <span className="font-normal text-slate-400 text-[11px]">
+                0 veya daha az girilirse robotta &quot;Tükendi&quot; görünür.
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
+              Kritik Stok Uyarısı (kg)
+              <input
+                className={inputClass}
+                inputMode="decimal"
+                value={form.minStockKg}
+                onChange={(event) => update("minStockKg", event.target.value)}
+                placeholder="Örn: 10 (Boş bırakılırsa uyarı yok)"
+              />
+              <span className="font-normal text-slate-400 text-[11px]">
+                Stok bu miktarın altına düşerse kritik stok uyarısı verilir.
+              </span>
+            </label>
+          </div>
+
+          {/* Mevsimsellik Takibi */}
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800">
+                🌿 Mevsimsellik Takibi
+              </span>
+              <span className="text-[11px] text-slate-500">
+                Boş bırakılırsa tüm yıl mevsiminde sayılır
+              </span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
+                Mevsim Başlangıç Ayı
+                <select
+                  className={inputClass}
+                  value={form.seasonStartMonth}
+                  onChange={(event) =>
+                    update("seasonStartMonth", event.target.value)
+                  }
+                >
+                  <option value="">(Seçilmedi - Tüm Yıl)</option>
+                  {MONTH_NAMES_TR.map((month, index) => (
+                    <option key={index + 1} value={String(index + 1)}>
+                      {month} ({index + 1}. Ay)
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
+                Mevsim Bitiş Ayı
+                <select
+                  className={inputClass}
+                  value={form.seasonEndMonth}
+                  onChange={(event) =>
+                    update("seasonEndMonth", event.target.value)
+                  }
+                >
+                  <option value="">(Seçilmedi - Tüm Yıl)</option>
+                  {MONTH_NAMES_TR.map((month, index) => (
+                    <option key={index + 1} value={String(index + 1)}>
+                      {month} ({index + 1}. Ay)
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
           <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
             Açıklama (İsteğe bağlı)
             <input
@@ -271,7 +371,7 @@ function IngredientModal({
                 aria-label="Görsel adresi"
               />
 
-              <label className="inline-flex h-10 shrink-0 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3.5 font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition">
+              <label className="inline-flex h-9 shrink-0 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3.5 font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition">
                 {uploading ? "Yükleniyor..." : "📁 Dosya Seç"}
                 <input
                   type="file"
@@ -317,7 +417,7 @@ function IngredientModal({
             variant="outline"
             onClick={onClose}
             disabled={pending || uploading}
-            className="h-10 px-5 text-xs font-semibold text-slate-700 hover:bg-white cursor-pointer"
+            className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
           >
             Vazgeç
           </Button>
@@ -325,7 +425,7 @@ function IngredientModal({
             type="button"
             onClick={onSave}
             disabled={pending || uploading || !form.name.trim()}
-            className="h-10 bg-emerald-700 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
+            className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
           >
             {pending ? (
               <div className="flex items-center gap-2">
@@ -626,7 +726,8 @@ export function IngredientManager({
                     <th className="px-4 py-3">Malzeme</th>
                     <th className="px-4 py-3">Grup</th>
                     <th className="px-4 py-3 text-right">TL / kg</th>
-                    <th className="px-4 py-3 text-right">5 kg bidonda</th>
+                    <th className="px-4 py-3">Stok Durumu</th>
+                    <th className="px-4 py-3">Mevsim</th>
                     <th className="px-4 py-3">Durum</th>
                     <th className="px-4 py-3 text-right">İşlem</th>
                   </tr>
@@ -635,7 +736,7 @@ export function IngredientManager({
                   {ingredients.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="px-4 py-12 text-center text-slate-500"
                       >
                         <p className="font-bold text-slate-800 mb-1">
@@ -685,8 +786,48 @@ export function IngredientManager({
                         <td className="px-4 py-3 text-right tabular-nums">
                           {formatMoney(item.pricePerKg)}
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums">
-                          +{formatMoney(Number(item.pricePerKg) * 5)}
+                        <td className="px-4 py-3">
+                          {item.stockKg !== null ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-semibold text-slate-800">
+                                {item.stockKg} kg
+                              </span>
+                              {!item.inStock ? (
+                                <span className="inline-flex w-fit rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
+                                  Tükendi
+                                </span>
+                              ) : item.isCriticalStock ? (
+                                <span className="inline-flex w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                                  Kritik Stok
+                                </span>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">Limitsiz</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {item.seasonStartMonth && item.seasonEndMonth ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-xs font-medium text-slate-700">
+                                {formatSeasonRange(
+                                  item.seasonStartMonth,
+                                  item.seasonEndMonth,
+                                )}
+                              </span>
+                              {!item.inSeason ? (
+                                <span className="inline-flex w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                                  Mevsim Dışı
+                                </span>
+                              ) : (
+                                <span className="inline-flex w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                                  Mevsiminde
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">Tüm Yıl</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span

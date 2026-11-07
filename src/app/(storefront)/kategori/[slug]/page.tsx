@@ -15,22 +15,68 @@ import { absoluteUrl } from "@/shared/site-url";
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps<"/kategori/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const loaded = await loadCategory(slug);
   if (loaded.kind !== "ok") return {};
 
   const { category } = loaded.value;
+  const query = parseListQuery(await searchParams, { categorySlug: slug });
+  const hasFilters = Boolean(
+    (query.sort && query.sort !== "newest") ||
+    (query.brandSlugs && query.brandSlugs.length > 0) ||
+    (query.attributeFilters && Object.keys(query.attributeFilters).length > 0) ||
+    query.minPrice !== undefined ||
+    query.maxPrice !== undefined,
+  );
+
+  const page = query.page ?? 1;
+  const canonicalPath =
+    page > 1
+      ? `/kategori/${category.slug}?sayfa=${page}`
+      : `/kategori/${category.slug}`;
+
+  const baseTitle = category.seoTitle ?? category.name;
+  const title = page > 1 ? `${baseTitle} - Sayfa ${page}` : baseTitle;
+
   const description =
     category.seoDescription ??
     category.description ??
     `${category.name} kategorisindeki ürünleri keşfedin.`;
 
+  const categoryImageUrl = category.imageUrl
+    ? category.imageUrl.startsWith("http")
+      ? category.imageUrl
+      : absoluteUrl(category.imageUrl)
+    : undefined;
+
   return {
-    title: category.seoTitle ?? category.name,
+    title,
     description,
-    alternates: { canonical: absoluteUrl(`/kategori/${category.slug}`) },
-    openGraph: { title: category.name, description, type: "website" },
+    alternates: { canonical: absoluteUrl(canonicalPath) },
+    robots: hasFilters
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: categoryImageUrl
+        ? [
+            {
+              url: categoryImageUrl,
+              alt: category.name,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: categoryImageUrl ? [categoryImageUrl] : undefined,
+    },
   };
 }
 
@@ -66,12 +112,20 @@ async function CategoryContent({
         data={{
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          itemListElement: breadcrumbs.map((crumb, index) => ({
-            "@type": "ListItem",
-            position: index + 1,
-            name: crumb.name,
-            item: absoluteUrl(`/kategori/${crumb.slug}`),
-          })),
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Ana Sayfa",
+              item: absoluteUrl("/"),
+            },
+            ...breadcrumbs.map((crumb, index) => ({
+              "@type": "ListItem",
+              position: index + 2,
+              name: crumb.name,
+              item: absoluteUrl(`/kategori/${crumb.slug}`),
+            })),
+          ],
         }}
       />
       <Breadcrumbs items={crumbs} />

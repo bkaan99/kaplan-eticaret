@@ -1,3 +1,4 @@
+import packageJson from "../../package.json";
 import { features, type Features } from "./features";
 import { projectConfig } from "./project-config";
 
@@ -5,6 +6,7 @@ export type SalesMode = "retail" | "b2b" | "hybrid";
 
 export interface SiteConfig {
   name: string;
+  version: string;
   description: string;
   locale: "tr";
   currency: string;
@@ -43,6 +45,10 @@ export interface SiteConfig {
   auditLog: {
     retentionDays: number;
   };
+  cart: {
+    /** Terk edilmiş sahipsiz (anonim) sepetlerin saklanacağı gün sayısı */
+    abandonedRetentionDays: number;
+  };
   b2b: {
     /** Vadeli ödemede varsayılan vade (gün) */
     deferredPaymentDays: number;
@@ -55,6 +61,7 @@ export interface SiteConfig {
 
 const defaultSiteConfig: SiteConfig = {
   name: "E-Ticaret Şablonu",
+  version: packageJson.version,
   description: "Next.js tabanlı e-ticaret şablonu",
   locale: "tr",
   currency: "TRY",
@@ -80,6 +87,9 @@ const defaultSiteConfig: SiteConfig = {
   auditLog: {
     retentionDays: 365,
   },
+  cart: {
+    abandonedRetentionDays: 30,
+  },
   b2b: {
     deferredPaymentDays: 30,
     bankTransferHoldHours: 72,
@@ -91,10 +101,12 @@ const projectSite = projectConfig.site ?? {};
 
 export const siteConfig: SiteConfig = {
   ...defaultSiteConfig,
+  version: packageJson.version,
   name: projectSite.name ?? defaultSiteConfig.name,
   description: projectSite.description ?? defaultSiteConfig.description,
   salesMode: projectSite.salesMode ?? defaultSiteConfig.salesMode,
   contact: { ...defaultSiteConfig.contact, ...projectSite.contact },
+  cart: { ...defaultSiteConfig.cart, ...projectSite.cart },
   b2b: { ...defaultSiteConfig.b2b, ...projectSite.b2b },
 };
 

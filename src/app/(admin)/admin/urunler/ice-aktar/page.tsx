@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { AdminLoading } from "@/components/admin/admin-list";
+import { CsvDownloadLink } from "@/components/admin/csv-download-link";
 import { PageHeader } from "@/components/admin/page-header";
 import { adminPage } from "@/modules/admin/guard";
 import { PERMISSIONS } from "@/shared/permissions";
@@ -35,22 +36,16 @@ async function ImportContent() {
             uygulanmaz.
           </li>
         </ul>
-        <p className="flex gap-4">
-          <a
+        <div className="flex flex-wrap items-center gap-2.5 pt-2">
+          <CsvDownloadLink
             href="/admin/urunler/ice-aktar/sablon/urunler"
-            download
-            className="underline"
-          >
-            Ürün şablonu
-          </a>
-          <a
+            label="Ürün Şablonu"
+          />
+          <CsvDownloadLink
             href="/admin/urunler/ice-aktar/sablon/guncelle"
-            download
-            className="underline"
-          >
-            Güncelleme şablonu
-          </a>
-        </p>
+            label="Fiyat & Stok Şablonu"
+          />
+        </div>
       </div>
       <ImportForm />
     </div>

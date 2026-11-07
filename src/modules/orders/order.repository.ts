@@ -169,6 +169,17 @@ function generateOrderNumber(): string {
   return value;
 }
 
+/** Hata zincirinde (Drizzle `cause` ile sarar) verilen metin geçiyor mu? */
+function hasErrorText(error: unknown, text: string): boolean {
+  for (let e: unknown = error, depth = 0; e && depth < 4; depth++) {
+    if (String((e as { message?: unknown }).message ?? "").includes(text)) {
+      return true;
+    }
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 function toAddress(json: unknown): AddressSnapshot {
   return json as AddressSnapshot;
 }
@@ -347,13 +358,22 @@ export class D1OrderRepository implements OrderRepository {
     const orderId = newId();
     const expiresAt = new Date(Date.now() + order.reservationMinutes * 60_000);
 
-    // Stok rezervasyonu: koşullu güncelleme yarış durumunu ve fazla satışı önler.
-    const claimed = await this.claimStock(order.items, "reserve");
+    const db = this.db();
+    const tracked = order.items.filter((item) => item.trackInventory);
 
     try {
-      const db = this.db();
-      // Sipariş, ödeme, kalemler ve stok rezervasyonları tek batch'te (atomik) oluşur.
+      // Stok rezervasyonu, sipariş, ödeme ve kalemler TEK batch'te (atomik) yazılır. Stok yetersizse
+      // `0004` trigger'ı işlemi baştan sona geri alır: kısmi rezervasyon ya da sızıntı kalmaz ve
+      // eşzamanlı siparişler fazla satamaz.
       await runBatch(db, [
+        ...tracked.map((item) =>
+          db
+            .update(variants)
+            .set({
+              reservedQuantity: sql`${variants.reservedQuantity} + ${item.quantity}`,
+            })
+            .where(eq(variants.id, item.variantId)),
+        ),
         db
           .insert(orders)
           .values(orderValues(order, { orderId, orderNumber, lookupToken })),
@@ -366,23 +386,44 @@ export class D1OrderRepository implements OrderRepository {
           currency: order.currency,
           merchantOid: orderNumber,
         }),
-        ...order.items
-          .filter((item) => item.trackInventory)
-          .map((item) =>
-            db.insert(reservations).values({
-              orderId,
-              variantId: item.variantId,
-              quantity: item.quantity,
-              expiresAt,
-            }),
-          ),
+        ...tracked.map((item) =>
+          db.insert(reservations).values({
+            orderId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            expiresAt,
+          }),
+        ),
       ]);
 
       return { orderId, orderNumber, lookupToken, merchantOid: orderNumber };
     } catch (error) {
-      await this.revertStockClaims(claimed, "reserve");
+      if (hasErrorText(error, "STOK_YETERSIZ")) {
+        throw new ConflictError(await this.insufficientStockMessage(tracked));
+      }
       throw error;
     }
+  }
+
+  /** Reddedilen siparişte hangi ürünün yetmediğini bulur (kullanıcıya gösterilecek mesaj için). */
+  private async insufficientStockMessage(
+    items: NewOrder["items"],
+  ): Promise<string> {
+    const db = this.db();
+    for (const item of items) {
+      const [row] = await db
+        .select({
+          available: sql<number>`${variants.stockQuantity} - ${variants.reservedQuantity}`,
+          isActive: variants.isActive,
+        })
+        .from(variants)
+        .where(eq(variants.id, item.variantId))
+        .limit(1);
+      if (!row || !row.isActive || Number(row.available) < item.quantity) {
+        return `"${item.productName}" için yeterli stok yok`;
+      }
+    }
+    return "Siparişinizdeki bir ürün için yeterli stok yok";
   }
 
   /** Ödenmemiş vadeli sipariş toplamı (kredi kullanımı); toplama Decimal ile JS'te yapılır. */

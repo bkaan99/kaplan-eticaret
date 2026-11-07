@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import { getProductAdminService } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
 import { isAppError } from "@/shared/errors";
@@ -44,25 +45,23 @@ async function EditProductContent({
         {isCustomPickle ? (
           <Link
             href="/admin/tursu-malzemeleri"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+            className="text-[12px] font-medium text-slate-500 hover:text-slate-900"
           >
-            <span>← Turşu Malzemeleri ve Reçetelerine Dön</span>
+            ← Turşu malzemeleri
           </Link>
         ) : (
           <Link
             href="/admin/urunler"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+            className="text-[12px] font-medium text-slate-500 hover:text-slate-900"
           >
-            <span>← Tüm Ürünlere Dön</span>
+            ← Ürünler
           </Link>
         )}
       </div>
 
       <PageHeader
         title={
-          isCustomPickle
-            ? "Bidon Boyutları ve Taban Fiyatları"
-            : product.name
+          isCustomPickle ? "Bidon Boyutları ve Taban Fiyatları" : product.name
         }
         description={
           isCustomPickle
@@ -75,25 +74,25 @@ async function EditProductContent({
               <>
                 <Link
                   href="/admin/tursu-malzemeleri"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+                  className={buttonVariants({ variant: "outline" })}
                 >
-                  <span>🥗 Malzemeler</span>
+                  Malzemeler
                 </Link>
                 <Link
                   href="/kendi-tursunu-yap"
                   target="_blank"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full bg-amber-500 px-3.5 text-xs font-semibold text-slate-950 shadow-2xs hover:bg-amber-400"
+                  className={buttonVariants({ variant: "outline" })}
                 >
-                  <span>Turşu Yapıcıyı Aç ↗</span>
+                  Turşu yapıcıyı aç ↗
                 </Link>
               </>
             ) : product.status === "ACTIVE" ? (
               <Link
                 href={`/urun/${product.slug}`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+                className={buttonVariants({ variant: "outline" })}
                 target="_blank"
               >
-                <span>Sayfayı Görüntüle ↗</span>
+                Mağazada görüntüle ↗
               </Link>
             ) : null}
           </div>
@@ -105,7 +104,9 @@ async function EditProductContent({
         mode="edit"
         product={product}
         references={references}
-        initialTab={resolvedSearchParams.tab || (isCustomPickle ? "variants" : "basic")}
+        initialTab={
+          resolvedSearchParams.tab || (isCustomPickle ? "variants" : "basic")
+        }
       />
     </>
   );

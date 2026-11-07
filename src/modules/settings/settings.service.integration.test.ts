@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Db } from "@/db";
 import { createTestDb, type TestDb } from "../../../tests/support/test-db";
+import { D1SettingsRepository } from "./settings.repository";
 import { SettingsService } from "./settings.service";
 
 describe("SettingsService (veritabanı)", () => {
@@ -17,7 +18,9 @@ describe("SettingsService (veritabanı)", () => {
   });
 
   it("kayıt yoksa varsayılan iletişim ayarlarını döndürür", async () => {
-    const settings = await new SettingsService(() => db).getContactSettings();
+    const settings = await new SettingsService(
+      new D1SettingsRepository(() => db),
+    ).getContactSettings();
 
     expect(settings.phone).toBeDefined();
     expect(settings.email).toBeDefined();
@@ -26,7 +29,10 @@ describe("SettingsService (veritabanı)", () => {
 
   it("kaydeder, tekrar kaydedince üzerine yazar ve denetim kaydı bırakır", async () => {
     const audit = { log: vi.fn().mockResolvedValue(undefined) };
-    const service = new SettingsService(() => db, audit as never);
+    const service = new SettingsService(
+      new D1SettingsRepository(() => db),
+      audit as never,
+    );
 
     await service.saveContactSettings(
       {

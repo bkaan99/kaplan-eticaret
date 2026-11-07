@@ -7,15 +7,36 @@ import { SortLinks } from "@/components/storefront/sort-links";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { catalogService } from "@/modules/catalog/container";
 import { parseListQuery, toSearchString } from "@/modules/catalog/query-params";
+import { absoluteUrl } from "@/shared/site-url";
 
 export async function generateMetadata({
   searchParams,
 }: PageProps<"/ara">): Promise<Metadata> {
   const query = parseListQuery(await searchParams);
   const isSearch = Boolean(query.search && query.search.trim().length > 0);
+  const hasFilters = Boolean(
+    (query.sort && query.sort !== "newest") ||
+    (query.brandSlugs && query.brandSlugs.length > 0) ||
+    (query.attributeFilters && Object.keys(query.attributeFilters).length > 0) ||
+    query.minPrice !== undefined ||
+    query.maxPrice !== undefined,
+  );
+
+  const page = query.page ?? 1;
+  const canonicalPath = page > 1 ? `/ara?sayfa=${page}` : "/ara";
+
+  if (isSearch) {
+    return {
+      title: `“${query.search}” Arama Sonuçları`,
+      alternates: { canonical: absoluteUrl("/ara") },
+      robots: { index: false, follow: true },
+    };
+  }
+
   return {
-    title: isSearch ? `“${query.search}” Arama Sonuçları` : "Tüm Ürünler",
-    robots: isSearch
+    title: page > 1 ? `Tüm Ürünler - Sayfa ${page}` : "Tüm Ürünler",
+    alternates: { canonical: absoluteUrl(canonicalPath) },
+    robots: hasFilters
       ? { index: false, follow: true }
       : { index: true, follow: true },
   };

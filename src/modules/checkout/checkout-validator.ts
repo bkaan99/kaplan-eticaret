@@ -24,7 +24,7 @@ import {
   CheckoutPaymentStrategyRegistry,
   createDefaultCheckoutPaymentStrategies,
 } from "./checkout-payment-strategy";
-import type { CustomizationPricer } from "../custom-pickle/custom-pickle.types";
+import type { ItemCustomizationHandler } from "../cart/customization";
 import { quoteCustomizations } from "./checkout-customizations";
 
 export interface CheckoutValidatorDeps {
@@ -32,7 +32,7 @@ export interface CheckoutValidatorDeps {
   checkout: CheckoutRepository;
   orders: CouponUsageRepository;
   dealers?: DealerTerms;
-  customizations?: CustomizationPricer;
+  customizations?: ItemCustomizationHandler;
   settings: CheckoutSettings;
   now: () => Date;
   strategies?: CheckoutPaymentStrategyRegistry;
