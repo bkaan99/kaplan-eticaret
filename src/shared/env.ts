@@ -51,7 +51,12 @@ const envSchema = z
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;
 
-    if (!env.CRON_SECRET) {
+    // Derleme sırasında secret'lar yoktur (Cloudflare'de çalışma zamanında verilir);
+    // cron uçları secret yokken zaten 401 verir (fail-closed).
+    if (
+      !env.CRON_SECRET &&
+      process.env.NEXT_PHASE !== "phase-production-build"
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["CRON_SECRET"],
