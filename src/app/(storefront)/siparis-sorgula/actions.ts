@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { orderAccessPath } from "@/modules/orders/order-access";
+import { setOrderAccessCookie } from "@/modules/orders/order-access";
 import { getOrderService } from "@/modules/orders/container";
 import { isAppError } from "@/shared/errors";
 import {
@@ -22,7 +22,9 @@ export async function lookupOrderAction(
   const email = String(formData.get("email") ?? "").trim();
 
   if (!orderNumber || !email) {
-    return { error: "Lütfen sipariş numaranızı ve e-posta adresinizi giriniz." };
+    return {
+      error: "Lütfen sipariş numaranızı ve e-posta adresinizi giriniz.",
+    };
   }
 
   try {
@@ -30,7 +32,8 @@ export async function lookupOrderAction(
     await enforceRateLimit("order-lookup", ip, RATE_LIMIT_POLICIES.orderLookup);
 
     const order = await getOrderService().lookupByEmail(orderNumber, email);
-    redirect(orderAccessPath(order.orderNumber, order.lookupToken));
+    await setOrderAccessCookie(order.orderNumber, order.lookupToken);
+    redirect(`/siparis/${order.orderNumber}`);
   } catch (error) {
     // redirect() özel bir hata fırlatır; uygulama hatası değilse yeniden fırlatılır.
     if (!isAppError(error)) throw error;
