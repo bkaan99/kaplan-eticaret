@@ -92,10 +92,9 @@ export async function placeOrderAction(
     await enforceRateLimit("checkout", ip, RATE_LIMIT_POLICIES.checkout);
 
     const identity = await getCartIdentity();
-    const created = await getCheckoutService().placeOrder(
-      identity,
-      parsed.data,
-    );
+    const created = await (
+      await getCheckoutService()
+    ).placeOrder(identity, parsed.data);
     orderNumber = created.orderNumber;
     lookupToken = created.lookupToken;
     method = parsed.data.paymentMethod;
@@ -115,7 +114,7 @@ export async function placeOrderAction(
 
 /** Geliştirme ortamında sahte ödeme sayfasından sonucu bildirir. */
 export async function devPaymentAction(formData: FormData): Promise<void> {
-  const provider = getDevPaymentProvider();
+  const provider = await getDevPaymentProvider();
   if (!provider) return;
 
   const orderNumber = text(formData, "orderNumber");

@@ -9,11 +9,11 @@ import { Price } from "@/components/storefront/price";
 import { devPaymentAction } from "../../actions";
 
 export const metadata: Metadata = {
-  title: "Geliştirme ödeme sayfası",
+  title: "Test ödeme sayfası",
   robots: { index: false },
 };
 
-/** Yalnızca PayTR anahtarı olmayan geliştirme ortamında görünür. */
+/** Yalnızca panelde ödeme modu "Test modu" iken görünür; canlıda 404. */
 async function DevPaymentContent({
   params,
   searchParams,
@@ -22,7 +22,7 @@ async function DevPaymentContent({
   "params" | "searchParams"
 >) {
   await connection();
-  if (!getDevPaymentProvider()) notFound();
+  if (!(await getDevPaymentProvider())) notFound();
 
   const { orderNumber } = await params;
   const query = await searchParams;
@@ -37,7 +37,7 @@ async function DevPaymentContent({
   return (
     <div className="flex max-w-md flex-col gap-4 rounded-theme border border-amber-300 bg-amber-50 p-6">
       <p className="text-sm text-amber-800">
-        Bu sayfa yalnızca geliştirme ortamında görünür. Gerçek ödeme alınmaz.
+        Test modu: bu sayfa sahte ödeme içindir, gerçek ödeme alınmaz.
       </p>
       <p>
         Sipariş <strong>{order.orderNumber}</strong> ·{" "}

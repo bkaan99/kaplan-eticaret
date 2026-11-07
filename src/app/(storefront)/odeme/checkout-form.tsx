@@ -32,6 +32,7 @@ export function CheckoutForm({
   );
   const [sameBilling, setSameBilling] = useState(true);
   const errors = state.fieldErrors;
+  const canPay = paymentOptions.some((option) => option.available);
 
   return (
     <form action={formAction} className="flex flex-col gap-8">
@@ -123,10 +124,14 @@ export function CheckoutForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !canPay}
         className="rounded-theme bg-primary px-6 py-3 text-primary-foreground disabled:opacity-60"
       >
-        {pending ? "Sipariş oluşturuluyor..." : "Ödemeye geç"}
+        {pending
+          ? "Sipariş oluşturuluyor..."
+          : canPay
+            ? "Ödemeye geç"
+            : "Ödeme şu anda kullanılamıyor"}
       </button>
     </form>
   );

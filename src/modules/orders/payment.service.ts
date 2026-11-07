@@ -75,7 +75,7 @@ export class PaymentService {
   async handleCallback(
     payload: Record<string, string>,
   ): Promise<PaymentOutcome> {
-    const result = this.provider.verifyCallback(payload);
+    const result = await this.provider.verifyCallback(payload);
 
     const outcome = await this.orders.applyPaymentResult({
       merchantOid: result.merchantOid,

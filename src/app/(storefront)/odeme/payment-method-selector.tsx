@@ -14,6 +14,20 @@ export function PaymentMethodSelector({
   paymentOptions,
 }: PaymentMethodSelectorProps) {
   if (paymentOptions.length <= 1) {
+    const card = paymentOptions[0];
+    if (card && !card.available) {
+      return (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold">Ödeme yöntemi</h2>
+          <p
+            role="alert"
+            className="rounded-theme border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+          >
+            {card.note ?? "Ödeme şu anda kullanılamıyor."}
+          </p>
+        </section>
+      );
+    }
     return <input type="hidden" name="paymentMethod" value="CARD" />;
   }
 
@@ -36,9 +50,7 @@ export function PaymentMethodSelector({
             className="mt-1"
           />
           <span className="flex flex-col">
-            <span className="font-medium">
-              {METHOD_LABELS[option.method]}
-            </span>
+            <span className="font-medium">{METHOD_LABELS[option.method]}</span>
             {option.note ? (
               <span className="text-muted-foreground">{option.note}</span>
             ) : null}
