@@ -1,10 +1,14 @@
 import { trackingUrl } from "@/shared/shipping/carriers";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Price } from "@/components/storefront/price";
 import { siteConfig } from "@/config/site.config";
 import { getCurrentUser } from "@/modules/auth/session";
+import {
+  orderAccessPath,
+  readOrderAccessToken,
+} from "@/modules/orders/order-access";
 import { getOrderService } from "@/modules/orders/container";
 import {
   ORDER_STATUS_LABELS,
@@ -31,7 +35,14 @@ async function OrderContent({
 }: Pick<PageProps<"/siparis/[orderNumber]">, "params" | "searchParams">) {
   const { orderNumber } = await params;
   const query = await searchParams;
-  const token = typeof query["t"] === "string" ? query["t"] : null;
+  // Eski ?t= yer imleri → çerez + temiz URL
+  if (typeof query["t"] === "string" && query["t"]) {
+    const extra: Record<string, string> = {};
+    if (typeof query["durum"] === "string") extra["durum"] = query["durum"];
+    redirect(orderAccessPath(orderNumber, query["t"], extra));
+  }
+
+  const token = await readOrderAccessToken(orderNumber);
   const user = await getCurrentUser();
 
   let order;

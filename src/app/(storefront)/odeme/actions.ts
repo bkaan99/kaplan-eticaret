@@ -6,6 +6,7 @@ import { getCartIdentity } from "@/modules/cart/cart.session";
 import { checkoutSchema } from "@/modules/checkout/checkout.schema";
 import { getCheckoutService } from "@/modules/checkout/container";
 import { getDevPaymentProvider } from "@/integrations/payment/container";
+import { orderAccessPath } from "@/modules/orders/order-access";
 import { getPaymentService } from "@/modules/orders/container";
 import { isAppError } from "@/shared/errors";
 import { reportError } from "@/shared/error-reporter";
@@ -105,10 +106,13 @@ export async function placeOrderAction(
   }
 
   // Kart ödemesi güvenli ödeme sayfasına, havale/vadeli sipariş detay sayfasına gider.
+  // Token query'de kalmaz; /erisim çereze alır.
   redirect(
     method === "CARD"
-      ? `/odeme/ode/${orderNumber}?t=${lookupToken}`
-      : `/siparis/${orderNumber}?t=${lookupToken}`,
+      ? orderAccessPath(orderNumber, lookupToken, {
+          next: `/odeme/ode/${orderNumber}`,
+        })
+      : orderAccessPath(orderNumber, lookupToken),
   );
 }
 
@@ -131,5 +135,5 @@ export async function devPaymentAction(formData: FormData): Promise<void> {
   };
 
   await getPaymentService().handleCallback(payload);
-  redirect(`/siparis/${orderNumber}?t=${lookupToken}`);
+  redirect(orderAccessPath(orderNumber, lookupToken));
 }

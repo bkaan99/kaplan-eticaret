@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { getDevPaymentProvider } from "@/integrations/payment/container";
+import {
+  orderAccessPath,
+  readOrderAccessToken,
+} from "@/modules/orders/order-access";
 import { getOrderService } from "@/modules/orders/container";
 import { getCurrentUser } from "@/modules/auth/session";
 import { Price } from "@/components/storefront/price";
@@ -26,7 +30,15 @@ async function DevPaymentContent({
 
   const { orderNumber } = await params;
   const query = await searchParams;
-  const token = typeof query["t"] === "string" ? query["t"] : "";
+  if (typeof query["t"] === "string" && query["t"]) {
+    redirect(
+      orderAccessPath(orderNumber, query["t"], {
+        next: `/odeme/gelistirme/${orderNumber}`,
+      }),
+    );
+  }
+
+  const token = (await readOrderAccessToken(orderNumber)) ?? "";
   const user = await getCurrentUser();
 
   const order = await getOrderService()

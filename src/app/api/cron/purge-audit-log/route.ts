@@ -1,13 +1,13 @@
 import { connection } from "next/server";
 import { siteConfig } from "@/config/site.config";
 import { getAuditLogger } from "@/shared/audit";
+import { authorizeCronRequest } from "@/shared/cron-auth";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export async function GET(request: Request) {
   await connection();
-  const secret = process.env["CRON_SECRET"];
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!authorizeCronRequest(request)) {
     return new Response("Unauthorized", { status: 401 });
   }
 

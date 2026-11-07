@@ -9,6 +9,7 @@ const SITEVERIFY_URL =
 /**
  * Cloudflare Turnstile yanıtını doğrular. `features.captcha` kapalıysa
  * (varsayılan) hiçbir şey yapmaz; açıkken geçersiz yanıt hata fırlatır.
+ * Anahtar yoksa fail-closed (sessizce geçmez).
  */
 export async function verifyCaptcha(
   token: string | null,
@@ -17,7 +18,9 @@ export async function verifyCaptcha(
   if (!isFeatureEnabled("captcha")) return;
 
   const secret = getEnv().TURNSTILE_SECRET_KEY;
-  if (!secret) throw new Error("TURNSTILE_SECRET_KEY tanımlı değil");
+  if (!secret) {
+    throw new Error("TURNSTILE_SECRET_KEY tanımlı değil (captcha özelliği açık)");
+  }
   if (!token) throw new ValidationError("Lütfen robot olmadığınızı doğrulayın");
 
   const body = new URLSearchParams({ secret, response: token });
@@ -28,7 +31,15 @@ export async function verifyCaptcha(
     body,
     signal: AbortSignal.timeout(10_000),
   });
-  const result = (await response.json()) as { success?: boolean };
+
+  if (!response.ok) {
+    throw new ValidationError("Robot doğrulaması başarısız, tekrar deneyin");
+  }
+
+  const result = (await response.json()) as {
+    success?: boolean;
+    "error-codes"?: string[];
+  };
 
   if (!result.success) {
     throw new ValidationError("Robot doğrulaması başarısız, tekrar deneyin");

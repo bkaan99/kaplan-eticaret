@@ -32,8 +32,7 @@ type EmailPayload = {
 async function callCron(env: CloudflareEnv, path: string): Promise<void> {
   const secret = env.CRON_SECRET;
   if (!secret) {
-    console.warn("CRON_SECRET yok; cron atlandı", path);
-    return;
+    throw new Error(`CRON_SECRET tanımlı değil; cron çalıştırılamaz: ${path}`);
   }
 
   const base = env.APP_URL ?? "https://kaplan-eticaret.workers.dev";

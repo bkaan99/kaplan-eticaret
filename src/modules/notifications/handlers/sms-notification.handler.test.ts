@@ -45,7 +45,7 @@ describe("renderOrderShippedSms", () => {
         context,
       ),
     ).toBe(
-      "Kaplan Turşu: SABC123 numaralı siparişiniz kargoya verildi. https://site.test/siparis/SABC123?t=tok",
+      "Kaplan Turşu: SABC123 numaralı siparişiniz kargoya verildi. https://site.test/siparis/SABC123/erisim?t=tok",
     );
   });
 });
