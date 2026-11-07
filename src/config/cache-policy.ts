@@ -15,6 +15,10 @@ export const CACHE_PUBLIC_HTML =
 export const CACHE_CATALOG_API =
   "public, s-maxage=30, stale-while-revalidate=120";
 
+/** sitemap / robots / llms / feed — edge 1 saat + SWR. */
+export const CACHE_SEO_FEED =
+  "public, max-age=3600, stale-while-revalidate=86400";
+
 /** R2 /uploads görselleri — içerik adresi değişmez (uuid). */
 export const CACHE_UPLOAD_ASSET = "public, max-age=31536000, immutable";
 
@@ -33,6 +37,8 @@ const PRIVATE_PREFIXES = [
   "/sifre-sifirla",
   "/dogrula",
   "/bayi-basvuru",
+  "/siparis",
+  "/siparis-sorgula",
   "/api/auth",
   "/api/cron",
   "/api/payments",
@@ -45,7 +51,25 @@ const PRIVATE_PREFIXES = [
 /** Anonimken edge cache’lenebilir vitrin yolları. */
 const PUBLIC_HTML_PREFIXES = ["/urun/", "/kategori/", "/sayfa/"] as const;
 
-const PUBLIC_HTML_EXACT = ["/", "/iletisim", "/ara"] as const;
+const PUBLIC_HTML_EXACT = [
+  "/",
+  "/iletisim",
+  "/ara",
+  "/kendi-tursunu-yap",
+] as const;
+
+const SEO_FEED_EXACT = [
+  "/sitemap.xml",
+  "/robots.txt",
+  "/llms.txt",
+  "/feeds/products.xml",
+] as const;
+
+export function isSeoFeedPath(pathname: string): boolean {
+  return SEO_FEED_EXACT.includes(
+    pathname as (typeof SEO_FEED_EXACT)[number],
+  );
+}
 
 export function isPrivatePath(pathname: string): boolean {
   return PRIVATE_PREFIXES.some(

@@ -24,26 +24,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
   const allPages = [...pages, ...fallbackPages];
 
+  const now = new Date();
+
   return [
     {
       url: absoluteUrl("/"),
+      lastModified: now,
       changeFrequency: "daily",
       priority: 1,
       images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
     },
     {
+      url: absoluteUrl("/ara"),
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
+    {
       url: absoluteUrl("/kendi-tursunu-yap"),
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
     },
     {
       url: absoluteUrl("/iletisim"),
+      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.6,
       images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
     },
     ...categories.map((category) => ({
       url: absoluteUrl(`/kategori/${category.slug}`),
+      lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.7,
       images: category.imageUrl
@@ -67,6 +79,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: product.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.8,
+        images: product.imageUrl
+          ? [
+              product.imageUrl.startsWith("http")
+                ? product.imageUrl
+                : absoluteUrl(product.imageUrl),
+            ]
+          : undefined,
       })),
   ];
 }

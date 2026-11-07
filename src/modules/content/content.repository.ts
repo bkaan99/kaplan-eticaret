@@ -1,5 +1,14 @@
 import { and, asc, desc, eq, gte, isNull, lte, ne, or } from "drizzle-orm";
-import { banner, menu, menuItem, page, newId, runBatch, type Db } from "@/db";
+import {
+  banner,
+  menu,
+  menuItem,
+  page,
+  redirect,
+  newId,
+  runBatch,
+  type Db,
+} from "@/db";
 import type { BannerInput, MenuKey, PageInput } from "./content.schema";
 
 export interface BannerView {
@@ -44,6 +53,8 @@ export interface ContentRepository {
   createPage(input: PageInput, slug: string): Promise<string>;
   updatePage(id: string, input: PageInput, slug: string): Promise<void>;
   deletePage(id: string): Promise<void>;
+  addRedirect(fromPath: string, toPath: string): Promise<void>;
+  findRedirect(path: string): Promise<string | null>;
 
   getMenu(key: MenuKey): Promise<MenuItemView[]>;
   replaceMenu(key: MenuKey, items: MenuItemView[]): Promise<void>;
@@ -149,6 +160,23 @@ export class D1ContentRepository implements ContentRepository {
 
   async deletePage(id: string): Promise<void> {
     await this.db().delete(page).where(eq(page.id, id));
+  }
+
+  async addRedirect(fromPath: string, toPath: string): Promise<void> {
+    if (fromPath === toPath) return;
+    await this.db()
+      .insert(redirect)
+      .values({ fromPath, toPath })
+      .onConflictDoUpdate({ target: redirect.fromPath, set: { toPath } });
+  }
+
+  async findRedirect(path: string): Promise<string | null> {
+    const [row] = await this.db()
+      .select({ toPath: redirect.toPath })
+      .from(redirect)
+      .where(eq(redirect.fromPath, path))
+      .limit(1);
+    return row?.toPath ?? null;
   }
 
   async getMenu(key: MenuKey): Promise<MenuItemView[]> {

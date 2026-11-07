@@ -218,7 +218,9 @@ export class CatalogService {
     return this.getCardsInOrder(ids, identity);
   }
 
-  listProductSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
+  listProductSlugs(): Promise<
+    { slug: string; updatedAt: Date; imageUrl: string | null }[]
+  > {
     return this.repository.listActiveProductSlugs();
   }
 
@@ -301,7 +303,7 @@ export class CatalogService {
       name: record.name,
       brandName: record.brandName,
       imageUrl: record.imageUrl ?? PLACEHOLDER_IMAGE,
-      imageAlt: record.imageAlt ?? record.name,
+      imageAlt: record.imageAlt?.trim() || record.name,
       priceVisible,
       price: priceVisible ? min.toFixed(2) : "0.00",
       compareAtPrice:
@@ -371,7 +373,7 @@ export class CatalogService {
         record.images.length > 0
           ? record.images.map((image) => ({
               url: image.url,
-              alt: image.alt ?? record.name,
+              alt: image.alt?.trim() || record.name,
               optionValueId: image.optionValueId,
             }))
           : [{ url: PLACEHOLDER_IMAGE, alt: record.name, optionValueId: null }],

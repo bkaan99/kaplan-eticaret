@@ -27,7 +27,7 @@ export function ProductGallery({ state }: { state: ProductViewState }) {
           >
             <Image
               src={image.url}
-              alt={image.alt}
+              alt={image.alt?.trim() || "Ürün görseli"}
               fill
               priority
               sizes="(min-width: 768px) 50vw, 100vw"

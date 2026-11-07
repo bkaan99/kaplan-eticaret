@@ -7,6 +7,7 @@ import {
   eq,
   exists,
   inArray,
+  isNull,
   notInArray,
   or,
   isNotNull,
@@ -21,6 +22,7 @@ import {
   containsText,
   product,
   productAttributeValue,
+  productImage,
   productVariant,
   redirect,
   relatedProduct,
@@ -135,7 +137,9 @@ export interface CatalogRepository {
   /** Öne çıkan ürünler; yetersizse en yeniler tamamlar. */
   findFeaturedIds(limit: number): Promise<string[]>;
   /** Sitemap için yayındaki tüm ürün slug'ları. */
-  listActiveProductSlugs(): Promise<{ slug: string; updatedAt: Date }[]>;
+  listActiveProductSlugs(): Promise<
+    { slug: string; updatedAt: Date; imageUrl: string | null }[]
+  >;
 }
 
 /** Listeleme koşulu; `product` tablosuna bağlı ilişkili alt sorgular (exists) kullanır. */
@@ -536,12 +540,27 @@ export class D1CatalogRepository implements CatalogRepository {
     return [...featured, ...filler].map((row) => row.id);
   }
 
-  listActiveProductSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
+  async listActiveProductSlugs(): Promise<
+    { slug: string; updatedAt: Date; imageUrl: string | null }[]
+  > {
     const db = this.db();
-    return db
-      .select({ slug: product.slug, updatedAt: product.updatedAt })
-      .from(product)
-      .where(and(eq(product.status, "ACTIVE"), hasActiveVariant(db)));
+    const rows = await db.query.product.findMany({
+      where: and(eq(product.status, "ACTIVE"), hasActiveVariant(db)),
+      columns: { slug: true, updatedAt: true },
+      with: {
+        images: {
+          where: isNull(productImage.optionValueId),
+          orderBy: (image, { asc: orderAsc }) => orderAsc(image.position),
+          limit: 1,
+          columns: { url: true },
+        },
+      },
+    });
+    return rows.map((row) => ({
+      slug: row.slug,
+      updatedAt: row.updatedAt,
+      imageUrl: row.images[0]?.url ?? null,
+    }));
   }
 }
 

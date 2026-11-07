@@ -268,7 +268,7 @@ Uygulama sırasında alınan teknik kararlar:
 
 - **Listeleme sıralaması bellek içinde yapılır.** Fiyata göre sıralama için `searchListing` aktif ürünlerin kimlik ve en düşük fiyatını çeker, sıralama ve sayfalama serviste yapılır. Bu yaklaşım birkaç bin ürüne kadar yeterlidir; daha büyük kataloglarda `CatalogRepository` arkasında SQL tabanlı sıralamaya geçilmelidir.
 - **Favoriler ürün bazlıdır** (`WishlistItem.productId`); kullanıcılar bedeni değil ürünü favorilere alır.
-- **Bilinmeyen kategori/ürün adreslerinde durum kodu 200 dönebilir.** Cache Components altında içerik akıtıldığından başlık gönderildikten sonra `notFound()` durumu değiştiremez; Next.js sayfaya `noindex` ekler ve 404 arayüzünü gösterir. Arama motorları için sorun yaratmaz ama izleme araçlarında 404 sayılmaz.
+- **Bilinmeyen kategori/ürün/CMS sayfalarında `notFound()` Suspense dışında ve `generateMetadata` içinde çağrılır.** Böylece Cache Components akışında soft-404 (200+noindex) yerine gerçek HTTP 404 döner.
 - **`use cache` kullanılmadı.** Kategori ağacı gibi veriler `use cache` ile build sırasında veritabanından okunurdu; şablonun build'i veritabanı gerektirmesin diye bilinçli olarak istek anında okunur. Önbellek stratejisi v0.6'da süreç içi TTL önbelleğiyle çözüldü (bölüm 17).
 - **Oturum okuyan her kod `connection()` ile istek anına alınır** (Auth.js rastgele değer ürettiği için prerender sırasında hata verirdi).
 - **shadcn/ui henüz eklenmedi.** Vitrin sade Tailwind bileşenleriyle yazıldı; admin fazında (v0.4) form ve tablo bileşenleri için eklenecek.

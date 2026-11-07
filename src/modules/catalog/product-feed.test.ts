@@ -14,6 +14,7 @@ const options: FeedOptions = {
   defaultBrand: "Kaplan",
   shipping: { freeShippingThreshold: 500, flatRate: 49.9 },
   productUrl: (slug) => `https://site.test/urun/${slug}`,
+  googleProductCategory: "422",
 };
 
 const variant = (overrides: Partial<FeedVariant> = {}): FeedVariant => ({
@@ -53,6 +54,7 @@ describe("buildProductFeedXml", () => {
     expect(xml).toContain("<g:availability>in_stock</g:availability>");
     expect(xml).toContain("<g:brand>Kaplan</g:brand>");
     expect(xml).toContain("<g:identifier_exists>no</g:identifier_exists>");
+    expect(xml).toContain("<g:google_product_category>422</g:google_product_category>");
     expect(xml).toContain(
       "<g:shipping><g:country>TR</g:country><g:price>49.90 TRY</g:price></g:shipping>",
     );

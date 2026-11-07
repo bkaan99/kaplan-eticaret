@@ -46,6 +46,11 @@ export interface FeedOptions {
   shipping: { freeShippingThreshold: number; flatRate: number };
   /** Ürün URL'si üretir */
   productUrl: (slug: string) => string;
+  /**
+   * Google Product Taxonomy ID veya yol metni.
+   * Örn. `422` veya `Food, Beverages & Tobacco > Food Items > Condiments & Sauces`
+   */
+  googleProductCategory?: string;
 }
 
 const DESCRIPTION_MAX = 5000;
@@ -126,6 +131,7 @@ function variantItem(
     tag("brand", product.brandName || options.defaultBrand),
     variant.gtin ? tag("gtin", variant.gtin) : tag("identifier_exists", "no"),
     tag("product_type", product.productType),
+    tag("google_product_category", options.googleProductCategory),
     variant.optionLabel ? tag("size", variant.optionLabel) : "",
     product.weightGram ? tag("shipping_weight", `${product.weightGram} g`) : "",
     `<g:shipping>${tag("country", "TR")}${tag("price", money(shippingPrice, variant.currency))}</g:shipping>`,

@@ -4,10 +4,12 @@ import { siteConfig } from "@/config/site.config";
 import {
   CACHE_PRIVATE,
   CACHE_PUBLIC_HTML,
+  CACHE_SEO_FEED,
   CACHE_UPLOAD_ASSET,
   CDN_CACHE_UPLOAD,
   isPrivatePath,
   isPublicHtmlPath,
+  isSeoFeedPath,
   isUploadPath,
 } from "@/config/cache-policy";
 import {
@@ -75,6 +77,14 @@ export function proxy(request: NextRequest) {
     });
   }
 
+  if (isSeoFeedPath(pathname)) {
+    return withCacheHeaders({
+      "Cache-Control": CACHE_SEO_FEED,
+      "CDN-Cache-Control": CACHE_SEO_FEED,
+      "Cloudflare-CDN-Cache-Control": CACHE_SEO_FEED,
+    });
+  }
+
   if (isPublicHtmlPath(pathname)) {
     // /ara?q=… sonuçları kişiye özel değil ama çok çeşitli — sadece boş liste cache.
     if (pathname === "/ara" && request.nextUrl.searchParams.has("q")) {
@@ -90,7 +100,7 @@ export function proxy(request: NextRequest) {
     });
   }
 
-  // Eşleşen diğer yollar (ör. kendi-tursunu-yap): varsayılan private.
+  // Eşleşen diğer yollar: varsayılan private.
   return withCacheHeaders({ "Cache-Control": CACHE_PRIVATE });
 }
 
@@ -118,9 +128,16 @@ export const config = {
     "/sifre-sifirla",
     "/dogrula",
     "/bayi-basvuru",
+    "/siparis",
+    "/siparis/:path*",
+    "/siparis-sorgula",
     "/urun/:path*",
     "/kategori/:path*",
     "/uploads/:path*",
     "/api/:path*",
+    "/sitemap.xml",
+    "/robots.txt",
+    "/llms.txt",
+    "/feeds/products.xml",
   ],
 };

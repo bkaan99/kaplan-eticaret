@@ -4,16 +4,42 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/storefront/breadcrumbs";
 import { JsonLd } from "@/components/storefront/json-ld";
+import { siteConfig } from "@/config/site.config";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { customPickleService } from "@/modules/custom-pickle/container";
 import { absoluteUrl } from "@/shared/site-url";
 import { Builder } from "./builder";
 
+const PAGE_TITLE = "Kendi Turşunu Yap";
+const PAGE_DESCRIPTION =
+  "Bidon boyutunu seç, sevdiğin sebzeleri ve baharatları ekle, salamurasına ve acılığına sen karar ver. Senin tarifinle hazırlayıp gönderelim.";
+const PAGE_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.jpg";
+const PAGE_URL = absoluteUrl("/kendi-tursunu-yap");
+
 export const metadata: Metadata = {
-  title: "Kendi Turşunu Yap",
-  description:
-    "Bidon boyutunu seç, sevdiğin sebzeleri ve baharatları ekle, salamurasına ve acılığına sen karar ver. Senin tarifinle hazırlayıp gönderelim.",
-  alternates: { canonical: absoluteUrl("/kendi-tursunu-yap") },
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates: { canonical: PAGE_URL },
+  openGraph: {
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    url: PAGE_URL,
+    type: "website",
+    images: [
+      {
+        url: PAGE_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: `${PAGE_TITLE} | ${siteConfig.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    images: [PAGE_OG_IMAGE],
+  },
 };
 
 async function BuilderContent() {
@@ -77,16 +103,36 @@ export default function CustomPicklePage() {
             {
               "@type": "ListItem",
               position: 2,
-              name: "Kendi Turşunu Yap",
-              item: absoluteUrl("/kendi-tursunu-yap"),
+              name: PAGE_TITLE,
+              item: PAGE_URL,
             },
           ],
+        }}
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Service",
+          name: PAGE_TITLE,
+          description: PAGE_DESCRIPTION,
+          url: PAGE_URL,
+          serviceType: "Özel turşu hazırlama",
+          provider: {
+            "@type": "Organization",
+            name: siteConfig.name,
+            url: absoluteUrl("/"),
+          },
+          areaServed: {
+            "@type": "Country",
+            name: "TR",
+          },
+          image: absoluteUrl(PAGE_OG_IMAGE),
         }}
       />
       <Breadcrumbs
         items={[
           { name: "Ana sayfa", href: "/" },
-          { name: "Kendi Turşunu Yap" },
+          { name: PAGE_TITLE },
         ]}
       />
       <header className="flex max-w-2xl flex-col gap-2">

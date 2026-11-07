@@ -23,7 +23,6 @@ export async function generateMetadata({
   );
 
   const page = query.page ?? 1;
-  const canonicalPath = page > 1 ? `/ara?sayfa=${page}` : "/ara";
 
   if (isSearch) {
     return {
@@ -33,12 +32,23 @@ export async function generateMetadata({
     };
   }
 
+  const title = page > 1 ? `Tüm Ürünler - Sayfa ${page}` : "Tüm Ürünler";
+  const description =
+    "Kaplan Turşu ürünlerinin tamamını keşfedin: doğal fermente turşular, şalgam ve özel karışımlar.";
+
   return {
-    title: page > 1 ? `Tüm Ürünler - Sayfa ${page}` : "Tüm Ürünler",
-    alternates: { canonical: absoluteUrl(canonicalPath) },
-    robots: hasFilters
+    title,
+    description,
+    // Sayfalama otoritesini bölmemek için canonical her zaman /ara.
+    alternates: { canonical: absoluteUrl("/ara") },
+    robots: hasFilters || page > 1
       ? { index: false, follow: true }
       : { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
   };
 }
 

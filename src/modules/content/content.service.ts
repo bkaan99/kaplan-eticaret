@@ -37,6 +37,11 @@ export class ContentService {
     return page;
   }
 
+  /** Eski CMS slug'ı için 301 hedefi. */
+  findPageRedirect(path: string): Promise<string | null> {
+    return this.repository.findRedirect(path);
+  }
+
   publishedPageSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
     return this.repository.listPublishedPageSlugs();
   }
@@ -114,6 +119,12 @@ export class ContentService {
       }
 
       await this.repository.updatePage(id, input, slug);
+      if (slug !== existing.slug) {
+        await this.repository.addRedirect(
+          `/sayfa/${existing.slug}`,
+          `/sayfa/${slug}`,
+        );
+      }
       await this.log(actor, "page.update", "Page", id, {
         title: input.title,
         slug,

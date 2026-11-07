@@ -12,6 +12,7 @@ import { formatMoney } from "@/shared/money";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { catalogService } from "@/modules/catalog/container";
 import { loadProduct } from "@/modules/catalog/loaders";
+import type { ProductDetail } from "@/modules/catalog/catalog.types";
 import { CUSTOM_PICKLE_PRODUCT_SLUG } from "@/modules/custom-pickle/custom-pickle.types";
 import { TrackOnMount } from "@/shared/analytics/track-on-mount";
 import { validGtin } from "@/shared/seo/gtin";
@@ -28,11 +29,16 @@ export async function generateMetadata({
 }: PageProps<"/urun/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const loaded = await loadProduct(slug);
-  if (loaded.kind !== "ok") return {};
+  if (loaded.kind === "redirect") permanentRedirect(loaded.to);
+  // Metadata aşamasında 404 → soft-404 (200+noindex) oluşmaz.
+  if (loaded.kind === "missing") notFound();
 
   const product = loaded.value;
+  const title = product.seoTitle ?? product.name;
   const description =
-    product.seoDescription ?? plainText(product.description, 160);
+    product.seoDescription ??
+    plainText(product.description, 160) ??
+    `${product.name} - ${siteConfig.name}`;
   const image = product.images[0];
   const imageUrl = image
     ? image.url.startsWith("/")
@@ -41,25 +47,25 @@ export async function generateMetadata({
     : undefined;
 
   return {
-    title: product.seoTitle ?? product.name,
+    title,
     description,
     alternates: { canonical: absoluteUrl(`/urun/${product.slug}`) },
     openGraph: {
-      title: product.name,
+      title,
       description,
       type: "website",
       images: imageUrl
         ? [
             {
               url: imageUrl,
-              alt: image?.alt ?? product.name,
+              alt: image?.alt?.trim() || product.name,
             },
           ]
         : undefined,
     },
     twitter: {
       card: "summary_large_image",
-      title: product.name,
+      title,
       description,
       images: imageUrl ? [imageUrl] : undefined,
     },
@@ -142,16 +148,7 @@ function ShippingInfo() {
   );
 }
 
-async function ProductContent({
-  params,
-}: Pick<PageProps<"/urun/[slug]">, "params">) {
-  const { slug } = await params;
-  const loaded = await loadProduct(slug);
-
-  if (loaded.kind === "redirect") permanentRedirect(loaded.to);
-  if (loaded.kind === "missing") notFound();
-
-  const product = loaded.value;
+async function ProductContent({ product }: { product: ProductDetail }) {
   // Bidonlar malzeme seçilerek oluşturulur; ürün sayfası yapıcıya yönlenir.
   if (product.slug === CUSTOM_PICKLE_PRODUCT_SLUG)
     redirect("/kendi-tursunu-yap");
@@ -343,10 +340,14 @@ async function ProductContent({
   );
 }
 
-export default function ProductPage({ params }: PageProps<"/urun/[slug]">) {
-  return (
-    <Suspense fallback={<p className="text-muted-foreground">Yükleniyor...</p>}>
-      <ProductContent params={params} />
-    </Suspense>
-  );
+export default async function ProductPage({
+  params,
+}: PageProps<"/urun/[slug]">) {
+  // Suspense dışında çözülür ki HTTP durumu hâlâ 404/301 yapılabilsin.
+  const { slug } = await params;
+  const loaded = await loadProduct(slug);
+  if (loaded.kind === "redirect") permanentRedirect(loaded.to);
+  if (loaded.kind === "missing") notFound();
+
+  return <ProductContent product={loaded.value} />;
 }

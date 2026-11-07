@@ -163,15 +163,22 @@ export function HeroSlider() {
 
         {/* Metin */}
         <div className="relative z-10 flex w-full flex-col justify-center px-6 py-8 pb-12 text-white sm:px-10 lg:ml-auto lg:w-[47%] lg:py-12 lg:pr-20 lg:pl-8">
+          {/* SEO: tek sabit H1; slayt metni görsel başlık olarak kalır. */}
+          <h1 className="sr-only">
+            Kaplan Turşu — Geleneksel ev yapımı çubuk turşuları ve şalgam suyu
+          </h1>
           <span className="text-[11px] font-bold tracking-[0.14em] text-amber-300 uppercase">
             {activeSlide.badge}
           </span>
-          <h1 className="mt-3 font-display text-3xl leading-[1.08] font-bold tracking-tight sm:text-4xl xl:text-5xl">
+          <p
+            className="mt-3 font-display text-3xl leading-[1.08] font-bold tracking-tight sm:text-4xl xl:text-5xl"
+            aria-live="polite"
+          >
             {activeSlide.titleLight}{" "}
             <span className="block text-amber-300">
               {activeSlide.titleBold}
             </span>
-          </h1>
+          </p>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-white/85 sm:text-base">
             {activeSlide.description}
           </p>

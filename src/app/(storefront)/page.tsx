@@ -18,10 +18,33 @@ import { catalogService } from "@/modules/catalog/container";
 import { customPickleService } from "@/modules/custom-pickle/container";
 import { maxIngredientsForSize } from "@/modules/custom-pickle/custom-pickle.types";
 
+const HOME_TITLE = "Geleneksel Ev Yapımı Çubuk Turşuları ve Şalgam Suyu";
+const HOME_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.jpg";
+
 export const metadata: Metadata = {
-  title: "Geleneksel Ev Yapımı Çubuk Turşuları ve Şalgam Suyu",
+  title: HOME_TITLE,
   description: siteConfig.description,
   alternates: { canonical: absoluteUrl("/") },
+  openGraph: {
+    title: HOME_TITLE,
+    description: siteConfig.description,
+    url: absoluteUrl("/"),
+    type: "website",
+    images: [
+      {
+        url: HOME_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} - Doğal Fermente Ev Turşuları`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: HOME_TITLE,
+    description: siteConfig.description,
+    images: [HOME_OG_IMAGE],
+  },
 };
 
 async function FeaturedProducts() {

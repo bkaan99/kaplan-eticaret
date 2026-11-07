@@ -1,17 +1,34 @@
 import { absoluteUrl } from "@/shared/site-url";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { notFound, permanentRedirect } from "next/navigation";
 import { RichText } from "@/components/content/rich-text";
 import { JsonLd } from "@/components/storefront/json-ld";
+import { siteConfig } from "@/config/site.config";
 import { getContentService } from "@/modules/content/container";
-import {
-  LEGAL_PAGE_TEMPLATES,
-  type LegalPageTemplate,
-} from "@/modules/content/legal-templates";
+import { LEGAL_PAGE_TEMPLATES } from "@/modules/content/legal-templates";
 import { storefrontContact } from "@/config/storefront-contact";
 import { isAppError } from "@/shared/errors";
+
+const PAGE_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.jpg";
+
+/** Markdown `## Soru` bloklarından FAQPage şeması üretir. */
+function faqFromMarkdown(content: string): { q: string; a: string }[] {
+  return content
+    .split(/^## /m)
+    .slice(1)
+    .map((block) => {
+      const newline = block.indexOf("\n");
+      const q = (newline === -1 ? block : block.slice(0, newline)).trim();
+      const a = (newline === -1 ? "" : block.slice(newline + 1))
+        .replace(/^#+\s.*$/gm, "")
+        .replace(/\*\*/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return { q, a };
+    })
+    .filter((item) => item.q.length > 0 && item.a.length > 0);
+}
 
 const CORPORATE_LINKS = [
   { slug: "hakkimizda", title: "Hakkımızda", href: "/sayfa/hakkimizda" },
@@ -83,6 +100,9 @@ async function loadPage(slug: string) {
     };
   }
 
+  const to = await getContentService().findPageRedirect(`/sayfa/${slug}`);
+  if (to) permanentRedirect(to);
+
   return null;
 }
 
@@ -91,7 +111,7 @@ export async function generateMetadata({
 }: PageProps<"/sayfa/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const page = await loadPage(slug);
-  if (!page) return {};
+  if (!page) notFound();
 
   const title = page.seoTitle ?? page.title;
   const description =
@@ -108,24 +128,35 @@ export async function generateMetadata({
       description,
       url,
       type: "article",
+      images: [
+        {
+          url: PAGE_OG_IMAGE,
+          width: 1200,
+          height: 630,
+          alt: `${title} | ${siteConfig.name}`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [PAGE_OG_IMAGE],
     },
   };
 }
 
 async function PageContent({
-  params,
-}: Pick<PageProps<"/sayfa/[slug]">, "params">) {
-  const { slug } = await params;
-  const page = await loadPage(slug);
-  if (!page) notFound();
-
+  page,
+}: {
+  page: NonNullable<Awaited<ReturnType<typeof loadPage>>>;
+}) {
   const isLegal = LEGAL_LINKS.some((l) => l.slug === page.slug);
   const badgeText = isLegal ? "Resmi Yasal Belge" : "Kurumsal Bilgilendirme";
+  const faqItems =
+    page.slug === "sikca-sorulan-sorular"
+      ? faqFromMarkdown(page.content)
+      : [];
 
   return (
     <div className="flex flex-col gap-6 py-4">
@@ -159,6 +190,22 @@ async function PageContent({
           ],
         }}
       />
+      {faqItems.length > 0 ? (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqItems.map((item) => ({
+              "@type": "Question",
+              name: item.q,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: item.a,
+              },
+            })),
+          }}
+        />
+      ) : null}
       {/* Üst Breadcrumb */}
       <nav
         aria-label="Sayfa yolu"
@@ -292,16 +339,13 @@ async function PageContent({
   );
 }
 
-export default function StaticPage({ params }: PageProps<"/sayfa/[slug]">) {
-  return (
-    <Suspense
-      fallback={
-        <div className="py-20 text-center text-sm text-slate-400">
-          Belge yükleniyor...
-        </div>
-      }
-    >
-      <PageContent params={params} />
-    </Suspense>
-  );
+export default async function StaticPage({
+  params,
+}: PageProps<"/sayfa/[slug]">) {
+  // Suspense dışında çözülür ki HTTP durumu hâlâ 404/301 yapılabilsin.
+  const { slug } = await params;
+  const page = await loadPage(slug);
+  if (!page) notFound();
+
+  return <PageContent page={page} />;
 }

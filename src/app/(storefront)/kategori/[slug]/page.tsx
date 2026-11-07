@@ -10,6 +10,10 @@ import { SortLinks } from "@/components/storefront/sort-links";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { catalogService } from "@/modules/catalog/container";
 import { loadCategory } from "@/modules/catalog/loaders";
+import type {
+  CategoryBreadcrumb,
+  CategoryNode,
+} from "@/modules/catalog/catalog.types";
 import { parseListQuery, toSearchString } from "@/modules/catalog/query-params";
 import { absoluteUrl } from "@/shared/site-url";
 
@@ -19,7 +23,8 @@ export async function generateMetadata({
 }: PageProps<"/kategori/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const loaded = await loadCategory(slug);
-  if (loaded.kind !== "ok") return {};
+  if (loaded.kind === "redirect") permanentRedirect(loaded.to);
+  if (loaded.kind === "missing") notFound();
 
   const { category } = loaded.value;
   const query = parseListQuery(await searchParams, { categorySlug: slug });
@@ -32,10 +37,8 @@ export async function generateMetadata({
   );
 
   const page = query.page ?? 1;
-  const canonicalPath =
-    page > 1
-      ? `/kategori/${category.slug}?sayfa=${page}`
-      : `/kategori/${category.slug}`;
+  // Sayfalama otoritesini bölmemek için canonical her zaman 1. sayfa.
+  const canonicalPath = `/kategori/${category.slug}`;
 
   const baseTitle = category.seoTitle ?? category.name;
   const title = page > 1 ? `${baseTitle} - Sayfa ${page}` : baseTitle;
@@ -55,7 +58,7 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: absoluteUrl(canonicalPath) },
-    robots: hasFilters
+    robots: hasFilters || page > 1
       ? { index: false, follow: true }
       : { index: true, follow: true },
     openGraph: {
@@ -81,19 +84,30 @@ export async function generateMetadata({
 }
 
 async function CategoryContent({
-  params,
+  category,
+  breadcrumbs,
   searchParams,
-}: Pick<PageProps<"/kategori/[slug]">, "params" | "searchParams">) {
-  const { slug } = await params;
-  const loaded = await loadCategory(slug);
-
-  if (loaded.kind === "redirect") permanentRedirect(loaded.to);
-  if (loaded.kind === "missing") notFound();
-
-  const { category, breadcrumbs } = loaded.value;
-  const query = parseListQuery(await searchParams, { categorySlug: slug });
+}: {
+  category: CategoryNode;
+  breadcrumbs: CategoryBreadcrumb[];
+  searchParams: PageProps<"/kategori/[slug]">["searchParams"];
+}) {
+  const query = parseListQuery(await searchParams, {
+    categorySlug: category.slug,
+  });
   const result = await catalogService.list(query, await getRequestPricing());
   const basePath = `/kategori/${category.slug}`;
+  const hasFilters = Boolean(
+    (query.sort && query.sort !== "newest") ||
+      (query.brandSlugs && query.brandSlugs.length > 0) ||
+      (query.attributeFilters &&
+        Object.keys(query.attributeFilters).length > 0) ||
+      query.minPrice !== undefined ||
+      query.maxPrice !== undefined,
+  );
+  const page = query.page ?? 1;
+  const showItemList =
+    !hasFilters && page === 1 && result.items.length > 0;
 
   const crumbs = [
     { name: "Ana sayfa", href: "/" },
@@ -128,6 +142,22 @@ async function CategoryContent({
           ],
         }}
       />
+      {showItemList ? (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: category.name,
+            numberOfItems: result.total,
+            itemListElement: result.items.map((item, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              url: absoluteUrl(`/urun/${item.slug}`),
+              name: item.name,
+            })),
+          }}
+        />
+      ) : null}
       <Breadcrumbs items={crumbs} />
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">{category.name}</h1>
@@ -162,13 +192,23 @@ async function CategoryContent({
   );
 }
 
-export default function CategoryPage({
+export default async function CategoryPage({
   params,
   searchParams,
 }: PageProps<"/kategori/[slug]">) {
+  // Suspense dışında çözülür ki HTTP durumu hâlâ 404/301 yapılabilsin.
+  const { slug } = await params;
+  const loaded = await loadCategory(slug);
+  if (loaded.kind === "redirect") permanentRedirect(loaded.to);
+  if (loaded.kind === "missing") notFound();
+
   return (
     <Suspense fallback={<p className="text-muted-foreground">Yükleniyor...</p>}>
-      <CategoryContent params={params} searchParams={searchParams} />
+      <CategoryContent
+        category={loaded.value.category}
+        breadcrumbs={loaded.value.breadcrumbs}
+        searchParams={searchParams}
+      />
     </Suspense>
   );
 }

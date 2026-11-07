@@ -30,6 +30,8 @@ export async function GET() {
     defaultBrand: siteConfig.name,
     shipping: siteConfig.shipping,
     productUrl: (slug) => absoluteUrl(`/urun/${slug}`),
+    // Google taxonomy: Condiment / sauce (turşu, salamura, fermente gıda)
+    googleProductCategory: "422",
   });
 
   return new Response(xml, {
