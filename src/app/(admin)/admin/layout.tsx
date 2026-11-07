@@ -19,7 +19,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
   const initial = (user.name?.trim() || user.email?.trim() || "Y").charAt(0).toUpperCase();
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8fafc] text-[13px] leading-normal text-slate-700 antialiased md:flex-row">
+    <div className="flex min-h-screen flex-col bg-[#f8fafc] text-[13px] leading-normal text-slate-700 antialiased md:pl-60">
       {/* Sol Menü / Sidebar (sabit) */}
       <AdminSidebar
         nav={nav}
@@ -28,7 +28,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
       />
 
       {/* Sağ Ana İçerik Alanı */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
         {/* Üst Yönetici Başlık Çubuğu */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 shadow-2xs backdrop-blur-md sm:px-5">
           <div className="min-w-0">

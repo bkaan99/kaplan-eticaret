@@ -261,8 +261,7 @@ export function AdminSidebar({
         </nav>
       </aside>
 
-      {/* Masaüstü spacer: fixed sidebar için yer ayırır */}
-      <div className="hidden w-60 shrink-0 md:block" aria-hidden="true" />
+      {/* Masaüstünde sidebar için yer, layout'taki md:pl-60 ile ayrılır (ayrı spacer yok). */}
 
       {/* Mobil Backdrop */}
       {mobileOpen ? (
