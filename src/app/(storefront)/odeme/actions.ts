@@ -6,6 +6,7 @@ import { getCartIdentity } from "@/modules/cart/cart.session";
 import { checkoutSchema } from "@/modules/checkout/checkout.schema";
 import { getCheckoutService } from "@/modules/checkout/container";
 import { getDevPaymentProvider } from "@/integrations/payment/container";
+import { orderAccessPath } from "@/modules/orders/order-access";
 import { getPaymentService } from "@/modules/orders/container";
 import { isAppError } from "@/shared/errors";
 import { reportError } from "@/shared/error-reporter";
@@ -92,10 +93,9 @@ export async function placeOrderAction(
     await enforceRateLimit("checkout", ip, RATE_LIMIT_POLICIES.checkout);
 
     const identity = await getCartIdentity();
-    const created = await getCheckoutService().placeOrder(
-      identity,
-      parsed.data,
-    );
+    const created = await (
+      await getCheckoutService()
+    ).placeOrder(identity, parsed.data);
     orderNumber = created.orderNumber;
     lookupToken = created.lookupToken;
     method = parsed.data.paymentMethod;
@@ -106,16 +106,19 @@ export async function placeOrderAction(
   }
 
   // Kart ödemesi güvenli ödeme sayfasına, havale/vadeli sipariş detay sayfasına gider.
+  // Token query'de kalmaz; /erisim çereze alır.
   redirect(
     method === "CARD"
-      ? `/odeme/ode/${orderNumber}?t=${lookupToken}`
-      : `/siparis/${orderNumber}?t=${lookupToken}`,
+      ? orderAccessPath(orderNumber, lookupToken, {
+          next: `/odeme/ode/${orderNumber}`,
+        })
+      : orderAccessPath(orderNumber, lookupToken),
   );
 }
 
 /** Geliştirme ortamında sahte ödeme sayfasından sonucu bildirir. */
 export async function devPaymentAction(formData: FormData): Promise<void> {
-  const provider = getDevPaymentProvider();
+  const provider = await getDevPaymentProvider();
   if (!provider) return;
 
   const orderNumber = text(formData, "orderNumber");
@@ -132,5 +135,5 @@ export async function devPaymentAction(formData: FormData): Promise<void> {
   };
 
   await getPaymentService().handleCallback(payload);
-  redirect(`/siparis/${orderNumber}?t=${lookupToken}`);
+  redirect(orderAccessPath(orderNumber, lookupToken));
 }

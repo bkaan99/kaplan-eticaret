@@ -12,13 +12,29 @@ export interface TestDb {
   close(): Promise<void>;
 }
 
-/** SQL dosyasını `;` ile ifadelere böler (DDL'de metin içinde `;` yoktur). */
+/**
+ * SQL dosyasını ifadelere böler: normal ifadeler `;` ile biten satırda, `CREATE TRIGGER` ise
+ * `END;` satırında sona erer (gövdesinde `;` bulunur).
+ */
 function statements(sql: string): string[] {
-  return sql
-    .replace(/^\s*--.*$/gm, "")
-    .split(";")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const out: string[] = [];
+  let buffer = "";
+  let trigger = false;
+
+  for (const line of sql.replace(/^\s*--.*$/gm, "").split("\n")) {
+    buffer += `${line}\n`;
+    if (/^CREATE\s+TRIGGER/i.test(buffer.trim())) trigger = true;
+    const trimmed = line.trim();
+    const ended = trigger ? /^END;?$/i.test(trimmed) : trimmed.endsWith(";");
+    if (ended) {
+      const statement = buffer.trim().replace(/;$/, "");
+      if (statement) out.push(statement);
+      buffer = "";
+      trigger = false;
+    }
+  }
+  if (buffer.trim()) out.push(buffer.trim());
+  return out;
 }
 
 /**

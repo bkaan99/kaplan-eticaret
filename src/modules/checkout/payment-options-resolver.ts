@@ -1,3 +1,4 @@
+import { CARD_UNAVAILABLE_MESSAGE } from "@/integrations/payment/payment-mode";
 import { formatMoney, toDecimal } from "@/shared/money";
 import { CreditLimitPolicy } from "../b2b/credit-limit.policy";
 import type { CartIdentity } from "../cart/cart.types";
@@ -26,8 +27,13 @@ export class PaymentOptionsResolver {
         ? await this.deps.dealers.findProfile(identity.userId)
         : null;
 
+    const cardAvailable = this.deps.settings.cardPaymentAvailable !== false;
     const options: PaymentOption[] = [
-      { method: "CARD", available: true, note: null },
+      {
+        method: "CARD",
+        available: cardAvailable,
+        note: cardAvailable ? null : CARD_UNAVAILABLE_MESSAGE,
+      },
     ];
 
     if (dealer?.status !== "APPROVED") return options;

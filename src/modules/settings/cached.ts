@@ -6,5 +6,6 @@ export const getCachedContactSettings: () => Promise<ContactSettings> =
   unstable_cache(
     () => settingsService.getContactSettings(),
     ["contact_settings_cache"],
-    { revalidate: 300, tags: ["settings", "contact_settings"] },
+    // OpenNext'te etiket önbelleği tanımlı değil: `revalidateTag` güvenilmez, bayatlık süreyle sınırlanır.
+    { revalidate: 60, tags: ["settings", "contact_settings"] },
   );

@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/modules/auth/session";
+import {
+  orderAccessPath,
+  readOrderAccessToken,
+} from "@/modules/orders/order-access";
 import { getOrderService, getPaymentService } from "@/modules/orders/container";
 import { isAppError } from "@/shared/errors";
 import { getClientIp } from "@/shared/rate-limit";
@@ -17,7 +21,15 @@ async function PaymentContent({
 }: Pick<PageProps<"/odeme/ode/[orderNumber]">, "params" | "searchParams">) {
   const { orderNumber } = await params;
   const query = await searchParams;
-  const token = typeof query["t"] === "string" ? query["t"] : null;
+  if (typeof query["t"] === "string" && query["t"]) {
+    redirect(
+      orderAccessPath(orderNumber, query["t"], {
+        next: `/odeme/ode/${orderNumber}`,
+      }),
+    );
+  }
+
+  const token = await readOrderAccessToken(orderNumber);
   const user = await getCurrentUser();
 
   let order;
@@ -32,7 +44,7 @@ async function PaymentContent({
   }
 
   if (order.status !== "PENDING_PAYMENT") {
-    redirect(`/siparis/${order.orderNumber}?t=${order.lookupToken}`);
+    redirect(orderAccessPath(order.orderNumber, order.lookupToken));
   }
 
   let payment: { paymentUrl: string; mode: "iframe" | "redirect" };

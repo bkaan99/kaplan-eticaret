@@ -40,7 +40,9 @@ export interface PaymentCallbackResult {
 
 export interface PaymentCallbackVerifier {
   /** İmzayı doğrular; geçersizse hata fırlatır. */
-  verifyCallback(payload: Record<string, string>): PaymentCallbackResult;
+  verifyCallback(
+    payload: Record<string, string>,
+  ): PaymentCallbackResult | Promise<PaymentCallbackResult>;
 }
 
 export interface RefundRequest {

@@ -51,6 +51,14 @@ const envSchema = z
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;
 
+    if (!env.CRON_SECRET) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["CRON_SECRET"],
+        message: "production ortamında CRON_SECRET zorunludur",
+      });
+    }
+
     const paytr = [
       env.PAYTR_MERCHANT_ID,
       env.PAYTR_MERCHANT_KEY,
