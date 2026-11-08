@@ -1,3 +1,4 @@
+import { integer } from "@/shared/format";
 import { AdminSearchIcon } from "@/components/admin/search-icon";
 import { isOneOf } from "@/shared/guards";
 import type { Metadata } from "next";
@@ -46,8 +47,6 @@ const TAB_LABELS: Record<OrderStatus, string> = {
   CANCELLED: "İptal",
   REFUNDED: "İade",
 };
-
-const integer = new Intl.NumberFormat("tr-TR");
 
 const isStatus = (value: string | undefined): value is OrderStatus =>
   isOneOf(STATUSES, value);

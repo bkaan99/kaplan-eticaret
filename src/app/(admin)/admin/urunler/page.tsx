@@ -1,3 +1,4 @@
+import { integer } from "@/shared/format";
 import { AdminSearchIcon } from "@/components/admin/search-icon";
 import { isOneOf } from "@/shared/guards";
 import type { Metadata } from "next";
@@ -50,8 +51,6 @@ const STATUS: Record<
     dot: "bg-slate-400",
   },
 };
-
-const integer = new Intl.NumberFormat("tr-TR");
 
 const isStatus = (value: string | undefined): value is ProductStatus =>
   isOneOf(STATUS_ORDER, value);

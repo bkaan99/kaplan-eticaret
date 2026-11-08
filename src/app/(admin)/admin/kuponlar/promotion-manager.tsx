@@ -1,5 +1,6 @@
 "use client";
 
+import { integer } from "@/shared/format";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,16 +16,7 @@ import { CampaignModal } from "./campaign-modal";
 import { CampaignTable } from "./campaign-table";
 import { CouponModal } from "./coupon-modal";
 import { CouponTable } from "./coupon-table";
-import {
-  CampaignFormState,
-  CouponFormState,
-  blankCampaign,
-  blankCoupon,
-  campaignToForm,
-  couponToForm,
-  integer,
-  withIsoDates,
-} from "./promotion-form";
+import { CampaignFormState, CouponFormState, blankCampaign, blankCoupon, campaignToForm, couponToForm, withIsoDates } from "./promotion-form";
 import { CampaignRow, Category, CouponRow } from "./promotion-types";
 import {
   Alert,

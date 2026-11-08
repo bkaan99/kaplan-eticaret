@@ -1,3 +1,4 @@
+import { integer } from "@/shared/format";
 import Link from "next/link";
 import type { ReactNode, SVGProps } from "react";
 import { RevenueChart } from "@/components/admin/revenue-chart";
@@ -99,8 +100,6 @@ const icons = {
 /* ------------------------------------------------------------------ */
 /* Yardımcı parçalar                                                   */
 /* ------------------------------------------------------------------ */
-
-const integer = new Intl.NumberFormat("tr-TR");
 
 /** Önceki döneme göre değişim. Durum rengi her zaman ok + metinle birlikte. */
 function Delta({

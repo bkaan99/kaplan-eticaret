@@ -1,3 +1,4 @@
+import { integer } from "@/shared/format";
 import { AdminSearchIcon } from "@/components/admin/search-icon";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -27,8 +28,6 @@ import { PERMISSIONS } from "@/shared/permissions";
 export const metadata: Metadata = { title: "Müşteriler" };
 
 const PAGE_SIZE = 25;
-const integer = new Intl.NumberFormat("tr-TR");
-
 /** URL'deki değer → segment ("?segment=alici" gibi Türkçe kısa adlar). */
 const SEGMENT_PARAM: Record<CustomerSegment, string> = {
   all: "",

@@ -1,3 +1,4 @@
+import { integer } from "@/shared/format";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,8 +22,6 @@ import { formatMoney } from "@/shared/money";
 import { PERMISSIONS } from "@/shared/permissions";
 
 export const metadata: Metadata = { title: "Müşteri" };
-
-const integer = new Intl.NumberFormat("tr-TR");
 
 const B2B_LABELS: Record<string, { label: string; tone: string }> = {
   PENDING: { label: "Başvuru bekliyor", tone: "bg-amber-50 text-amber-800" },
