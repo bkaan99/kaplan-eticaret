@@ -8,7 +8,6 @@ import {
 } from "@/modules/cart/cart.session";
 import { customPickleService } from "@/modules/custom-pickle/container";
 import { runStorefrontAction } from "@/shared/action";
-import { ValidationError } from "@/shared/errors";
 
 export interface CustomPickleActionResult {
   ok: boolean;
