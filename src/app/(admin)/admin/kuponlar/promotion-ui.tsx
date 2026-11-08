@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionRunner as useRunner } from "@/components/admin/use-action-runner";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -334,5 +333,3 @@ export function EmptyState({
     </div>
   );
 }
-
-export { useRunner };

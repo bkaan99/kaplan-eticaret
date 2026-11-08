@@ -1,5 +1,6 @@
 "use client";
 
+import { useActionRunner } from "@/components/admin/use-action-runner";
 import { integer } from "@/shared/format";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,16 +17,17 @@ import { CampaignModal } from "./campaign-modal";
 import { CampaignTable } from "./campaign-table";
 import { CouponModal } from "./coupon-modal";
 import { CouponTable } from "./coupon-table";
-import { CampaignFormState, CouponFormState, blankCampaign, blankCoupon, campaignToForm, couponToForm, withIsoDates } from "./promotion-form";
-import { CampaignRow, Category, CouponRow } from "./promotion-types";
 import {
-  Alert,
-  EmptyState,
-  ICONS,
-  Icon,
-  Stat,
-  useRunner,
-} from "./promotion-ui";
+  CampaignFormState,
+  CouponFormState,
+  blankCampaign,
+  blankCoupon,
+  campaignToForm,
+  couponToForm,
+  withIsoDates,
+} from "./promotion-form";
+import { CampaignRow, Category, CouponRow } from "./promotion-types";
+import { Alert, EmptyState, ICONS, Icon, Stat } from "./promotion-ui";
 
 export function PromotionManager({
   coupons,
@@ -41,7 +43,7 @@ export function PromotionManager({
 }) {
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const [tab, setTab] = useState<"coupons" | "campaigns">("coupons");
-  const { pending, message, run, setMessage } = useRunner();
+  const { pending, message, run, setMessage } = useActionRunner();
 
   const [couponForm, setCouponForm] = useState<CouponFormState | null>(null);
   const [campaignForm, setCampaignForm] = useState<CampaignFormState | null>(
