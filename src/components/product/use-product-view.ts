@@ -1,5 +1,6 @@
 "use client";
 
+import { discountPercent } from "@/shared/money";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { addToCartAction } from "@/app/(storefront)/sepet/actions";
 import { refreshStorefrontShell } from "@/components/storefront/shell-events";
@@ -13,14 +14,6 @@ import {
 import { trackEvent } from "@/shared/analytics/client";
 
 const MAX_QUANTITY = 99;
-
-export function discountPercent(price: string, compareAt: string | null): number | null {
-  if (!compareAt) return null;
-  const current = Number(price);
-  const original = Number(compareAt);
-  if (!(original > current)) return null;
-  return Math.round((1 - current / original) * 100);
-}
 
 export function useProductView(product: ProductDetail) {
   const [selection, setSelection] = useState<Selection>(() =>

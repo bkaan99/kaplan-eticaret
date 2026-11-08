@@ -94,6 +94,56 @@ async function sendEmailViaResend(
   }
 }
 
+/**
+ * Kuyruk işi işleyicisi: normal dönerse mesaj onaylanır (ack), hata fırlatırsa yeniden denenir.
+ * Ayar eksikliği gibi tekrar denemenin işe yaramayacağı durumlar loglanıp sessizce dönülür.
+ */
+type QueueJobHandler = (env: CloudflareEnv, data: unknown) => Promise<void>;
+
+const handleEmailJob: QueueJobHandler = async (env, data) => {
+  const payload = (data ?? {}) as EmailPayload;
+  if (!env.RESEND_API_KEY) {
+    // Secret yokken kuyruğu zehirleme; staging'de log + ack.
+    console.warn("RESEND_API_KEY yok; email.send atlandı", { to: payload.to });
+    return;
+  }
+  await sendEmailViaResend(env, payload);
+  console.log("email.send gönderildi", { to: payload.to });
+};
+
+const handleSmsJob: QueueJobHandler = async (env, data) => {
+  const payload = (data ?? {}) as SmsPayload;
+  const to = normalizeTrMobile(payload.to);
+  if (
+    !env.NETGSM_USERCODE ||
+    !env.NETGSM_PASSWORD ||
+    !env.NETGSM_MSGHEADER ||
+    !to ||
+    !payload.text
+  ) {
+    // Ayar veya numara eksikken kuyruğu zehirleme; log + ack.
+    console.warn("Netgsm ayarı ya da SMS gövdesi eksik; sms.send atlandı", {
+      hasConfig: Boolean(env.NETGSM_USERCODE && env.NETGSM_PASSWORD),
+    });
+    return;
+  }
+  await sendNetgsmSms(
+    {
+      usercode: env.NETGSM_USERCODE,
+      password: env.NETGSM_PASSWORD,
+      msgheader: env.NETGSM_MSGHEADER,
+    },
+    { to, text: payload.text },
+  );
+  console.log("sms.send gönderildi");
+};
+
+/** Yeni iş türü eklemek için buraya tek satır eklemek yeter. */
+const QUEUE_JOB_HANDLERS: Record<string, QueueJobHandler> = {
+  "email.send": handleEmailJob,
+  "sms.send": handleSmsJob,
+};
+
 const worker: ExportedHandler<CloudflareEnv> = {
   fetch: handler.fetch,
 
@@ -106,67 +156,22 @@ const worker: ExportedHandler<CloudflareEnv> = {
         continue;
       }
 
-      if (name === "email.send") {
-        const payload = (body.data ?? {}) as EmailPayload;
-        if (!env.RESEND_API_KEY) {
-          // Secret yokken kuyruğu zehirleme; staging'de log + ack.
-          console.warn("RESEND_API_KEY yok; email.send atlandı", {
-            to: payload.to,
-          });
-          message.ack();
-          continue;
-        }
-        try {
-          await sendEmailViaResend(env, payload);
-          console.log("email.send gönderildi", { to: payload.to });
-          message.ack();
-        } catch (error) {
-          console.error("email.send başarısız; yeniden denenecek", error);
-          message.retry();
-        }
+      const handler = Object.hasOwn(QUEUE_JOB_HANDLERS, name)
+        ? QUEUE_JOB_HANDLERS[name]
+        : undefined;
+      if (!handler) {
+        console.warn("Bilinmeyen kuyruk işi", name);
+        message.ack();
         continue;
       }
 
-      if (name === "sms.send") {
-        const payload = (body.data ?? {}) as SmsPayload;
-        const to = normalizeTrMobile(payload.to);
-        if (
-          !env.NETGSM_USERCODE ||
-          !env.NETGSM_PASSWORD ||
-          !env.NETGSM_MSGHEADER ||
-          !to ||
-          !payload.text
-        ) {
-          // Ayar veya numara eksikken kuyruğu zehirleme; log + ack.
-          console.warn(
-            "Netgsm ayarı ya da SMS gövdesi eksik; sms.send atlandı",
-            {
-              hasConfig: Boolean(env.NETGSM_USERCODE && env.NETGSM_PASSWORD),
-            },
-          );
-          message.ack();
-          continue;
-        }
-        try {
-          await sendNetgsmSms(
-            {
-              usercode: env.NETGSM_USERCODE,
-              password: env.NETGSM_PASSWORD,
-              msgheader: env.NETGSM_MSGHEADER,
-            },
-            { to, text: payload.text },
-          );
-          console.log("sms.send gönderildi");
-          message.ack();
-        } catch (error) {
-          console.error("sms.send başarısız; yeniden denenecek", error);
-          message.retry();
-        }
-        continue;
+      try {
+        await handler(env, body.data);
+        message.ack();
+      } catch (error) {
+        console.error(`${name} başarısız; yeniden denenecek`, error);
+        message.retry();
       }
-
-      console.warn("Bilinmeyen kuyruk işi", name);
-      message.ack();
     }
   },
 

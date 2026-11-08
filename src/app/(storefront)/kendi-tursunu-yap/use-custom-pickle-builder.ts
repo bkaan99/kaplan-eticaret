@@ -13,12 +13,10 @@ import {
   DEFAULT_BRINE_CONFIG,
   DEFAULT_SPICE_CONFIG,
   maxIngredientsForSize,
-  type BrineOption,
   type IngredientGroup,
   type IngredientView,
   type PickleBrineOption,
-  type PickleSpiceOption,
-  type SpiceOption,
+  type PickleSpiceOption
 } from "@/modules/custom-pickle/custom-pickle.types";
 import type { BuilderSize } from "@/modules/custom-pickle/custom-pickle.service";
 import { trackEvent } from "@/shared/analytics/client";

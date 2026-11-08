@@ -1,8 +1,14 @@
-import type { InvoiceType, OrderStatus, PaymentStatus } from "@/db";
+import type {
+  InvoiceType,
+  OrderStatus,
+  PaymentMethodType,
+  PaymentStatus,
+} from "@/db";
 
 export type { InvoiceType, OrderStatus, PaymentStatus };
 
-export type PaymentMethod = "CARD" | "BANK_TRANSFER" | "DEFERRED";
+/** Ödeme yöntemleri tek kaynaktan (db/schema/enums) gelir. */
+export type PaymentMethod = PaymentMethodType;
 
 /** Sipariş anındaki adres kopyası; adres defteri değişse de sipariş değişmez. */
 export interface AddressSnapshot {

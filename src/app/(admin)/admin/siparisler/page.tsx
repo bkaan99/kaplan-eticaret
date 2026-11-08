@@ -1,3 +1,6 @@
+import { integer } from "@/shared/format";
+import { AdminSearchIcon } from "@/components/admin/search-icon";
+import { isOneOf } from "@/shared/guards";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -45,29 +48,8 @@ const TAB_LABELS: Record<OrderStatus, string> = {
   REFUNDED: "İade",
 };
 
-const integer = new Intl.NumberFormat("tr-TR");
-
-function isStatus(value: string | undefined): value is OrderStatus {
-  return STATUSES.includes(value as OrderStatus);
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={15}
-      height={15}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.9}
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
-  );
-}
+const isStatus = (value: string | undefined): value is OrderStatus =>
+  isOneOf(STATUSES, value);
 
 async function OrdersContent({
   searchParams,
@@ -171,7 +153,7 @@ async function OrdersContent({
             <label className="relative flex-1">
               <span className="sr-only">Sipariş ara</span>
               <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-slate-400">
-                <SearchIcon />
+                <AdminSearchIcon />
               </span>
               <input
                 name="q"

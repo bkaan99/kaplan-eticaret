@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { z } from "zod";
 import { ValidationError } from "@/shared/errors";
 import { parseCsvRecords } from "@/shared/csv-parse";
@@ -179,14 +180,14 @@ export class BulkUpdateService {
     const canApply = issues.length === 0 && updates.length > 0;
     if (!options.dryRun && canApply) {
       await this.repository.applyUpdates(updates);
-      await this.audit.log({
-        actorId: actor.userId,
-        ip: actor.ip,
-        action: "product.bulk-update",
-        entityType: "ProductVariant",
-        entityId: "bulk",
-        after: { count: updates.length, changes: audited.slice(0, 200) },
-      });
+      await this.audit.log(
+        withActor(actor, {
+          action: "product.bulk-update",
+          entityType: "ProductVariant",
+          entityId: "bulk",
+          after: { count: updates.length, changes: audited.slice(0, 200) },
+        }),
+      );
     }
 
     return {

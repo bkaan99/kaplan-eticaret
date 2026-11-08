@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import type { EventBus } from "@/shared/events/event-bus";
@@ -76,15 +77,15 @@ export class AdminOrderService {
       throw new ConflictError("Sipariş durumu değişmiş, sayfayı yenileyin");
 
     await this.orders.createShipment(order.id, { carrier, trackingNumber });
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "order.ship",
-      entityType: "Order",
-      entityId: order.id,
-      before: { status: order.status },
-      after: { status: "SHIPPED", carrier, trackingNumber },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "order.ship",
+        entityType: "Order",
+        entityId: order.id,
+        before: { status: order.status },
+        after: { status: "SHIPPED", carrier, trackingNumber },
+      }),
+    );
     await this.events.publish("order.shipped", {
       orderId: order.id,
       trackingNumber,
@@ -124,15 +125,15 @@ export class AdminOrderService {
       );
     }
 
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "order.bank-transfer.confirm",
-      entityType: "Order",
-      entityId: order.id,
-      before: { status: order.status, paymentStatus: order.paymentStatus },
-      after: { status: "PAID", amount: payment.amount },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "order.bank-transfer.confirm",
+        entityType: "Order",
+        entityId: order.id,
+        before: { status: order.status, paymentStatus: order.paymentStatus },
+        after: { status: "PAID", amount: payment.amount },
+      }),
+    );
     await this.events.publish("order.paid", { orderId: order.id });
   }
 
@@ -151,15 +152,15 @@ export class AdminOrderService {
     const updated = await this.payments.markDeferredPaid(order.id);
     if (!updated) throw new ConflictError("Ödeme zaten tahsil edilmiş");
 
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "order.deferred.collected",
-      entityType: "Order",
-      entityId: order.id,
-      before: { paymentStatus: order.paymentStatus },
-      after: { paymentStatus: "PAID", amount: payment.amount },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "order.deferred.collected",
+        entityType: "Order",
+        entityId: order.id,
+        before: { paymentStatus: order.paymentStatus },
+        after: { paymentStatus: "PAID", amount: payment.amount },
+      }),
+    );
   }
 
   async cancel(orderNumber: string, actor: Actor): Promise<void> {
@@ -169,14 +170,14 @@ export class AdminOrderService {
     }
 
     await this.orderService.cancelByStaff(orderNumber);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "order.cancel",
-      entityType: "Order",
-      entityId: order.id,
-      before: { status: order.status, paymentStatus: order.paymentStatus },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "order.cancel",
+        entityType: "Order",
+        entityId: order.id,
+        before: { status: order.status, paymentStatus: order.paymentStatus },
+      }),
+    );
   }
 
   private async move(
@@ -191,15 +192,15 @@ export class AdminOrderService {
     if (!moved)
       throw new ConflictError("Sipariş durumu değişmiş, sayfayı yenileyin");
 
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: `order.${to.toLowerCase()}`,
-      entityType: "Order",
-      entityId: order.id,
-      before: { status: order.status },
-      after: { status: to },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: `order.${to.toLowerCase()}`,
+        entityType: "Order",
+        entityId: order.id,
+        before: { status: order.status },
+        after: { status: to },
+      }),
+    );
   }
 
   private async assertTransition(

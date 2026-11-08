@@ -1,3 +1,4 @@
+import type { PaymentMethod } from "@/modules/orders/order.types";
 import type { OrderStatus, PaymentStatus } from "./order.types";
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
@@ -18,10 +19,7 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   PARTIALLY_REFUNDED: "Kısmen iade edildi",
 };
 
-export const PAYMENT_METHOD_LABELS: Record<
-  "CARD" | "BANK_TRANSFER" | "DEFERRED",
-  string
-> = {
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CARD: "Kredi kartı",
   BANK_TRANSFER: "Havale / EFT",
   DEFERRED: "Vadeli",

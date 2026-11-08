@@ -21,3 +21,11 @@ export interface AuditLogger {
   purgeOlderThan(cutoff: Date): Promise<number>;
 }
 
+
+/** Eylemi yapan kullanıcının kimliği ve IP bilgisini denetim kaydına ekler. */
+export function withActor(
+  actor: Actor,
+  entry: Omit<AuditEntry, "actorId" | "ip">,
+): AuditEntry {
+  return { ...entry, actorId: actor.userId, ip: actor.ip };
+}

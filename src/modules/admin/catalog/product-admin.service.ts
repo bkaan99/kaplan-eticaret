@@ -1,3 +1,5 @@
+import { withActor } from "@/shared/audit/audit-logger";
+import { toFieldErrors } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import type { EventBus } from "@/shared/events/event-bus";
@@ -20,18 +22,6 @@ export class ProductValidationError extends ValidationError {
   constructor(public readonly fieldErrors: FieldErrors) {
     super("Lütfen işaretli alanları kontrol edin");
   }
-}
-
-/** Zod hatalarını "variants.0.sku" biçiminde alan yoluna çevirir. */
-export function toFieldErrors(
-  issues: readonly { path: PropertyKey[]; message: string }[],
-): FieldErrors {
-  const errors: FieldErrors = {};
-  for (const issue of issues) {
-    const key = issue.path.map(String).join(".");
-    errors[key] ??= issue.message;
-  }
-  return errors;
 }
 
 export class ProductAdminService {
@@ -69,14 +59,14 @@ export class ProductAdminService {
     const slug = await this.resolveSlug(input);
 
     const id = await this.products.create(input, slug);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "product.create",
-      entityType: "Product",
-      entityId: id,
-      after: { name: input.name, slug, status: input.status },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "product.create",
+        entityType: "Product",
+        entityId: id,
+        after: { name: input.name, slug, status: input.status },
+      }),
+    );
     return id;
   }
 
@@ -103,15 +93,15 @@ export class ProductAdminService {
       await this.products.addRedirect(`/urun/${before.slug}`, `/urun/${slug}`);
     }
 
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "product.update",
-      entityType: "Product",
-      entityId: id,
-      before: this.snapshot(before),
-      after: this.inputSnapshot(input, slug),
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "product.update",
+        entityType: "Product",
+        entityId: id,
+        before: this.snapshot(before),
+        after: this.inputSnapshot(input, slug),
+      }),
+    );
   }
 
   /** Kaydetmeden doğrular; hatalarda ProductValidationError fırlatır. */

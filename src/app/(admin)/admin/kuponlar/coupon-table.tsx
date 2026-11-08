@@ -1,11 +1,12 @@
 "use client";
 
+import { integer } from "@/shared/format";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/cn";
 import { formatMoney } from "@/shared/money";
 import { endsSoon, promotionStatus } from "./promotion-status";
-import { discountLabel, integer, validity } from "./promotion-form";
+import { discountLabel, validity } from "./promotion-form";
 import { CouponRow } from "./promotion-types";
 import { ICONS, Icon, StatusBadge } from "./promotion-ui";
 

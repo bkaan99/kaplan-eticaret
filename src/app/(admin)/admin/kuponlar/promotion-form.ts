@@ -1,9 +1,8 @@
+import { integer } from "@/shared/format";
 import { formatAdminDate } from "@/components/admin/order-status";
 import { formatMoney } from "@/shared/money";
 import { isoToLocalInput, localInputToIso } from "./promotion-status";
 import { CampaignRow, CouponRow } from "./promotion-types";
-
-export const integer = new Intl.NumberFormat("tr-TR");
 
 export function discountLabel(
   type: "PERCENT" | "FIXED",

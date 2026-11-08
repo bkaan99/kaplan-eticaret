@@ -1,3 +1,5 @@
+import { withActor } from "@/shared/audit/audit-logger";
+import { firstIssue } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import { slugify, uniqueSlug } from "@/shared/slug";
@@ -14,10 +16,6 @@ import {
   brandInputSchema,
   categoryInputSchema,
 } from "./taxonomy.schema";
-
-function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
-}
 
 export class TaxonomyService {
   constructor(
@@ -72,19 +70,19 @@ export class TaxonomyService {
         );
       }
 
-      await this.audit.log({
-        actorId: actor.userId,
-        ip: actor.ip,
-        action: "category.update",
-        entityType: "Category",
-        entityId: id,
-        before: {
-          name: before.name,
-          slug: before.slug,
-          isActive: before.isActive,
-        },
-        after: { name: input.name, slug: wanted, isActive: input.isActive },
-      });
+      await this.audit.log(
+        withActor(actor, {
+          action: "category.update",
+          entityType: "Category",
+          entityId: id,
+          before: {
+            name: before.name,
+            slug: before.slug,
+            isActive: before.isActive,
+          },
+          after: { name: input.name, slug: wanted, isActive: input.isActive },
+        }),
+      );
       return id;
     }
 
@@ -101,14 +99,14 @@ export class TaxonomyService {
     );
     const created = await this.repository.createCategory(input, slug);
 
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "category.create",
-      entityType: "Category",
-      entityId: created,
-      after: { name: input.name, slug },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "category.create",
+        entityType: "Category",
+        entityId: created,
+        after: { name: input.name, slug },
+      }),
+    );
     return created;
   }
 
@@ -126,14 +124,14 @@ export class TaxonomyService {
     }
 
     await this.repository.deleteCategory(id);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "category.delete",
-      entityType: "Category",
-      entityId: id,
-      before: { name: category.name, slug: category.slug },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "category.delete",
+        entityType: "Category",
+        entityId: id,
+        before: { name: category.name, slug: category.slug },
+      }),
+    );
   }
 
   async saveBrand(
@@ -152,15 +150,15 @@ export class TaxonomyService {
         this.repository.brandSlugTaken(candidate, id),
       );
       await this.repository.updateBrand(id, parsed.data, slug);
-      await this.audit.log({
-        actorId: actor.userId,
-        ip: actor.ip,
-        action: "brand.update",
-        entityType: "Brand",
-        entityId: id,
-        before: { name: before.name },
-        after: { name: parsed.data.name },
-      });
+      await this.audit.log(
+        withActor(actor, {
+          action: "brand.update",
+          entityType: "Brand",
+          entityId: id,
+          before: { name: before.name },
+          after: { name: parsed.data.name },
+        }),
+      );
       return id;
     }
 
@@ -169,14 +167,14 @@ export class TaxonomyService {
     );
     const created = await this.repository.createBrand(parsed.data, slug);
 
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "brand.create",
-      entityType: "Brand",
-      entityId: created,
-      after: { name: parsed.data.name },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "brand.create",
+        entityType: "Brand",
+        entityId: created,
+        after: { name: parsed.data.name },
+      }),
+    );
     return created;
   }
 
@@ -195,14 +193,14 @@ export class TaxonomyService {
     }
 
     await this.repository.deleteBrand(id);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "brand.delete",
-      entityType: "Brand",
-      entityId: id,
-      before: { name: brand.name },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "brand.delete",
+        entityType: "Brand",
+        entityId: id,
+        before: { name: brand.name },
+      }),
+    );
   }
 
   async saveAttribute(
@@ -215,14 +213,14 @@ export class TaxonomyService {
 
     if (id) {
       await this.repository.updateAttribute(id, parsed.data);
-      await this.audit.log({
-        actorId: actor.userId,
-        ip: actor.ip,
-        action: "attribute.update",
-        entityType: "Attribute",
-        entityId: id,
-        after: parsed.data,
-      });
+      await this.audit.log(
+        withActor(actor, {
+          action: "attribute.update",
+          entityType: "Attribute",
+          entityId: id,
+          after: parsed.data,
+        }),
+      );
       return id;
     }
 
@@ -230,14 +228,14 @@ export class TaxonomyService {
       this.repository.attributeSlugTaken(s),
     );
     const created = await this.repository.createAttribute(parsed.data, slug);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "attribute.create",
-      entityType: "Attribute",
-      entityId: created,
-      after: { name: parsed.data.name, slug },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "attribute.create",
+        entityType: "Attribute",
+        entityId: created,
+        after: { name: parsed.data.name, slug },
+      }),
+    );
     return created;
   }
 
@@ -251,14 +249,14 @@ export class TaxonomyService {
     }
 
     await this.repository.deleteAttribute(id);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "attribute.delete",
-      entityType: "Attribute",
-      entityId: id,
-      before: { name: attr.name },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "attribute.delete",
+        entityType: "Attribute",
+        entityId: id,
+        before: { name: attr.name },
+      }),
+    );
   }
 
   async addAttributeValue(
@@ -280,14 +278,14 @@ export class TaxonomyService {
       parsed.data.value,
       slug,
     );
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "attribute.value.add",
-      entityType: "Attribute",
-      entityId: attributeId,
-      after: { value: parsed.data.value },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "attribute.value.add",
+        entityType: "Attribute",
+        entityId: attributeId,
+        after: { value: parsed.data.value },
+      }),
+    );
   }
 
   async updateAttributeValue(
@@ -318,15 +316,15 @@ export class TaxonomyService {
       parsed.data.value,
       slug,
     );
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "attribute.value.update",
-      entityType: "AttributeValue",
-      entityId: valueId,
-      before: { value: before.value },
-      after: { value: parsed.data.value },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "attribute.value.update",
+        entityType: "AttributeValue",
+        entityId: valueId,
+        before: { value: before.value },
+        after: { value: parsed.data.value },
+      }),
+    );
   }
 
   async deleteAttributeValue(valueId: string, actor: Actor): Promise<void> {
@@ -334,12 +332,12 @@ export class TaxonomyService {
       throw new ConflictError("Ürünlerde kullanılan değer silinemez");
     }
     await this.repository.deleteAttributeValue(valueId);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "attribute.value.delete",
-      entityType: "AttributeValue",
-      entityId: valueId,
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "attribute.value.delete",
+        entityType: "AttributeValue",
+        entityId: valueId,
+      }),
+    );
   }
 }
