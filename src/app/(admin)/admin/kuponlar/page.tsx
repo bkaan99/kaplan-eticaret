@@ -12,7 +12,8 @@ import {
 } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
 import { PERMISSIONS } from "@/shared/permissions";
-import { PromotionManager, type CampaignRow } from "./promotion-manager";
+import { PromotionManager } from "./promotion-manager";
+import type { CampaignRow } from "./promotion-types";
 
 export const metadata: Metadata = { title: "Kupon ve Kampanya Yönetimi" };
 
