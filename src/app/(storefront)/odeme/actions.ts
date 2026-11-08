@@ -1,5 +1,6 @@
 "use server";
 
+import type { PaymentMethod } from "@/modules/orders/order.types";
 import { toFieldErrors } from "@/shared/validation";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -77,7 +78,7 @@ export async function placeOrderAction(
 
   let orderNumber: string;
   let lookupToken: string;
-  let method: "CARD" | "BANK_TRANSFER" | "DEFERRED" = "CARD";
+  let method: PaymentMethod = "CARD";
 
   try {
     const ip = await getClientIp();

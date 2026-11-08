@@ -1,4 +1,5 @@
 import { TURKEY_DISTRICTS, isDistrictOf } from "@/shared/geo/turkey-districts";
+import { paymentMethodTypeValues } from "@/db/schema/enums";
 import { z } from "zod";
 
 /** Türkiye cep telefonunu 05XXXXXXXXX biçimine getirir; geçersizse null. */
@@ -127,7 +128,7 @@ export const checkoutSchema = z.object({
     .optional()
     .transform((value) => (value ? value.toUpperCase() : null)),
   customerNote: optionalTrimmed(500),
-  paymentMethod: z.enum(["CARD", "BANK_TRANSFER", "DEFERRED"]).default("CARD"),
+  paymentMethod: z.enum(paymentMethodTypeValues).default("CARD"),
   acceptTerms: z.literal(true, { error: "Sözleşmeleri onaylamalısınız" }),
 });
 

@@ -1,3 +1,4 @@
+import type { PaymentMethod } from "@/modules/orders/order.types";
 import { randomBytes, randomInt } from "node:crypto";
 import Decimal from "decimal.js";
 import { ConflictError, NotFoundError } from "@/shared/errors";
@@ -72,7 +73,7 @@ export interface OrderQueryRepository extends OrderLookupRepository {
     currency: string;
     status: string;
     provider: string;
-    method: "CARD" | "BANK_TRANSFER" | "DEFERRED";
+    method: PaymentMethod;
   } | null>;
 }
 

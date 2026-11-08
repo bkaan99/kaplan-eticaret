@@ -1,3 +1,4 @@
+import type { PaymentMethod } from "@/modules/orders/order.types";
 import type Decimal from "decimal.js";
 import type { CartIdentity, CartMutationResult } from "../cart/cart.types";
 import type { PriceResolver } from "../catalog/pricing";
@@ -53,7 +54,7 @@ export interface DealerTerms {
 }
 
 export interface PaymentOption {
-  method: "CARD" | "BANK_TRANSFER" | "DEFERRED";
+  method: PaymentMethod;
   available: boolean;
   /** Seçilemiyorsa nedeni; seçilebiliyorsa ek bilgi (örn. kalan kredi) */
   note: string | null;

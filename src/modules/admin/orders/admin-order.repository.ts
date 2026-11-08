@@ -1,3 +1,4 @@
+import type { PaymentMethod } from "@/modules/orders/order.types";
 import { and, count, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import { containsText, countWhere, order, shipment, type Db } from "@/db";
 import type { OrderStatus } from "../../orders/order.types";
@@ -20,7 +21,7 @@ export interface AdminOrderRow {
   currency: string;
   itemCount: number;
   /** Son ödeme kaydının yöntemi; ödeme kaydı yoksa null */
-  paymentMethod: "CARD" | "BANK_TRANSFER" | "DEFERRED" | null;
+  paymentMethod: PaymentMethod | null;
   createdAt: Date;
 }
 
@@ -62,7 +63,7 @@ export interface AdminOrderDetail {
   }[];
   payments: {
     provider: string;
-    method: "CARD" | "BANK_TRANSFER" | "DEFERRED";
+    method: PaymentMethod;
     status: string;
     amount: string;
     merchantOid: string;
