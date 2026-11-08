@@ -25,12 +25,12 @@ import {
   productVariant as variants,
   refund as refunds,
   runBatch,
-  shipment as shipments,
   stockReservation as reservations,
   type Db,
 } from "@/db";
+import { orderValues, orderWith, toView } from "./order.mapper";
+import { PaymentResultApplier } from "./payment-result.applier";
 import type {
-  AddressSnapshot,
   CreatedOrder,
   NewOrder,
   OrderView,
@@ -178,87 +178,6 @@ function hasErrorText(error: unknown, text: string): boolean {
     e = (e as { cause?: unknown }).cause;
   }
   return false;
-}
-
-function toAddress(json: unknown): AddressSnapshot {
-  return json as AddressSnapshot;
-}
-
-const orderWith = {
-  items: true,
-  shipments: { orderBy: desc(shipments.createdAt), limit: 1 },
-  payments: { orderBy: desc(payments.createdAt), limit: 1 },
-} as const;
-
-type OrderRow = typeof orders.$inferSelect & {
-  items: (typeof orderItems.$inferSelect)[];
-  shipments: (typeof shipments.$inferSelect)[];
-  payments: (typeof payments.$inferSelect)[];
-};
-
-function toView(row: OrderRow): OrderView {
-  const shipment = row.shipments[0];
-
-  return {
-    id: row.id,
-    orderNumber: row.orderNumber,
-    lookupToken: row.lookupToken,
-    status: row.status,
-    paymentStatus: row.paymentStatus,
-    email: row.guestEmail ?? "",
-    currency: row.currency,
-    subtotal: row.subtotal.toFixed(2),
-    discountTotal: row.discountTotal.toFixed(2),
-    shippingTotal: row.shippingTotal.toFixed(2),
-    taxTotal: row.taxTotal.toFixed(2),
-    grandTotal: row.grandTotal.toFixed(2),
-    couponCode: row.couponCode,
-    shippingAddress: toAddress(row.shippingAddress),
-    billingAddress: toAddress(row.billingAddress),
-    customerNote: row.customerNote,
-    items: row.items.map((item) => ({
-      id: item.id,
-      variantId: item.variantId,
-      productName: item.productName,
-      variantName: item.variantName,
-      sku: item.sku,
-      unitPrice: item.unitPrice.toFixed(2),
-      quantity: item.quantity,
-      lineTotal: item.lineTotal.toFixed(2),
-      customization: item.customization,
-    })),
-    trackingNumber: shipment?.trackingNumber ?? null,
-    carrier: shipment?.carrier ?? null,
-    createdAt: row.createdAt,
-    userId: row.userId,
-    paymentMethod: row.payments[0]?.method ?? "CARD",
-    paymentDueAt: row.payments[0]?.dueAt ?? null,
-  };
-}
-
-/** Sipariş ve ödeme kayıtlarındaki JSON/Decimal alanlarıyla birlikte yazılacak sipariş satırı. */
-function orderValues(
-  order: NewOrder,
-  ids: { orderId: string; orderNumber: string; lookupToken: string },
-) {
-  return {
-    id: ids.orderId,
-    orderNumber: ids.orderNumber,
-    lookupToken: ids.lookupToken,
-    userId: order.userId,
-    guestEmail: order.email,
-    cartId: order.cartId,
-    currency: order.currency,
-    subtotal: new Decimal(order.subtotal),
-    discountTotal: new Decimal(order.discountTotal),
-    shippingTotal: new Decimal(order.shippingTotal),
-    taxTotal: new Decimal(order.taxTotal),
-    grandTotal: new Decimal(order.grandTotal),
-    couponCode: order.couponCode,
-    shippingAddress: order.shippingAddress,
-    billingAddress: order.billingAddress,
-    customerNote: order.customerNote,
-  };
 }
 
 export class D1OrderRepository implements OrderRepository {
@@ -614,128 +533,7 @@ export class D1OrderRepository implements OrderRepository {
   }
 
   async applyPaymentResult(input: PaymentResultInput): Promise<PaymentOutcome> {
-    const db = this.db();
-    const found = await db.query.payment.findFirst({
-      where: eq(payments.merchantOid, input.merchantOid),
-      with: { order: true },
-    });
-    if (!found) return { kind: "not-found" } as const;
-
-    // Tutar uyuşmuyor: ödeme kabul edilmez, inceleme için FAILED işaretlenir.
-    const amountMismatch =
-      input.success && !new Decimal(input.amount).eq(found.amount);
-
-    // Aynı bildirim tekrar gelirse: yalnızca PENDING ödeme işlenir (idempotent).
-    const claimed = await db
-      .update(payments)
-      .set({
-        status: input.success && !amountMismatch ? "PAID" : "FAILED",
-        rawPayload: input.rawPayload,
-        paidAt: input.success ? new Date() : null,
-      })
-      .where(and(eq(payments.id, found.id), eq(payments.status, "PENDING")))
-      .run();
-    if (claimed.meta.changes === 0) {
-      return { kind: "already-processed", orderId: found.orderId } as const;
-    }
-
-    const orderId = found.orderId;
-    if (amountMismatch) {
-      return { kind: "amount-mismatch", orderId } as const;
-    }
-
-    try {
-      const active = await db
-        .select()
-        .from(reservations)
-        .where(
-          and(
-            eq(reservations.orderId, orderId),
-            eq(reservations.status, "ACTIVE"),
-          ),
-        );
-
-      if (input.success) {
-        await runBatch(db, [
-          ...active.map((reservation) =>
-            db
-              .update(variants)
-              .set({
-                stockQuantity: sql`${variants.stockQuantity} - ${reservation.quantity}`,
-                reservedQuantity: sql`${variants.reservedQuantity} - ${reservation.quantity}`,
-              })
-              .where(eq(variants.id, reservation.variantId)),
-          ),
-          db
-            .update(reservations)
-            .set({ status: "CONSUMED" })
-            .where(
-              and(
-                eq(reservations.orderId, orderId),
-                eq(reservations.status, "ACTIVE"),
-              ),
-            ),
-          db
-            .update(orders)
-            .set({ status: "PAID", paymentStatus: "PAID" })
-            .where(eq(orders.id, orderId)),
-          ...(found.order.couponCode
-            ? [
-                db
-                  .update(coupons)
-                  .set({ usedCount: sql`${coupons.usedCount} + 1` })
-                  .where(eq(coupons.code, found.order.couponCode)),
-              ]
-            : []),
-          ...(found.order.cartId
-            ? [db.delete(carts).where(eq(carts.id, found.order.cartId))]
-            : []),
-        ]);
-        return { kind: "paid", orderId } as const;
-      }
-
-      await runBatch(db, [
-        ...active.map((reservation) =>
-          db
-            .update(variants)
-            .set({
-              reservedQuantity: sql`${variants.reservedQuantity} - ${reservation.quantity}`,
-            })
-            .where(eq(variants.id, reservation.variantId)),
-        ),
-        db
-          .update(reservations)
-          .set({ status: "RELEASED" })
-          .where(
-            and(
-              eq(reservations.orderId, orderId),
-              eq(reservations.status, "ACTIVE"),
-            ),
-          ),
-        db
-          .update(orders)
-          .set({
-            status: "CANCELLED",
-            paymentStatus: "FAILED",
-            cancelledAt: new Date(),
-          })
-          .where(eq(orders.id, orderId)),
-      ]);
-      return { kind: "failed", orderId } as const;
-    } catch (error) {
-      // Telafi: sonuç uygulanamadıysa talebi geri bırak ki sağlayıcı bildirimi tekrar işlensin.
-      await db
-        .update(payments)
-        .set({ status: "PENDING", paidAt: null })
-        .where(
-          and(
-            eq(payments.id, found.id),
-            inArray(payments.status, ["PAID", "FAILED"]),
-          ),
-        )
-        .catch(() => undefined);
-      throw error;
-    }
+    return new PaymentResultApplier(this.db).apply(input);
   }
 
   async cancelOrder(orderId: string, markRefunded: boolean): Promise<void> {

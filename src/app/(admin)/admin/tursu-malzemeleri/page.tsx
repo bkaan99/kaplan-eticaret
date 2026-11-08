@@ -5,7 +5,10 @@ import { AccessDenied } from "@/components/admin/access-denied";
 import { AdminLoading } from "@/components/admin/admin-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { adminPage } from "@/modules/admin/guard";
-import { customPickleService } from "@/modules/custom-pickle/container";
+import {
+  customPickleAdminService,
+  customPickleService,
+} from "@/modules/custom-pickle/container";
 import { PERMISSIONS } from "@/shared/permissions";
 import { IngredientManager } from "./ingredient-manager";
 
@@ -16,8 +19,8 @@ async function IngredientsContent() {
   if (!user) return <AccessDenied />;
 
   const [ingredients, productId, options] = await Promise.all([
-    customPickleService.listIngredients(),
-    customPickleService.builderProductId(),
+    customPickleAdminService.listIngredients(),
+    customPickleAdminService.builderProductId(),
     customPickleService.getOptions(),
   ]);
   return (
