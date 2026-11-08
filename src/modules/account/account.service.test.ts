@@ -26,13 +26,22 @@ class FakeRepo implements AccountRepository {
   async findById(id: string) {
     return this.users.get(id) ?? null;
   }
-  async createCustomer(data: { email: string; passwordHash: string }) {
+  async createCustomer(data: {
+    email: string;
+    passwordHash: string | null;
+    firstName?: string;
+    lastName?: string;
+    emailVerified?: boolean;
+  }) {
     const user: AccountUser = {
       id: `u${++this.seq}`,
       email: data.email,
       passwordHash: data.passwordHash,
-      emailVerified: false,
+      emailVerified: data.emailVerified ?? false,
       isActive: true,
+      type: "CUSTOMER",
+      firstName: data.firstName ?? "Ali",
+      lastName: data.lastName ?? "Veli",
     };
     this.users.set(user.id, user);
     return user;
@@ -169,5 +178,53 @@ describe("AccountService", () => {
     await expect(
       service.resetPassword(verifyToken, "yeniparola123"),
     ).rejects.toThrow("geçersiz");
+  });
+
+  it("Google ile yeni hesap oluşturur (parolasız, doğrulanmış)", async () => {
+    const result = await service.loginWithGoogle({
+      email: "yeni@gmail.com",
+      firstName: "Ayşe",
+      lastName: "Yılmaz",
+    });
+
+    expect(result).toMatchObject({
+      email: "yeni@gmail.com",
+      name: "Ayşe Yılmaz",
+      type: "CUSTOMER",
+    });
+    const user = await repo.findByEmail("yeni@gmail.com");
+    expect(user?.passwordHash).toBeNull();
+    expect(user?.emailVerified).toBe(true);
+  });
+
+  it("Google ile mevcut e-postayı bağlar ve doğrulanmamışsa doğrular", async () => {
+    await service.register(input);
+    const before = await repo.findByEmail("ali@example.com");
+    expect(before?.emailVerified).toBe(false);
+
+    const result = await service.loginWithGoogle({
+      email: "ali@example.com",
+      firstName: "X",
+      lastName: "Y",
+    });
+
+    expect(result?.id).toBe(before!.id);
+    expect((await repo.findByEmail("ali@example.com"))!.emailVerified).toBe(
+      true,
+    );
+  });
+
+  it("pasif hesapta Google girişini reddeder", async () => {
+    await service.register(input);
+    const user = (await repo.findByEmail("ali@example.com"))!;
+    user.isActive = false;
+
+    await expect(
+      service.loginWithGoogle({
+        email: "ali@example.com",
+        firstName: "Ali",
+        lastName: "Veli",
+      }),
+    ).resolves.toBeNull();
   });
 });
