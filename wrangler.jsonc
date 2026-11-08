@@ -15,6 +15,10 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Cloudflare Images: /_next/image boyutlandırma + WebP/AVIF. Binding yoksa orijinal dosya döner.
+  "images": {
+    "binding": "IMAGES"
+  },
   "observability": {
     "enabled": true,
     "traces": {
