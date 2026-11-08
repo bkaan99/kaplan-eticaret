@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { isGoogleAuthEnabled } from "@/auth";
 import { Reveal } from "@/components/motion/motion";
 import { TurnstileWidget } from "@/components/storefront/turnstile-widget";
 import { siteConfig } from "@/config/site.config";
+import { GoogleSignInButton } from "./google-sign-in-button";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
@@ -41,6 +43,19 @@ async function LoginContent({
         >
           Parolanız güncellendi. Yeni parolanızla giriş yapabilirsiniz.
         </p>
+      ) : null}
+
+      {isGoogleAuthEnabled() ? (
+        <>
+          <GoogleSignInButton callbackUrl={callbackUrl} />
+          <div className="relative py-1 text-center text-xs font-semibold tracking-[0.14em] text-slate-400 uppercase">
+            <span className="relative z-10 bg-[#f3f4ef] px-3">veya</span>
+            <span
+              aria-hidden
+              className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300/70"
+            />
+          </div>
+        </>
       ) : null}
 
       <LoginForm callbackUrl={callbackUrl} captcha={<TurnstileWidget />} />

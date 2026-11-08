@@ -20,6 +20,9 @@ export class D1AccountRepository implements AccountRepository {
     emailVerifiedAt: Date | null;
     isActive: boolean;
     anonymizedAt: Date | null;
+    type: "CUSTOMER" | "STAFF";
+    firstName: string;
+    lastName: string;
   }): AccountUser {
     return {
       id: row.id,
@@ -27,6 +30,9 @@ export class D1AccountRepository implements AccountRepository {
       passwordHash: row.passwordHash,
       emailVerified: row.emailVerifiedAt !== null,
       isActive: row.isActive && row.anonymizedAt === null,
+      type: row.type,
+      firstName: row.firstName,
+      lastName: row.lastName,
     };
   }
 
@@ -46,10 +52,11 @@ export class D1AccountRepository implements AccountRepository {
 
   async createCustomer(data: {
     email: string;
-    passwordHash: string;
+    passwordHash: string | null;
     firstName: string;
     lastName: string;
     phone: string | null;
+    emailVerified?: boolean;
   }): Promise<AccountUser> {
     const db = this.db();
     const userId = newId();
@@ -66,6 +73,7 @@ export class D1AccountRepository implements AccountRepository {
             lastName: data.lastName,
             phone: data.phone,
             type: "CUSTOMER",
+            emailVerifiedAt: data.emailVerified ? new Date() : null,
           })
           .returning(),
         db.insert(customer).values({ userId }),

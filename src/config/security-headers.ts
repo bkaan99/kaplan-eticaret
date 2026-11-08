@@ -28,7 +28,8 @@ export function buildSecurityHeaders(isProduction: boolean): HeaderEntry[] {
     "frame-src https://www.paytr.com https://challenges.cloudflare.com https://www.google.com",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    // Google OAuth yönlendirmesi (Auth.js sign-in)
+    "form-action 'self' https://accounts.google.com",
     "frame-ancestors 'none'",
   ].join("; ");
 

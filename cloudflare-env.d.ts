@@ -22,6 +22,9 @@ declare global {
     /** Turnstile (site key vars'ta, secret wrangler secret) */
     TURNSTILE_SITE_KEY?: string;
     TURNSTILE_SECRET_KEY?: string;
+    /** Google OAuth (Auth.js) — wrangler secret */
+    AUTH_GOOGLE_ID?: string;
+    AUTH_GOOGLE_SECRET?: string;
     /** Access Service Token — staging Access açıkken cron self-fetch için */
     CF_ACCESS_CLIENT_ID?: string;
     CF_ACCESS_CLIENT_SECRET?: string;
