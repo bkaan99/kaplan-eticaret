@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { isFeatureEnabled } from "@/config/features";
 import { initWishlist } from "@/components/wishlist/wishlist-store";
@@ -32,6 +33,10 @@ export function StorefrontShellActions({
     cartCount: 0,
     user: null,
   });
+
+  // Header sayfa geçişlerinde yeniden oluşmaz; giriş/çıkış sonrası yönlendirmede
+  // oturum durumunu yenilemek için rota değişimini izleriz.
+  const pathname = usePathname();
 
   const load = useCallback(() => {
     void fetch("/api/storefront/shell", { credentials: "same-origin" })
@@ -68,7 +73,7 @@ export function StorefrontShellActions({
       window.removeEventListener(STOREFRONT_SHELL_REFRESH, onRefresh);
       window.removeEventListener("focus", onRefresh);
     };
-  }, [load]);
+  }, [load, pathname]);
 
   const user = state.user;
   const label = user?.name || user?.email || "";
