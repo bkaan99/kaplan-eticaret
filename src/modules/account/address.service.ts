@@ -1,10 +1,7 @@
+import { firstIssue } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import { MAX_SAVED_ADDRESSES, savedAddressSchema } from "./address.schema";
 import type { AddressRepository, SavedAddress } from "./address.repository";
-
-function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
-}
 
 export class AddressService {
   constructor(private readonly addresses: AddressRepository) {}

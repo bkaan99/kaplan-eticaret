@@ -1,3 +1,4 @@
+import { firstIssue } from "@/shared/validation";
 import { z } from "zod";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
@@ -48,10 +49,6 @@ export interface DealerMailer {
     approved: boolean,
     note: string | null,
   ): Promise<void>;
-}
-
-function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
 }
 
 export class DealerService {

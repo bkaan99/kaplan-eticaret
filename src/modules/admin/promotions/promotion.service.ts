@@ -1,3 +1,4 @@
+import { firstIssue } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import type {
@@ -12,10 +13,6 @@ import {
 } from "./promotion.schema";
 
 export type { CampaignView, CouponView };
-
-function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
-}
 
 export class PromotionService {
   constructor(

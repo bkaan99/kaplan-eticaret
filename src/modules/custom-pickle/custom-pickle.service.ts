@@ -19,7 +19,8 @@ import type {
   ItemCustomizationHandler,
 } from "../cart/customization";
 import { customPickleInputSchema } from "./custom-pickle.schema";
-import { firstIssue, registerOptions, toView } from "./custom-pickle.support";
+import { firstIssue } from "@/shared/validation";
+import { registerOptions, toView } from "./custom-pickle.support";
 import {
   bidonWeightGram,
   BRINE_OPTIONS,

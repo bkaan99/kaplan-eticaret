@@ -1,3 +1,4 @@
+import { firstIssue } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import { uniqueSlug } from "@/shared/slug";
@@ -11,10 +12,6 @@ import {
   groupPriceSchema,
   tierListSchema,
 } from "./price-list.schema";
-
-function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
-}
 
 export class PriceListService {
   constructor(

@@ -1,3 +1,4 @@
+import { firstIssue } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import { slugify, uniqueSlug } from "@/shared/slug";
@@ -14,10 +15,6 @@ import {
   brandInputSchema,
   categoryInputSchema,
 } from "./taxonomy.schema";
-
-function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
-}
 
 export class TaxonomyService {
   constructor(

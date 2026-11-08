@@ -1,3 +1,4 @@
+import { firstIssue } from "@/shared/validation";
 import {
   ConflictError,
   ForbiddenError,
@@ -21,10 +22,6 @@ export interface PasswordSetupSender {
 /** İşlemi yapan personel: kimliği ve kendi yetkileri (yetki yükseltmeyi önlemek için). */
 export interface StaffActor extends Actor {
   permissions: readonly string[];
-}
-
-function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
 }
 
 export class StaffService {

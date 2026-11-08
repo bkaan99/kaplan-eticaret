@@ -6,7 +6,8 @@ import {
   ingredientInputSchema,
   pickleOptionsConfigSchema,
 } from "./custom-pickle.schema";
-import { firstIssue, registerOptions, toView } from "./custom-pickle.support";
+import { firstIssue } from "@/shared/validation";
+import { registerOptions, toView } from "./custom-pickle.support";
 import {
   CUSTOM_PICKLE_PRODUCT_SLUG,
   type IngredientView,

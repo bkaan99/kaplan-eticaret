@@ -10,11 +10,10 @@ import {
   type IngredientView,
 } from "./custom-pickle.types";
 
-export function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
-}
-
-export function toView(record: IngredientRecord, now = new Date()): IngredientView {
+export function toView(
+  record: IngredientRecord,
+  now = new Date(),
+): IngredientView {
   const currentMonth = now.getMonth() + 1;
   const inSeason = isMonthInSeason(
     record.seasonStartMonth,
