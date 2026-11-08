@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
+import { useActionRunner as useRunner } from "@/components/admin/use-action-runner";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { RichText } from "@/components/content/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,31 +46,6 @@ export interface MenuItemRow {
 }
 
 const toLocalInput = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
-
-function useRunner() {
-  const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{
-    text: string;
-    error: boolean;
-  } | null>(null);
-
-  function run(
-    action: () => Promise<{ ok: boolean; error?: string }>,
-    onDone?: () => void,
-  ) {
-    startTransition(async () => {
-      const result = await action();
-      setMessage(
-        result.ok
-          ? { text: "İşlem başarıyla kaydedildi.", error: false }
-          : { text: result.error ?? "İşlem sırasında bir hata oluştu.", error: true },
-      );
-      if (result.ok) onDone?.();
-    });
-  }
-
-  return { pending, message, setMessage, run };
-}
 
 function Notice({
   message,
@@ -182,7 +157,10 @@ function BannerModal({
     body.set("file", file);
     try {
       const response = await fetch("/admin/yukle", { method: "POST", body });
-      const result = (await response.json()) as { url?: string; error?: string };
+      const result = (await response.json()) as {
+        url?: string;
+        error?: string;
+      };
       if (!response.ok || !result.url) {
         setUploadError(result.error ?? "Görsel yüklenemedi.");
         return;
@@ -234,7 +212,9 @@ function BannerModal({
         <div className="flex flex-col gap-4 overflow-y-auto p-6 text-sm">
           {/* Başlık */}
           <div className="flex flex-col gap-1.5">
-            <Label className="font-semibold text-slate-800">Banner Başlığı</Label>
+            <Label className="font-semibold text-slate-800">
+              Banner Başlığı
+            </Label>
             <Input
               value={form.title}
               onChange={(e) => onChange("title", e.target.value)}
@@ -245,7 +225,9 @@ function BannerModal({
 
           {/* Görsel Adresi & Dosya Yükleme */}
           <div className="flex flex-col gap-1.5">
-            <Label className="font-semibold text-slate-800">Banner Görseli</Label>
+            <Label className="font-semibold text-slate-800">
+              Banner Görseli
+            </Label>
             <div className="flex gap-2">
               <Input
                 value={form.imageUrl}
@@ -288,7 +270,9 @@ function BannerModal({
           {/* Tıklama Bağlantısı */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <Label className="font-semibold text-slate-800">Tıklama Bağlantısı</Label>
+              <Label className="font-semibold text-slate-800">
+                Tıklama Bağlantısı
+              </Label>
               <span className="text-[11px] text-slate-400">İsteğe bağlı</span>
             </div>
             <Input
@@ -298,23 +282,27 @@ function BannerModal({
               className="rounded-xl font-mono text-xs"
             />
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {["/kategori/klasik-tursular", "/kendi-tursunu-yap", "/ara"].map((sample) => (
-                <button
-                  key={sample}
-                  type="button"
-                  onClick={() => onChange("linkUrl", sample)}
-                  className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition"
-                >
-                  {sample}
-                </button>
-              ))}
+              {["/kategori/klasik-tursular", "/kendi-tursunu-yap", "/ara"].map(
+                (sample) => (
+                  <button
+                    key={sample}
+                    type="button"
+                    onClick={() => onChange("linkUrl", sample)}
+                    className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition"
+                  >
+                    {sample}
+                  </button>
+                ),
+              )}
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
             {/* Sıra */}
             <div className="flex flex-col gap-1.5">
-              <Label className="font-semibold text-slate-800">Gösterim Sırası</Label>
+              <Label className="font-semibold text-slate-800">
+                Gösterim Sırası
+              </Label>
               <Input
                 value={form.sortOrder}
                 onChange={(e) => onChange("sortOrder", e.target.value)}
@@ -324,7 +312,9 @@ function BannerModal({
             </div>
             {/* Başlangıç Tarihi */}
             <div className="flex flex-col gap-1.5">
-              <Label className="font-semibold text-slate-800">Yayın Başlangıcı</Label>
+              <Label className="font-semibold text-slate-800">
+                Yayın Başlangıcı
+              </Label>
               <Input
                 type="datetime-local"
                 value={form.startsAt}
@@ -334,7 +324,9 @@ function BannerModal({
             </div>
             {/* Bitiş Tarihi */}
             <div className="flex flex-col gap-1.5">
-              <Label className="font-semibold text-slate-800">Yayın Bitişi</Label>
+              <Label className="font-semibold text-slate-800">
+                Yayın Bitişi
+              </Label>
               <Input
                 type="datetime-local"
                 value={form.endsAt}
@@ -359,7 +351,12 @@ function BannerModal({
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
-          <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="rounded-xl"
+          >
             Vazgeç
           </Button>
           <Button
@@ -368,7 +365,11 @@ function BannerModal({
             onClick={onSave}
             className="rounded-xl bg-emerald-700 text-white hover:bg-emerald-800"
           >
-            {pending ? "Kaydediliyor..." : form.id ? "Değişiklikleri Kaydet" : "Bannerı Ekle"}
+            {pending
+              ? "Kaydediliyor..."
+              : form.id
+                ? "Değişiklikleri Kaydet"
+                : "Bannerı Ekle"}
           </Button>
         </div>
       </div>
@@ -418,9 +419,12 @@ function BannerSection({ banners }: { banners: BannerRow[] }) {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-slate-900">Ana Sayfa Bannerları</h2>
+          <h2 className="text-base font-bold text-slate-900">
+            Ana Sayfa Bannerları
+          </h2>
           <p className="text-xs text-slate-500">
-            Vitrin sliderında dönecek görselleri, kampanya afişlerini ve yönlendirmeleri yönetin.
+            Vitrin sliderında dönecek görselleri, kampanya afişlerini ve
+            yönlendirmeleri yönetin.
           </p>
         </div>
         <Button
@@ -432,16 +436,22 @@ function BannerSection({ banners }: { banners: BannerRow[] }) {
         </Button>
       </div>
 
-      <Notice message={!open ? message : null} onDismiss={() => setMessage(null)} />
+      <Notice
+        message={!open ? message : null}
+        onDismiss={() => setMessage(null)}
+      />
 
       {banners.length === 0 ? (
         <Card className="rounded-2xl border-dashed p-10 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl text-slate-400 mb-3">
             🖼️
           </div>
-          <p className="font-semibold text-slate-800">Henüz banner eklenmemiş</p>
+          <p className="font-semibold text-slate-800">
+            Henüz banner eklenmemiş
+          </p>
           <p className="mt-1 text-xs text-slate-500">
-            Ana sayfa vitrininde öne çıkarmak istediğiniz kampanya ve görseller için yukarıdaki butonu kullanın.
+            Ana sayfa vitrininde öne çıkarmak istediğiniz kampanya ve görseller
+            için yukarıdaki butonu kullanın.
           </p>
         </Card>
       ) : (
@@ -476,15 +486,23 @@ function BannerSection({ banners }: { banners: BannerRow[] }) {
 
               <CardContent className="p-4 flex flex-col justify-between gap-3">
                 <div>
-                  <h3 className="font-bold text-slate-900 truncate" title={banner.title}>
+                  <h3
+                    className="font-bold text-slate-900 truncate"
+                    title={banner.title}
+                  >
                     {banner.title}
                   </h3>
                   {banner.linkUrl ? (
-                    <p className="mt-0.5 truncate text-xs text-slate-500 font-mono" title={banner.linkUrl}>
+                    <p
+                      className="mt-0.5 truncate text-xs text-slate-500 font-mono"
+                      title={banner.linkUrl}
+                    >
                       🔗 {banner.linkUrl}
                     </p>
                   ) : (
-                    <p className="mt-0.5 text-xs text-slate-400">Bağlantı atanmamış</p>
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      Bağlantı atanmamış
+                    </p>
                   )}
                 </div>
 
@@ -502,7 +520,9 @@ function BannerSection({ banners }: { banners: BannerRow[] }) {
                     variant="ghost"
                     disabled={pending}
                     onClick={() => {
-                      if (window.confirm(`"${banner.title}" bannerı silinsin mi?`)) {
+                      if (
+                        window.confirm(`"${banner.title}" bannerı silinsin mi?`)
+                      ) {
                         run(() => deleteBannerAction(banner.id));
                       }
                     }}
@@ -635,7 +655,9 @@ function PageSection({ pages }: { pages: PageRow[] }) {
               placeholder="Sayfa ara..."
               className="h-9 rounded-xl pl-8 text-xs bg-white"
             />
-            <span className="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
+            <span className="absolute left-2.5 top-2.5 text-xs text-slate-400">
+              🔍
+            </span>
           </div>
 
           {/* Sayfa Listesi */}
@@ -656,7 +678,10 @@ function PageSection({ pages }: { pages: PageRow[] }) {
                     <span className="font-bold truncate text-slate-900 group-hover:text-emerald-800">
                       {page.title}
                     </span>
-                    <Badge tone={page.isPublished ? "success" : "warning"} className="shrink-0">
+                    <Badge
+                      tone={page.isPublished ? "success" : "warning"}
+                      className="shrink-0"
+                    >
                       {page.isPublished ? "Yayında" : "Taslak"}
                     </Badge>
                   </div>
@@ -678,7 +703,11 @@ function PageSection({ pages }: { pages: PageRow[] }) {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm(`"${page.title}" sayfası silinsin mi?`)) {
+                          if (
+                            window.confirm(
+                              `"${page.title}" sayfası silinsin mi?`,
+                            )
+                          ) {
                             run(() => deletePageAction(page.id));
                           }
                         }}
@@ -706,7 +735,9 @@ function PageSection({ pages }: { pages: PageRow[] }) {
             <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900">
-                  {form.id ? `Sayfayı Düzenle: ${form.title}` : "Yeni Sayfa Oluştur"}
+                  {form.id
+                    ? `Sayfayı Düzenle: ${form.title}`
+                    : "Yeni Sayfa Oluştur"}
                 </CardTitle>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Markdown formatında zengin metin düzenleme ve anlık önizleme.
@@ -744,7 +775,9 @@ function PageSection({ pages }: { pages: PageRow[] }) {
               {/* Başlık ve Slug */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
-                  <Label className="font-semibold text-slate-800">Sayfa Başlığı</Label>
+                  <Label className="font-semibold text-slate-800">
+                    Sayfa Başlığı
+                  </Label>
                   <Input
                     value={form.title}
                     onChange={(e) => {
@@ -759,9 +792,13 @@ function PageSection({ pages }: { pages: PageRow[] }) {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label className="font-semibold text-slate-800">Sayfa Adresi (Slug)</Label>
+                  <Label className="font-semibold text-slate-800">
+                    Sayfa Adresi (Slug)
+                  </Label>
                   <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 focus-within:border-primary focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10">
-                    <span className="text-xs text-slate-400 font-mono">/sayfa/</span>
+                    <span className="text-xs text-slate-400 font-mono">
+                      /sayfa/
+                    </span>
                     <input
                       value={form.slug}
                       onChange={(e) => set("slug", slugify(e.target.value))}
@@ -776,7 +813,9 @@ function PageSection({ pages }: { pages: PageRow[] }) {
               {tabMode === "edit" ? (
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between gap-2">
-                    <Label className="font-semibold text-slate-800">Sayfa İçeriği</Label>
+                    <Label className="font-semibold text-slate-800">
+                      Sayfa İçeriği
+                    </Label>
                     {/* Markdown Hızlı Biçimlendirme Araç Çubuğu */}
                     <div className="flex items-center gap-1 text-xs">
                       <button
@@ -831,7 +870,9 @@ function PageSection({ pages }: { pages: PageRow[] }) {
                     className="rounded-xl font-mono text-xs leading-relaxed"
                   />
                   <p className="text-[11px] text-slate-400">
-                    💡 İpucu: Güvenlik için HTML etiketleri yerine Markdown kullanın. Boş satır bırakarak yeni paragraflar oluşturabilirsiniz.
+                    💡 İpucu: Güvenlik için HTML etiketleri yerine Markdown
+                    kullanın. Boş satır bırakarak yeni paragraflar
+                    oluşturabilirsiniz.
                   </p>
                 </div>
               ) : (
@@ -847,7 +888,9 @@ function PageSection({ pages }: { pages: PageRow[] }) {
                   {form.content.trim() ? (
                     <RichText source={form.content} />
                   ) : (
-                    <p className="text-sm text-slate-400 italic">İçerik henüz girilmedi.</p>
+                    <p className="text-sm text-slate-400 italic">
+                      İçerik henüz girilmedi.
+                    </p>
                   )}
                 </div>
               )}
@@ -861,7 +904,9 @@ function PageSection({ pages }: { pages: PageRow[] }) {
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between text-xs">
                       <Label className="text-slate-700">SEO Başlığı</Label>
-                      <span className="text-slate-400 text-[10px]">{form.seoTitle.length}/70</span>
+                      <span className="text-slate-400 text-[10px]">
+                        {form.seoTitle.length}/70
+                      </span>
                     </div>
                     <Input
                       value={form.seoTitle}
@@ -984,7 +1029,9 @@ function MenuEditor({
       <CardHeader className="border-b border-slate-100 pb-4">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base font-bold text-slate-900">{title}</CardTitle>
+            <CardTitle className="text-base font-bold text-slate-900">
+              {title}
+            </CardTitle>
             <p className="text-xs text-slate-500 mt-0.5">{description}</p>
           </div>
           <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
@@ -997,7 +1044,8 @@ function MenuEditor({
 
         {items.length === 0 ? (
           <p className="py-6 text-center text-xs text-slate-400">
-            Bu menüde henüz özel bağlantı yok. Aşağıdaki önerilerden veya &quot;Öğe Ekle&quot; butonundan ekleyebilirsiniz.
+            Bu menüde henüz özel bağlantı yok. Aşağıdaki önerilerden veya
+            &quot;Öğe Ekle&quot; butonundan ekleyebilirsiniz.
           </p>
         ) : (
           <div className="flex flex-col gap-2">
@@ -1134,7 +1182,9 @@ export function ContentManager({
   headerMenu: MenuItemRow[];
   footerMenu: MenuItemRow[];
 }) {
-  const [activeTab, setActiveTab] = useState<"banners" | "pages" | "menus">("banners");
+  const [activeTab, setActiveTab] = useState<"banners" | "pages" | "menus">(
+    "banners",
+  );
 
   return (
     <div className="flex flex-col gap-6">

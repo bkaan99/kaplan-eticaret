@@ -1,13 +1,7 @@
 "use client";
 
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  useTransition,
-  type ReactNode,
-} from "react";
+import { useActionRunner as useRunner } from "@/components/admin/use-action-runner";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/shared/cn";
@@ -105,30 +99,6 @@ export function Alert({ message }: { message: Message }) {
       {message.text}
     </div>
   );
-}
-
-export function useRunner() {
-  const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<Message>(null);
-
-  function run(
-    action: () => Promise<{ ok: boolean; error?: string }>,
-    successText: string,
-    onDone?: () => void,
-  ) {
-    startTransition(async () => {
-      setMessage(null);
-      const result = await action();
-      setMessage(
-        result.ok
-          ? { text: successText, error: false }
-          : { text: result.error ?? "İşlem başarısız oldu.", error: true },
-      );
-      if (result.ok) onDone?.();
-    });
-  }
-
-  return { pending, message, run, setMessage };
 }
 
 export function Modal({
@@ -364,3 +334,5 @@ export function EmptyState({
     </div>
   );
 }
+
+export { useRunner };

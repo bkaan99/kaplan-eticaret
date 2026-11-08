@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useActionRunner as useRunner } from "@/components/admin/use-action-runner";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,25 +28,6 @@ export interface BrandView {
   productCount: number;
 }
 
-function useRunner() {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
-  function run(
-    action: () => Promise<{ ok: boolean; error?: string }>,
-    onDone?: () => void,
-  ) {
-    startTransition(async () => {
-      setError(null);
-      const result = await action();
-      setError(result.ok ? null : (result.error ?? "İşlem gerçekleştirilemedi"));
-      if (result.ok) onDone?.();
-    });
-  }
-
-  return { pending, error, run, setError };
-}
-
 /* -------------------------------------------------------------------------- */
 /*                               ATTRIBUTE MODAL                              */
 /* -------------------------------------------------------------------------- */
@@ -53,7 +35,11 @@ function useRunner() {
 interface AttributeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  editingAttribute: { id: string | null; name: string; isFilterable: boolean } | null;
+  editingAttribute: {
+    id: string | null;
+    name: string;
+    isFilterable: boolean;
+  } | null;
   onSuccess?: () => void;
 }
 
@@ -135,7 +121,9 @@ function AttributeModal({
                 id="attribute-modal-title"
                 className="text-base font-bold text-slate-900"
               >
-                {editingAttribute?.id ? "Niteliği Düzenle" : "Yeni Nitelik Tanımla"}
+                {editingAttribute?.id
+                  ? "Niteliği Düzenle"
+                  : "Yeni Nitelik Tanımla"}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Ürünlerin filtrelenebilmesi için özellik başlığı belirleyin
@@ -191,8 +179,8 @@ function AttributeModal({
                     Vitrinde Filtre Olarak Gösterilsin
                   </span>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Müşteriler kategori veya mağaza sayfasında ürünleri bu niteliğe
-                    göre filtreleyebilsin (örn: Tatlı, Orta Acı, Ekşi).
+                    Müşteriler kategori veya mağaza sayfasında ürünleri bu
+                    niteliğe göre filtreleyebilsin (örn: Tatlı, Orta Acı, Ekşi).
                   </p>
                 </div>
               </label>
@@ -316,9 +304,7 @@ function BrandModal({
                 id="brand-modal-title"
                 className="text-base font-bold text-slate-900"
               >
-                {editingBrand
-                  ? "Markayı Düzenle"
-                  : "Yeni Marka / Üretici Ekle"}
+                {editingBrand ? "Markayı Düzenle" : "Yeni Marka / Üretici Ekle"}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 {editingBrand
@@ -632,9 +618,7 @@ function AttributeCard({
             }}
             className="h-8 px-2.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
             title={
-              inUse
-                ? "Ürünlerde kullanılan nitelik silinemez"
-                : "Niteliği sil"
+              inUse ? "Ürünlerde kullanılan nitelik silinemez" : "Niteliği sil"
             }
           >
             Sil
@@ -697,7 +681,8 @@ function AttributeCard({
 
             {attribute.values.length === 0 && (
               <span className="text-xs text-slate-400 italic">
-                Henüz değer tanımlanmadı. &ldquo;+ Değer Ekle&rdquo; ile ekleyebilirsiniz.
+                Henüz değer tanımlanmadı. &ldquo;+ Değer Ekle&rdquo; ile
+                ekleyebilirsiniz.
               </span>
             )}
           </div>
@@ -746,7 +731,9 @@ export function AttributeManager({
   } | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "attributes" | "brands">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "attributes" | "brands">(
+    "all",
+  );
 
   // İstatistikler
   const stats = useMemo(() => {
@@ -982,9 +969,7 @@ export function AttributeManager({
       {/* Ana Çift Kolonlu İçerik Alanı (Artık sayfa içinde açık formlar yok) */}
       <div
         className={`grid gap-6 items-start ${
-          activeTab === "all"
-            ? "lg:grid-cols-[1.3fr_1fr]"
-            : "grid-cols-1"
+          activeTab === "all" ? "lg:grid-cols-[1.3fr_1fr]" : "grid-cols-1"
         }`}
       >
         {/* Nitelikler Bölümü */}
@@ -1093,14 +1078,18 @@ export function AttributeManager({
                         </button>
                         <button
                           type="button"
-                          disabled={brandRunner.pending || brand.productCount > 0}
+                          disabled={
+                            brandRunner.pending || brand.productCount > 0
+                          }
                           onClick={() => {
                             if (
                               window.confirm(
                                 `"${brand.name}" markasını silmek istediğinize emin misiniz?`,
                               )
                             ) {
-                              brandRunner.run(() => deleteBrandAction(brand.id));
+                              brandRunner.run(() =>
+                                deleteBrandAction(brand.id),
+                              );
                             }
                           }}
                           className="rounded-lg p-1.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
