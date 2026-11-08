@@ -1,3 +1,4 @@
+import { isOneOf } from "@/shared/guards";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -18,9 +19,13 @@ import { DealerRow } from "./dealer-row";
 
 export const metadata: Metadata = { title: "Bayiler" };
 
-function isStatus(value: string | undefined): value is DealerStatus {
-  return value === "PENDING" || value === "APPROVED" || value === "REJECTED";
-}
+const DEALER_STATUSES: readonly DealerStatus[] = [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+];
+const isStatus = (value: string | undefined): value is DealerStatus =>
+  isOneOf(DEALER_STATUSES, value);
 
 async function DealersContent({
   searchParams,

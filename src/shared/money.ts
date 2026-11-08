@@ -66,3 +66,15 @@ export function formatMoney(
     currency,
   }).format(roundMoney(value).toNumber());
 }
+
+/** Karşılaştırma fiyatına göre indirim yüzdesi (örn. 20); indirim yoksa null. */
+export function discountPercent(
+  price: string,
+  compareAt: string | null,
+): number | null {
+  if (!compareAt) return null;
+  const current = Number(price);
+  const original = Number(compareAt);
+  if (!(original > current)) return null;
+  return Math.round((1 - current / original) * 100);
+}

@@ -1,3 +1,4 @@
+import { discountPercent } from "@/shared/money";
 import Image from "next/image";
 import Link from "next/link";
 import { isFeatureEnabled } from "@/config/features";
@@ -5,14 +6,6 @@ import type { ProductCard as ProductCardData } from "@/modules/catalog/catalog.t
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
 import { Price } from "./price";
 import { QuickAddButton } from "./quick-add-button";
-
-function discountPercent(price: string, compareAt: string | null) {
-  if (!compareAt) return null;
-  const current = Number(price);
-  const original = Number(compareAt);
-  if (!(original > current)) return null;
-  return Math.round((1 - current / original) * 100);
-}
 
 export function ProductCard({
   product,

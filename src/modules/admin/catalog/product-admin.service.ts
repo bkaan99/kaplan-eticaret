@@ -1,3 +1,4 @@
+import { toFieldErrors } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import type { EventBus } from "@/shared/events/event-bus";
@@ -20,18 +21,6 @@ export class ProductValidationError extends ValidationError {
   constructor(public readonly fieldErrors: FieldErrors) {
     super("Lütfen işaretli alanları kontrol edin");
   }
-}
-
-/** Zod hatalarını "variants.0.sku" biçiminde alan yoluna çevirir. */
-export function toFieldErrors(
-  issues: readonly { path: PropertyKey[]; message: string }[],
-): FieldErrors {
-  const errors: FieldErrors = {};
-  for (const issue of issues) {
-    const key = issue.path.map(String).join(".");
-    errors[key] ??= issue.message;
-  }
-  return errors;
 }
 
 export class ProductAdminService {

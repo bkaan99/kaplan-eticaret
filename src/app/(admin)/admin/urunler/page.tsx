@@ -1,3 +1,5 @@
+import { AdminSearchIcon } from "@/components/admin/search-icon";
+import { isOneOf } from "@/shared/guards";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -51,9 +53,8 @@ const STATUS: Record<
 
 const integer = new Intl.NumberFormat("tr-TR");
 
-function isStatus(value: string | undefined): value is ProductStatus {
-  return value === "DRAFT" || value === "ACTIVE" || value === "ARCHIVED";
-}
+const isStatus = (value: string | undefined): value is ProductStatus =>
+  isOneOf(STATUS_ORDER, value);
 
 function StatusBadge({ status }: { status: ProductStatus }) {
   const style = STATUS[status];
@@ -153,24 +154,6 @@ function Thumb({ src, size }: { src: string | null; size: 40 | 44 }) {
         className="object-cover"
       />
     </span>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={15}
-      height={15}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.9}
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
   );
 }
 
@@ -317,7 +300,7 @@ async function ProductsContent({
               <label className="relative min-w-0 flex-1 basis-56 lg:w-80 lg:flex-none">
                 <span className="sr-only">Ürün ara</span>
                 <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-slate-400">
-                  <SearchIcon />
+                  <AdminSearchIcon />
                 </span>
                 <input
                   name="q"

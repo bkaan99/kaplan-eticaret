@@ -1,3 +1,4 @@
+import { AdminSearchIcon } from "@/components/admin/search-icon";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -67,24 +68,6 @@ function AccountStatus({ customer }: { customer: CustomerRow }) {
       <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
       Doğrulanmadı
     </span>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={15}
-      height={15}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.9}
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
   );
 }
 
@@ -178,7 +161,7 @@ async function CustomersContent({
             <label className="relative flex-1">
               <span className="sr-only">Müşteri ara</span>
               <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-slate-400">
-                <SearchIcon />
+                <AdminSearchIcon />
               </span>
               <input
                 name="q"

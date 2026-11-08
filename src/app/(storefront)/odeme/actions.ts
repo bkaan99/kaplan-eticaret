@@ -1,5 +1,6 @@
 "use server";
 
+import { toFieldErrors } from "@/shared/validation";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getCartIdentity } from "@/modules/cart/cart.session";
@@ -44,22 +45,12 @@ function readAddress(formData: FormData, prefix: string) {
   };
 }
 
-function toFieldErrors(error: z.ZodError): Record<string, string> {
-  const errors: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const key = issue.path
-      .map((part) =>
-        part === "shippingAddress"
-          ? "shipping"
-          : part === "billingAddress"
-            ? "billing"
-            : String(part),
-      )
-      .join(".");
-    errors[key] ??= issue.message;
-  }
-  return errors;
-}
+const ADDRESS_KEY_ALIASES: Record<string, string> = {
+  shippingAddress: "shipping",
+  billingAddress: "billing",
+};
+const aliasPart = (part: PropertyKey) =>
+  ADDRESS_KEY_ALIASES[String(part)] ?? String(part);
 
 export async function placeOrderAction(
   _previous: CheckoutFormState,
@@ -80,7 +71,7 @@ export async function placeOrderAction(
   if (!parsed.success) {
     return {
       message: "Lütfen işaretli alanları kontrol edin.",
-      fieldErrors: toFieldErrors(parsed.error),
+      fieldErrors: toFieldErrors(parsed.error.issues, aliasPart),
     };
   }
 
