@@ -41,6 +41,9 @@ const envSchema = z
     CRON_SECRET: optionalString,
     TURNSTILE_SITE_KEY: optionalString,
     TURNSTILE_SECRET_KEY: optionalString,
+    /** Google OAuth (Auth.js); ikisi de varsa "Google ile giriş" açılır */
+    AUTH_GOOGLE_ID: optionalString,
+    AUTH_GOOGLE_SECRET: optionalString,
     /** Workers queue consumer; yerelde SMTP kullanılır */
     RESEND_API_KEY: optionalString,
     /** Netgsm SMS (features.sms): abone no, şifre ve onaylı SMS başlığı */

@@ -19,6 +19,9 @@ class FakeRepo implements AccountRepository {
     passwordHash: "h:eskiparola123",
     emailVerified: true,
     isActive: true,
+    type: "CUSTOMER",
+    firstName: "Ali",
+    lastName: "Veli",
   };
   profile: unknown = null;
   async findByEmail() {

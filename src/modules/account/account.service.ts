@@ -16,6 +16,9 @@ export interface AccountUser {
   passwordHash: string | null;
   emailVerified: boolean;
   isActive: boolean;
+  type: "CUSTOMER" | "STAFF";
+  firstName: string;
+  lastName: string;
 }
 
 export interface AccountRepository {
@@ -23,10 +26,11 @@ export interface AccountRepository {
   findById(id: string): Promise<AccountUser | null>;
   createCustomer(data: {
     email: string;
-    passwordHash: string;
+    passwordHash: string | null;
     firstName: string;
     lastName: string;
     phone: string | null;
+    emailVerified?: boolean;
   }): Promise<AccountUser>;
   markEmailVerified(userId: string): Promise<void>;
   updatePassword(userId: string, passwordHash: string): Promise<void>;
@@ -40,6 +44,19 @@ export interface AccountRepository {
     lastName: string;
     phone: string | null;
   } | null>;
+}
+
+export interface GoogleProfileInput {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface GoogleLoginResult {
+  id: string;
+  email: string;
+  name: string;
+  type: AccountUser["type"];
 }
 
 /** Hesap e-postalarını gönderen sözleşme (kuyruk arkasındaki NotificationService). */
@@ -99,6 +116,50 @@ export class AccountService {
     });
 
     await this.sendVerification(user);
+  }
+
+  /**
+   * Google OAuth sonrası: aynı e-posta varsa bağlar, yoksa doğrulanmış
+   * müşteri hesabı oluşturur (parolasız).
+   */
+  async loginWithGoogle(
+    input: GoogleProfileInput,
+  ): Promise<GoogleLoginResult | null> {
+    const email = input.email.trim().toLowerCase();
+    if (!email) return null;
+
+    const firstName = input.firstName.trim().slice(0, 60) || "Müşteri";
+    const lastName = input.lastName.trim().slice(0, 60) || "-";
+
+    const existing = await this.deps.accounts.findByEmail(email);
+    if (existing) {
+      if (!existing.isActive) return null;
+      if (!existing.emailVerified) {
+        await this.deps.accounts.markEmailVerified(existing.id);
+      }
+      return {
+        id: existing.id,
+        email: existing.email,
+        name: `${existing.firstName} ${existing.lastName}`.trim(),
+        type: existing.type,
+      };
+    }
+
+    const created = await this.deps.accounts.createCustomer({
+      email,
+      passwordHash: null,
+      firstName,
+      lastName,
+      phone: null,
+      emailVerified: true,
+    });
+
+    return {
+      id: created.id,
+      email: created.email,
+      name: `${firstName} ${lastName}`.trim(),
+      type: created.type,
+    };
   }
 
   async resendVerification(userId: string): Promise<void> {
