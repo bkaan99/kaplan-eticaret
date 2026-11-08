@@ -1,9 +1,8 @@
 import { isFeatureEnabled } from "@/config/features";
 import { siteConfig } from "@/config/site.config";
-import { SmtpMailer } from "@/integrations/notification/smtp-mailer";
+import { createMailerFromEnv } from "@/integrations/notification/mailer-factory";
 import { getCloudflareEnv } from "@/shared/cloudflare";
 import { getDb } from "@/shared/db";
-import { getEnv } from "@/shared/env";
 import { getEventBus } from "@/shared/events";
 import { getJobQueue } from "@/shared/queue";
 import { getSiteUrl } from "@/shared/site-url";
@@ -26,16 +25,7 @@ export function getNotificationDispatcher(): NotificationDispatcher {
   if (getCloudflareEnv()?.JOB_QUEUE) {
     dispatcher = new QueueNotificationDispatcher(getJobQueue());
   } else {
-    const env = getEnv();
-    dispatcher = new DirectNotificationDispatcher(
-      new SmtpMailer({
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        from: env.MAIL_FROM,
-        user: env.SMTP_USER,
-        password: env.SMTP_PASSWORD,
-      }),
-    );
+    dispatcher = new DirectNotificationDispatcher(createMailerFromEnv());
   }
 
   return dispatcher;
