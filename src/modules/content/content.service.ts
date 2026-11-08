@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { firstIssue } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
@@ -165,13 +166,13 @@ export class ContentService {
     entityId: string,
     after?: unknown,
   ): Promise<void> {
-    return this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action,
-      entityType,
-      entityId,
-      after,
-    });
+    return this.audit.log(
+      withActor(actor, {
+        action,
+        entityType,
+        entityId,
+        after,
+      }),
+    );
   }
 }

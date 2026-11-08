@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { firstIssue } from "@/shared/validation";
 import {
   ConflictError,
@@ -55,14 +56,14 @@ export class StaffService {
     if (!id) {
       this.assertCanGrant(actor, input.permissions);
       const created = await this.repository.createRole(input);
-      await this.audit.log({
-        actorId: actor.userId,
-        ip: actor.ip,
-        action: "role.create",
-        entityType: "Role",
-        entityId: created,
-        after: { name: input.name, permissions: input.permissions },
-      });
+      await this.audit.log(
+        withActor(actor, {
+          action: "role.create",
+          entityType: "Role",
+          entityId: created,
+          after: { name: input.name, permissions: input.permissions },
+        }),
+      );
       return created;
     }
 
@@ -85,15 +86,15 @@ export class StaffService {
       ...input,
       name: role.isSystem ? role.name : input.name,
     });
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "role.update",
-      entityType: "Role",
-      entityId: id,
-      before: { name: role.name, permissions: role.permissions },
-      after: { name: input.name, permissions: input.permissions },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "role.update",
+        entityType: "Role",
+        entityId: id,
+        before: { name: role.name, permissions: role.permissions },
+        after: { name: input.name, permissions: input.permissions },
+      }),
+    );
     return id;
   }
 
@@ -110,14 +111,14 @@ export class StaffService {
     }
 
     await this.repository.deleteRole(id);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "role.delete",
-      entityType: "Role",
-      entityId: id,
-      before: { name: role.name, isSystem: role.isSystem },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "role.delete",
+        entityType: "Role",
+        entityId: id,
+        before: { name: role.name, isSystem: role.isSystem },
+      }),
+    );
   }
 
   /** Personeli oluşturur ve parola belirleme bağlantısını e-posta ile gönderir. */
@@ -137,14 +138,14 @@ export class StaffService {
 
     const id = await this.repository.createStaff(input);
     await this.passwordSetup.sendPasswordSetup(input.email);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "staff.invite",
-      entityType: "User",
-      entityId: id,
-      after: { email: input.email, roles: roles.map((role) => role.name) },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "staff.invite",
+        entityType: "User",
+        entityId: id,
+        after: { email: input.email, roles: roles.map((role) => role.name) },
+      }),
+    );
     return id;
   }
 
@@ -154,13 +155,13 @@ export class StaffService {
       throw new ConflictError("Bu personel parolasını zaten belirlemiş");
     }
     await this.passwordSetup.sendPasswordSetup(staff.email);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "staff.resend-invite",
-      entityType: "User",
-      entityId: userId,
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "staff.resend-invite",
+        entityType: "User",
+        entityId: userId,
+      }),
+    );
   }
 
   async setRoles(
@@ -194,15 +195,15 @@ export class StaffService {
     }
 
     await this.repository.setRoles(userId, roleIds);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "staff.roles",
-      entityType: "User",
-      entityId: userId,
-      before: { roles: staff.roles.map((role) => role.name) },
-      after: { roles: next.map((role) => role.name) },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "staff.roles",
+        entityType: "User",
+        entityId: userId,
+        before: { roles: staff.roles.map((role) => role.name) },
+        after: { roles: next.map((role) => role.name) },
+      }),
+    );
   }
 
   async setActive(
@@ -225,13 +226,13 @@ export class StaffService {
     if (!isActive) await this.assertManagersRemain({ userId });
 
     await this.repository.setActive(userId, isActive);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: isActive ? "staff.activate" : "staff.deactivate",
-      entityType: "User",
-      entityId: userId,
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: isActive ? "staff.activate" : "staff.deactivate",
+        entityType: "User",
+        entityId: userId,
+      }),
+    );
   }
 
   private assertNotSelf(userId: string, actor: StaffActor): void {

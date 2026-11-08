@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { siteConfig } from "@/config/site.config";
 import { ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
@@ -46,13 +47,13 @@ export class SettingsService {
     const before = await this.getContactSettings();
     await this.settings.saveContactSettings(parsed.data);
 
-    await this.audit?.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "settings.contact.update",
-      entityType: "ContactSettings",
-      before,
-      after: parsed.data,
-    });
+    await this.audit?.log(
+      withActor(actor, {
+        action: "settings.contact.update",
+        entityType: "ContactSettings",
+        before,
+        after: parsed.data,
+      }),
+    );
   }
 }

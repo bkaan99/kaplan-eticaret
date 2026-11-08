@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import {
   DEFAULT_PAYMENT_MODE,
   isPaymentMode,
@@ -54,14 +55,14 @@ export class PaymentModeService {
     this.cache.invalidate();
 
     if (before !== raw) {
-      await this.audit?.log({
-        actorId: actor.userId,
-        ip: actor.ip,
-        action: "settings.payment_mode.update",
-        entityType: "PaymentMode",
-        before: { mode: before, label: PAYMENT_MODE_LABELS[before] },
-        after: { mode: raw, label: PAYMENT_MODE_LABELS[raw] },
-      });
+      await this.audit?.log(
+        withActor(actor, {
+          action: "settings.payment_mode.update",
+          entityType: "PaymentMode",
+          before: { mode: before, label: PAYMENT_MODE_LABELS[before] },
+          after: { mode: raw, label: PAYMENT_MODE_LABELS[raw] },
+        }),
+      );
     }
     return raw;
   }

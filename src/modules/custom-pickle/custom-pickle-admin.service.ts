@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import { ValidationError } from "@/shared/errors";
 import { slugify } from "@/shared/slug";
@@ -60,25 +61,25 @@ export class CustomPickleAdminService {
       savedId = await this.repository.createIngredient({ ...input, slug });
     }
 
-    await this.audit?.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: id ? "pickle-ingredient.update" : "pickle-ingredient.create",
-      entityType: "PickleIngredient",
-      entityId: savedId,
-      after: input,
-    });
+    await this.audit?.log(
+      withActor(actor, {
+        action: id ? "pickle-ingredient.update" : "pickle-ingredient.create",
+        entityType: "PickleIngredient",
+        entityId: savedId,
+        after: input,
+      }),
+    );
   }
 
   async deleteIngredient(id: string, actor: Actor): Promise<void> {
     await this.repository.deleteIngredient(id);
-    await this.audit?.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "pickle-ingredient.delete",
-      entityType: "PickleIngredient",
-      entityId: id,
-    });
+    await this.audit?.log(
+      withActor(actor, {
+        action: "pickle-ingredient.delete",
+        entityType: "PickleIngredient",
+        entityId: id,
+      }),
+    );
   }
 
   async saveOptions(raw: unknown, actor: Actor): Promise<void> {
@@ -90,13 +91,13 @@ export class CustomPickleAdminService {
     await this.repository.savePickleOptions(parsed.data);
     registerOptions(parsed.data);
 
-    await this.audit?.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "custom-pickle.options.update",
-      entityType: "CustomPickleOptions",
-      before,
-      after: parsed.data,
-    });
+    await this.audit?.log(
+      withActor(actor, {
+        action: "custom-pickle.options.update",
+        entityType: "CustomPickleOptions",
+        before,
+        after: parsed.data,
+      }),
+    );
   }
 }

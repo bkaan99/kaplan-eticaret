@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { toFieldErrors } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
@@ -58,14 +59,14 @@ export class ProductAdminService {
     const slug = await this.resolveSlug(input);
 
     const id = await this.products.create(input, slug);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "product.create",
-      entityType: "Product",
-      entityId: id,
-      after: { name: input.name, slug, status: input.status },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "product.create",
+        entityType: "Product",
+        entityId: id,
+        after: { name: input.name, slug, status: input.status },
+      }),
+    );
     return id;
   }
 
@@ -92,15 +93,15 @@ export class ProductAdminService {
       await this.products.addRedirect(`/urun/${before.slug}`, `/urun/${slug}`);
     }
 
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "product.update",
-      entityType: "Product",
-      entityId: id,
-      before: this.snapshot(before),
-      after: this.inputSnapshot(input, slug),
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "product.update",
+        entityType: "Product",
+        entityId: id,
+        before: this.snapshot(before),
+        after: this.inputSnapshot(input, slug),
+      }),
+    );
   }
 
   /** Kaydetmeden doğrular; hatalarda ProductValidationError fırlatır. */

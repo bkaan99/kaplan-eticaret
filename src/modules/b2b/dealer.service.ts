@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { firstIssue } from "@/shared/validation";
 import { z } from "zod";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
@@ -110,15 +111,15 @@ export class DealerService {
     }
 
     await this.dealers.approve(userId, parsed.data);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "dealer.approve",
-      entityType: "Customer",
-      entityId: userId,
-      before: { status: profile.status },
-      after: { status: "APPROVED", ...parsed.data },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "dealer.approve",
+        entityType: "Customer",
+        entityId: userId,
+        before: { status: profile.status },
+        after: { status: "APPROVED", ...parsed.data },
+      }),
+    );
 
     const contact = await this.dealers.findContact(userId);
     if (contact && profile.status !== "APPROVED") {
@@ -142,19 +143,19 @@ export class DealerService {
     }
 
     await this.dealers.updateTerms(userId, parsed.data);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "dealer.terms",
-      entityType: "Customer",
-      entityId: userId,
-      before: {
-        groupId: profile.groupId,
-        creditLimit: profile.creditLimit,
-        minOrderAmount: profile.minOrderAmount,
-      },
-      after: parsed.data,
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "dealer.terms",
+        entityType: "Customer",
+        entityId: userId,
+        before: {
+          groupId: profile.groupId,
+          creditLimit: profile.creditLimit,
+          minOrderAmount: profile.minOrderAmount,
+        },
+        after: parsed.data,
+      }),
+    );
   }
 
   async reject(
@@ -169,15 +170,15 @@ export class DealerService {
 
     const trimmed = note?.trim() || null;
     await this.dealers.reject(userId, trimmed);
-    await this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "dealer.reject",
-      entityType: "Customer",
-      entityId: userId,
-      before: { status: profile.status },
-      after: { status: "REJECTED", note: trimmed },
-    });
+    await this.audit.log(
+      withActor(actor, {
+        action: "dealer.reject",
+        entityType: "Customer",
+        entityId: userId,
+        before: { status: profile.status },
+        after: { status: "REJECTED", note: trimmed },
+      }),
+    );
 
     const contact = await this.dealers.findContact(userId);
     if (contact)

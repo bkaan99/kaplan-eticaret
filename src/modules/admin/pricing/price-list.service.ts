@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { firstIssue } from "@/shared/validation";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
@@ -139,16 +140,16 @@ export class PriceListService {
     after?: unknown,
     before?: unknown,
   ): Promise<void> {
-    return this.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action,
-      entityType: action.startsWith("customer-group")
-        ? "CustomerGroup"
-        : "ProductVariant",
-      entityId,
-      before,
-      after,
-    });
+    return this.audit.log(
+      withActor(actor, {
+        action,
+        entityType: action.startsWith("customer-group")
+          ? "CustomerGroup"
+          : "ProductVariant",
+        entityId,
+        before,
+        after,
+      }),
+    );
   }
 }

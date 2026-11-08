@@ -1,3 +1,4 @@
+import { withActor } from "@/shared/audit/audit-logger";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import type { PaymentRefunder } from "@/integrations/payment/payment-provider";
@@ -131,18 +132,18 @@ export class ReturnService {
       restock: options.restock,
     });
 
-    await this.deps.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "return.approve",
-      entityType: "ReturnRequest",
-      entityId: requestId,
-      after: {
-        amount,
-        restock: options.restock,
-        order: request.order.orderNumber,
-      },
-    });
+    await this.deps.audit.log(
+      withActor(actor, {
+        action: "return.approve",
+        entityType: "ReturnRequest",
+        entityId: requestId,
+        after: {
+          amount,
+          restock: options.restock,
+          order: request.order.orderNumber,
+        },
+      }),
+    );
 
     await this.notify(request, true, amount, null);
   }
@@ -159,14 +160,14 @@ export class ReturnService {
     );
     if (!rejected) throw new ConflictError("Bu talep zaten işlenmiş");
 
-    await this.deps.audit.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "return.reject",
-      entityType: "ReturnRequest",
-      entityId: requestId,
-      after: { adminNote, order: request.order.orderNumber },
-    });
+    await this.deps.audit.log(
+      withActor(actor, {
+        action: "return.reject",
+        entityType: "ReturnRequest",
+        entityId: requestId,
+        after: { adminNote, order: request.order.orderNumber },
+      }),
+    );
 
     await this.notify(request, false, null, adminNote?.trim() || null);
   }
