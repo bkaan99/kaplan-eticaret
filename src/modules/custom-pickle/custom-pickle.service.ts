@@ -5,10 +5,9 @@ import {
 } from "./custom-pickle.shares";
 import { createHash } from "node:crypto";
 import type Decimal from "decimal.js";
-import type { Actor, AuditLogger } from "@/shared/audit";
+import type { AuditLogger } from "@/shared/audit";
 import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import { roundMoney, toDecimal } from "@/shared/money";
-import { slugify } from "@/shared/slug";
 import { availableQuantity } from "../catalog/availability";
 import type { PriceResolver, PricingContext } from "../catalog/pricing";
 import type {
@@ -19,18 +18,14 @@ import type {
   CustomizationLineItem,
   ItemCustomizationHandler,
 } from "../cart/customization";
-import {
-  customPickleInputSchema,
-  ingredientInputSchema,
-  pickleOptionsConfigSchema,
-} from "./custom-pickle.schema";
+import { customPickleInputSchema } from "./custom-pickle.schema";
+import { firstIssue, registerOptions, toView } from "./custom-pickle.support";
 import {
   bidonWeightGram,
   BRINE_OPTIONS,
   CUSTOM_PICKLE_PRODUCT_SLUG,
   isMonthInSeason,
   isStockAvailable,
-  isStockCritical,
   maxIngredientsForSize,
   SPICE_OPTIONS,
   type CustomPickleConfig,
@@ -41,10 +36,6 @@ import {
   type PickleSpiceOption,
   type StoredCustomization,
 } from "./custom-pickle.types";
-
-function firstIssue(error: { issues: readonly { message: string }[] }): string {
-  return error.issues[0]?.message ?? "Geçersiz bilgi";
-}
 
 /** Bidonun kilogramı; tanımlı değilse 1 kg sayılır. */
 export function bidonKg(weightGram: number | null): Decimal {
@@ -118,40 +109,6 @@ function readShares(value: unknown): Record<string, number> | undefined {
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
-function toView(record: IngredientRecord, now = new Date()): IngredientView {
-  const currentMonth = now.getMonth() + 1;
-  const inSeason = isMonthInSeason(
-    record.seasonStartMonth,
-    record.seasonEndMonth,
-    currentMonth,
-  );
-  const inStock = isStockAvailable(record.stockKg);
-  const isCriticalStock = isStockCritical(record.stockKg, record.minStockKg);
-  const isAvailable = record.isActive && inStock && inSeason;
-
-  return {
-    id: record.id,
-    name: record.name,
-    slug: record.slug,
-    group: record.group,
-    description: record.description,
-    imageUrl: record.imageUrl,
-    pricePerKg: toDecimal(record.pricePerKg).toFixed(2),
-    stockKg: record.stockKg ? toDecimal(record.stockKg).toFixed(2) : null,
-    minStockKg: record.minStockKg
-      ? toDecimal(record.minStockKg).toFixed(2)
-      : null,
-    seasonStartMonth: record.seasonStartMonth,
-    seasonEndMonth: record.seasonEndMonth,
-    inStock,
-    inSeason,
-    isAvailable,
-    isCriticalStock,
-    isActive: record.isActive,
-    sortOrder: record.sortOrder,
-  };
-}
-
 export interface BuilderSize {
   variantId: string;
   label: string;
@@ -160,15 +117,6 @@ export interface BuilderSize {
   currency: string;
   weightGram: number | null;
   inStock: boolean;
-}
-
-function registerOptions(config: CustomPickleConfig) {
-  for (const b of config.brines) {
-    BRINE_OPTIONS[b.key] = b.label;
-  }
-  for (const s of config.spices) {
-    SPICE_OPTIONS[s.key] = s.label;
-  }
 }
 
 export interface BuilderData {
@@ -195,6 +143,12 @@ export class CustomPickleService
     private readonly priceResolver: PriceResolver,
     private readonly audit?: AuditLogger,
   ) {}
+
+  async getOptions(): Promise<CustomPickleConfig> {
+    const config = await this.repository.getPickleOptions();
+    registerOptions(config);
+    return config;
+  }
 
   /** Bu ürün özelleştirilebilir mi? (Kendi Turşunu Yap bidonu) */
   isCustomizable(productSlug: string): boolean {
@@ -517,94 +471,6 @@ export class CustomPickleService
           note: customization.note,
         },
       };
-    });
-  }
-
-  // --- Yönetim paneli ---
-
-  /** Bidon boyutlarının yönetildiği ürünün kimliği (ürün düzenleme bağlantısı için). */
-  async builderProductId(): Promise<string | null> {
-    const product = await this.repository.findBuilderProduct(
-      CUSTOM_PICKLE_PRODUCT_SLUG,
-    );
-    return product?.id ?? null;
-  }
-
-  async listIngredients(): Promise<IngredientView[]> {
-    return (await this.repository.listIngredients({ activeOnly: false })).map(
-      (item) => toView(item),
-    );
-  }
-
-  async saveIngredient(
-    id: string | null,
-    raw: unknown,
-    actor: Actor,
-  ): Promise<void> {
-    const parsed = ingredientInputSchema.safeParse(raw);
-    if (!parsed.success) throw new ValidationError(firstIssue(parsed.error));
-    const input = parsed.data;
-
-    let savedId: string;
-    if (id) {
-      await this.repository.updateIngredient(id, input);
-      savedId = id;
-    } else {
-      const base = slugify(input.name) || "malzeme";
-      let slug = base;
-      for (
-        let suffix = 2;
-        await this.repository.findIngredientBySlug(slug);
-        suffix++
-      ) {
-        slug = `${base}-${suffix}`;
-      }
-      savedId = await this.repository.createIngredient({ ...input, slug });
-    }
-
-    await this.audit?.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: id ? "pickle-ingredient.update" : "pickle-ingredient.create",
-      entityType: "PickleIngredient",
-      entityId: savedId,
-      after: input,
-    });
-  }
-
-  async deleteIngredient(id: string, actor: Actor): Promise<void> {
-    await this.repository.deleteIngredient(id);
-    await this.audit?.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "pickle-ingredient.delete",
-      entityType: "PickleIngredient",
-      entityId: id,
-    });
-  }
-
-  async getOptions(): Promise<CustomPickleConfig> {
-    const config = await this.repository.getPickleOptions();
-    registerOptions(config);
-    return config;
-  }
-
-  async saveOptions(raw: unknown, actor: Actor): Promise<void> {
-    const parsed = pickleOptionsConfigSchema.safeParse(raw);
-    if (!parsed.success) {
-      throw new ValidationError(firstIssue(parsed.error));
-    }
-    const before = await this.repository.getPickleOptions();
-    await this.repository.savePickleOptions(parsed.data);
-    registerOptions(parsed.data);
-
-    await this.audit?.log({
-      actorId: actor.userId,
-      ip: actor.ip,
-      action: "custom-pickle.options.update",
-      entityType: "CustomPickleOptions",
-      before,
-      after: parsed.data,
     });
   }
 }

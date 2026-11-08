@@ -249,7 +249,7 @@ Bu belge, uygulama ilerledikçe güncellenir; Faz 0 ORM kararı buraya işlenir.
 Drizzle ile `.open-next` 748 MB → 66 MB, Worker paketi ~14 MB.
 
 **Nasıl çalışıyor:**
-- Şema: `src/db/schema.ts` (tek kaynak, elle sürdürülür). Migration'lar `db/migrations/NNNN_*.sql` (wrangler D1).
+- Şema: `src/db/schema/` (tek kaynak, alan dosyaları, elle sürdürülür). Migration'lar `db/migrations/NNNN_*.sql` (wrangler D1).
 - `Decimal` (`decimal.js`) ve `Date` için özel kolon tipleri (`src/db/types.ts`): servis katmanı değişmedi.
 - D1'de interaktif transaction yok: çok adımlı yazmalar `runBatch(db, [...])` ile tek atomik batch'te çalışır;
   kimlikler uygulamada üretilir. Stok için koşullu `UPDATE` (yarış testi geçiyor).

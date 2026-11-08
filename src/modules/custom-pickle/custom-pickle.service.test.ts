@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { CustomPickleAdminService } from "./custom-pickle-admin.service";
 import { describe, expect, it } from "vitest";
 import { ConflictError } from "@/shared/errors";
 import { RetailPriceResolver } from "../catalog/pricing";
@@ -378,9 +379,10 @@ describe("CustomPickleService.quote", () => {
       }),
     ]);
     const s = service(repository);
+    const admin = new CustomPickleAdminService(repository);
 
     // Yeni salamura (Elma Sirkeli) ve yeni acılık (Atom) ekle
-    await s.saveOptions(
+    await admin.saveOptions(
       {
         brines: [
           {
