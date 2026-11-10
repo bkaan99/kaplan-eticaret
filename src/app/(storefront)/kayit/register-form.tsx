@@ -1,6 +1,10 @@
 "use client";
 
 import { useActionState } from "react";
+import {
+  sanitizeTurkishMobileInput,
+  TR_MOBILE_MAX_DIGITS,
+} from "@/modules/checkout/checkout.schema";
 import { registerAction, type RegisterState } from "./actions";
 
 const initial: RegisterState = {};
@@ -43,7 +47,20 @@ export function RegisterForm({ captcha }: { captcha?: React.ReactNode }) {
       </label>
       <label className="flex flex-col gap-1 text-sm">
         Cep telefonu (isteğe bağlı)
-        <input name="phone" type="tel" autoComplete="tel" className={input} />
+        <input
+          name="phone"
+          type="tel"
+          inputMode="numeric"
+          maxLength={TR_MOBILE_MAX_DIGITS}
+          autoComplete="tel"
+          placeholder="05XXXXXXXXX"
+          className={input}
+          onInput={(event) => {
+            event.currentTarget.value = sanitizeTurkishMobileInput(
+              event.currentTarget.value,
+            );
+          }}
+        />
       </label>
       <label className="flex flex-col gap-1 text-sm">
         Parola

@@ -4,6 +4,7 @@ import {
   checkoutSchema,
   isValidTckn,
   normalizeTurkishMobile,
+  sanitizeTurkishMobileInput,
 } from "./checkout.schema";
 
 const baseAddress = {
@@ -14,6 +15,15 @@ const baseAddress = {
   district: "Kadıköy",
   addressLine: "Örnek Sokak No: 12 Daire 3",
 };
+
+describe("sanitizeTurkishMobileInput", () => {
+  it("harf ve özel karakterleri temizler, 11 haneyle sınırlar", () => {
+    expect(sanitizeTurkishMobileInput("05ab55-123-45-678999")).toBe(
+      "05551234567",
+    );
+    expect(sanitizeTurkishMobileInput("abc")).toBe("");
+  });
+});
 
 describe("normalizeTurkishMobile", () => {
   it.each([

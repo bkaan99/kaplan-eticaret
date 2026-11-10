@@ -2,6 +2,14 @@ import { TURKEY_DISTRICTS, isDistrictOf } from "@/shared/geo/turkey-districts";
 import { paymentMethodTypeValues } from "@/db/schema/enums";
 import { z } from "zod";
 
+/** Türkiye cep telefonu için beklenen hane sayısı (05XXXXXXXXX). */
+export const TR_MOBILE_MAX_DIGITS = 11;
+
+/** Input'tan yalnızca rakam bırakır ve 11 haneyle sınırlar. */
+export function sanitizeTurkishMobileInput(input: string): string {
+  return input.replace(/\D/g, "").slice(0, TR_MOBILE_MAX_DIGITS);
+}
+
 /** Türkiye cep telefonunu 05XXXXXXXXX biçimine getirir; geçersizse null. */
 export function normalizeTurkishMobile(input: string): string | null {
   const digits = input.replace(/\D/g, "");
