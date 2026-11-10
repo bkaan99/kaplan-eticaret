@@ -30,7 +30,7 @@ export async function getCheckoutService(): Promise<CheckoutService> {
     settings: {
       guestCheckoutEnabled: features.guestCheckout,
       reservationMinutes: siteConfig.inventory.reservationMinutes,
-      shippingTaxRate: shipping.taxRate,
+      shippingTaxRate: shipping.taxRate ?? siteConfig.shipping.taxRate,
       paymentProvider: cardProvider === "paytr" ? "paytr" : "dev",
       cardPaymentAvailable: cardProvider !== "unavailable",
       requireDealer: siteConfig.salesMode === "b2b",
