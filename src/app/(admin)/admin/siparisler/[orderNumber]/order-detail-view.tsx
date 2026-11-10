@@ -39,11 +39,11 @@ function Section({
 }) {
   return (
     <Card className={className}>
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-3.5">
         <h2 className="text-[13px] font-semibold text-slate-900">{title}</h2>
         {action}
       </div>
-      <div className="px-5 py-4">{children}</div>
+      <div className="px-4 py-4 sm:px-5">{children}</div>
     </Card>
   );
 }
@@ -145,9 +145,11 @@ export function OrderDetailView({
   ];
 
   return (
-    <div className="flex flex-col gap-5">
+    <div
+      className={`flex flex-col gap-5 ${actions ? "pb-28 md:pb-0" : ""}`}
+    >
       {/* Başlık şeridi */}
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/70 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/70 pb-4 sm:gap-4">
         <div className="min-w-0">
           <Link
             href="/admin/siparisler"
@@ -156,7 +158,7 @@ export function OrderDetailView({
             ← Siparişler
           </Link>
           <div className="mt-1 flex flex-wrap items-center gap-2.5">
-            <h1 className="font-mono text-xl font-semibold tracking-tight text-slate-900">
+            <h1 className="font-mono text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
               {order.orderNumber}
             </h1>
             <OrderStatusBadge status={order.status} />
@@ -168,15 +170,15 @@ export function OrderDetailView({
             {order.source}
           </p>
         </div>
-        <div className="text-right">
+        <div className="text-left sm:text-right">
           <p className="text-[11px] text-slate-500">Sipariş tutarı</p>
-          <p className="text-xl font-semibold text-slate-900 tabular-nums">
+          <p className="text-lg font-semibold text-slate-900 tabular-nums sm:text-xl">
             {formatMoney(order.grandTotal, order.currency)}
           </p>
         </div>
       </div>
 
-      <Card className="px-5 py-5">
+      <Card className="px-4 py-4 sm:px-5 sm:py-5">
         <OrderProgress
           status={order.status}
           dates={{

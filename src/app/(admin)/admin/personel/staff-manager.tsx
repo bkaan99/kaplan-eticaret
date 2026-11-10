@@ -600,7 +600,7 @@ export function StaffManager({
                   type="button"
                   onClick={() => setFilterTab(tab.id)}
                   className={cn(
-                    "rounded-lg px-3 py-1.5 text-[12px] font-semibold transition",
+                    "min-h-10 rounded-lg px-3 py-2 text-[12px] font-semibold transition sm:min-h-0 sm:py-1.5",
                     active
                       ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80"
                       : "text-slate-600 hover:text-slate-900",

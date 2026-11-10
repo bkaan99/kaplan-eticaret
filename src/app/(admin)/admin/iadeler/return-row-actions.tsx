@@ -33,27 +33,37 @@ export function ReturnRowActions({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="flex items-center gap-2 text-sm">
+    <div className="flex flex-col gap-3">
+      <label className="flex min-h-10 items-center gap-2.5 text-sm text-slate-700">
         <input
           type="checkbox"
           checked={restock}
           onChange={(event) => setRestock(event.target.checked)}
+          className="size-4 rounded border-slate-300"
         />
         Ürünleri stoğa geri al
       </label>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button disabled={pending} onClick={approve}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <Button
+          className="w-full sm:w-auto"
+          disabled={pending}
+          onClick={approve}
+        >
           Onayla ve iade et
         </Button>
         <Input
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="Red nedeni (isteğe bağlı)"
-          className="w-56"
+          className="w-full sm:w-56"
           aria-label="Red nedeni"
         />
-        <Button variant="outline" disabled={pending} onClick={reject}>
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          disabled={pending}
+          onClick={reject}
+        >
           Reddet
         </Button>
       </div>

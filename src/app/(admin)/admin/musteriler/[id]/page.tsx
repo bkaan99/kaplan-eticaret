@@ -224,46 +224,81 @@ async function CustomerContent({
                 Bu müşteri henüz sipariş vermedi.
               </p>
             ) : (
-              <Table>
-                <THead>
-                  <tr>
-                    <TH className="pl-5">Sipariş</TH>
-                    <TH className="hidden sm:table-cell">Tarih</TH>
-                    <TH>Durum</TH>
-                    <TH className="pr-5 text-right">Tutar</TH>
-                  </tr>
-                </THead>
-                <TBody>
+              <>
+                {/* Mobil: kart listesi */}
+                <ul className="divide-y divide-slate-100 md:hidden">
                   {customer.orders.map((order) => (
-                    <TR key={order.orderNumber} className="group relative">
-                      <TD className="py-2.5 pl-5">
-                        <Link
-                          href={`/admin/siparisler/${order.orderNumber}`}
-                          className="font-mono text-[12.5px] font-semibold text-slate-900 after:absolute after:inset-0 after:content-[''] group-hover:text-primary"
-                        >
-                          {order.orderNumber}
-                        </Link>
-                        <div className="text-[11px] text-slate-400 sm:hidden">
-                          {formatAdminDate(order.createdAt)}
+                    <li key={order.orderNumber}>
+                      <Link
+                        href={`/admin/siparisler/${order.orderNumber}`}
+                        className="flex min-h-[4.5rem] flex-col justify-center gap-1.5 px-4 py-3.5 active:bg-slate-50"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-mono text-[13px] font-semibold text-slate-900">
+                            {order.orderNumber}
+                          </span>
+                          {isOrderStatus(order.status) ? (
+                            <OrderStatusBadge status={order.status} />
+                          ) : (
+                            <span className="text-[12px] text-slate-600">
+                              {order.status}
+                            </span>
+                          )}
                         </div>
-                      </TD>
-                      <TD className="hidden py-2.5 whitespace-nowrap text-slate-600 sm:table-cell">
-                        {formatAdminDate(order.createdAt)}
-                      </TD>
-                      <TD className="py-2.5">
-                        {isOrderStatus(order.status) ? (
-                          <OrderStatusBadge status={order.status} />
-                        ) : (
-                          order.status
-                        )}
-                      </TD>
-                      <TD className="py-2.5 pr-5 text-right font-semibold whitespace-nowrap text-slate-900 tabular-nums">
-                        {formatMoney(order.grandTotal)}
-                      </TD>
-                    </TR>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[11px] text-slate-400">
+                            {formatAdminDate(order.createdAt)}
+                          </span>
+                          <span className="text-[13px] font-semibold text-slate-900 tabular-nums">
+                            {formatMoney(order.grandTotal)}
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
                   ))}
-                </TBody>
-              </Table>
+                </ul>
+
+                {/* Masaüstü: tablo */}
+                <div className="hidden md:block">
+                  <Table>
+                    <THead>
+                      <tr>
+                        <TH className="pl-5">Sipariş</TH>
+                        <TH>Tarih</TH>
+                        <TH>Durum</TH>
+                        <TH className="pr-5 text-right">Tutar</TH>
+                      </tr>
+                    </THead>
+                    <TBody>
+                      {customer.orders.map((order) => (
+                        <TR key={order.orderNumber} className="group relative">
+                          <TD className="py-2.5 pl-5">
+                            <Link
+                              href={`/admin/siparisler/${order.orderNumber}`}
+                              className="font-mono text-[12.5px] font-semibold text-slate-900 after:absolute after:inset-0 after:content-[''] group-hover:text-primary"
+                            >
+                              {order.orderNumber}
+                            </Link>
+                          </TD>
+                          <TD className="py-2.5 whitespace-nowrap text-slate-600">
+                            {formatAdminDate(order.createdAt)}
+                          </TD>
+                          <TD className="py-2.5">
+                            {isOrderStatus(order.status) ? (
+                              <OrderStatusBadge status={order.status} />
+                            ) : (
+                              order.status
+                            )}
+                          </TD>
+                          <TD className="py-2.5 pr-5 text-right font-semibold whitespace-nowrap text-slate-900 tabular-nums">
+                            {formatMoney(order.grandTotal)}
+                          </TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </div>
+              </>
             )}
           </Section>
         </div>

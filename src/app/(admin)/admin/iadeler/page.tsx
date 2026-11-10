@@ -68,18 +68,20 @@ async function ReturnsContent({
       ) : (
         <div className="flex flex-col gap-3">
           {requests.map((request) => (
-            <AdminPanel key={request.id} className="p-5">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <Link
-                  href={`/admin/siparisler/${request.orderNumber}`}
-                  className="text-base font-bold text-slate-900 hover:text-primary"
-                >
-                  {request.orderNumber}
-                </Link>
-                <Badge tone={TONES[request.status]}>
-                  {STATUS_LABELS[request.status]}
-                </Badge>
-                <span className="text-sm text-slate-500">
+            <AdminPanel key={request.id} className="p-4 sm:p-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/admin/siparisler/${request.orderNumber}`}
+                    className="text-[15px] font-bold text-slate-900 hover:text-primary sm:text-base"
+                  >
+                    {request.orderNumber}
+                  </Link>
+                  <Badge tone={TONES[request.status]}>
+                    {STATUS_LABELS[request.status]}
+                  </Badge>
+                </div>
+                <span className="text-[12px] text-slate-500 sm:text-sm">
                   {request.email} · {request.createdAt.toLocaleString("tr-TR")}
                 </span>
               </div>

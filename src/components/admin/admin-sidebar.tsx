@@ -241,7 +241,7 @@ export function AdminSidebar({
   return (
     <>
       {/* Tek mobil üst bar */}
-      <div className="sticky top-0 z-40 flex min-h-14 items-center gap-3 border-b border-emerald-950/80 bg-[#0c1a13] px-3 py-2 text-white md:hidden">
+      <div className="sticky top-0 z-40 flex min-h-14 items-center gap-3 border-b border-emerald-950/80 bg-[#0c1a13] px-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-white md:hidden">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}

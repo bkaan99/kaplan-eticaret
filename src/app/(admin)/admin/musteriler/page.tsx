@@ -188,12 +188,12 @@ async function CustomersContent({
                 type="search"
                 defaultValue={search}
                 placeholder="Ad, soyad veya e-posta ara…"
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10 sm:h-9"
               />
             </label>
             <button
               type="submit"
-              className="h-9 rounded-lg bg-slate-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-slate-800"
+              className="h-10 rounded-lg bg-slate-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-slate-800 sm:h-9"
             >
               Ara
             </button>

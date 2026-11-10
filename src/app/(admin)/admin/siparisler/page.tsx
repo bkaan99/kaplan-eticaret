@@ -110,7 +110,7 @@ async function OrdersContent({
                 })}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 pt-1.5 pb-2.5 text-[13px] font-medium whitespace-nowrap transition-colors",
+                  "-mb-px flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 px-3 pt-1.5 pb-2.5 text-[13px] font-medium whitespace-nowrap transition-colors sm:min-h-0",
                   active
                     ? "border-slate-900 text-slate-900"
                     : "border-transparent text-slate-500 hover:text-slate-800",
@@ -160,12 +160,12 @@ async function OrdersContent({
                 type="search"
                 defaultValue={search}
                 placeholder="Sipariş no veya e-posta ara"
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10 sm:h-9"
               />
             </label>
             <button
               type="submit"
-              className="h-9 rounded-lg bg-slate-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-slate-800"
+              className="h-10 rounded-lg bg-slate-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-slate-800 sm:h-9"
             >
               Ara
             </button>
@@ -191,10 +191,10 @@ async function OrdersContent({
             <li key={order.id}>
               <Link
                 href={`/admin/siparisler/${order.orderNumber}`}
-                className="flex flex-col gap-1.5 px-4 py-3 active:bg-slate-50"
+                className="flex min-h-[4.5rem] flex-col justify-center gap-1.5 px-4 py-3.5 active:bg-slate-50"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-[12.5px] font-semibold text-slate-900">
+                  <span className="font-mono text-[13px] font-semibold text-slate-900">
                     {order.orderNumber}
                   </span>
                   <OrderStatusBadge status={order.status} />

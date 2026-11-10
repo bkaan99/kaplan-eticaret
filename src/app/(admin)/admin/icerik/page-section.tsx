@@ -30,6 +30,7 @@ export function PageSection({ pages }: { pages: PageRow[] }) {
   const [form, setForm] = useState(blankPage);
   const [search, setSearch] = useState("");
   const [tabMode, setTabMode] = useState<"edit" | "preview">("edit");
+  const [mobilePane, setMobilePane] = useState<"list" | "editor">("list");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const set = <K extends keyof typeof blankPage>(
@@ -73,13 +74,19 @@ export function PageSection({ pages }: { pages: PageRow[] }) {
       seoDescription: page.seoDescription ?? "",
     });
     setTabMode("edit");
+    setMobilePane("editor");
     setMessage(null);
   }
 
   function handleCreateNew() {
     setForm(blankPage);
     setTabMode("edit");
+    setMobilePane("editor");
     setMessage(null);
+  }
+
+  function handleBackToList() {
+    setMobilePane("list");
   }
 
   return (
@@ -87,17 +94,20 @@ export function PageSection({ pages }: { pages: PageRow[] }) {
       <Notice message={message} onDismiss={() => setMessage(null)} />
 
       <div className="grid items-start gap-6 lg:grid-cols-12">
-        {/* Sol Sütun: Sayfalar Listesi (~4 Sütun) */}
-        <aside className="space-y-3 lg:col-span-4">
-          <div className="flex items-center justify-between gap-2">
+        {/* Sol Sütun: Sayfalar Listesi (~4 Sütun) — mobilde editör açıkken gizle */}
+        <aside
+          className={`space-y-3 lg:col-span-4 ${
+            mobilePane === "editor" ? "hidden lg:block" : "block"
+          }`}
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Mevcut Sayfalar ({filteredPages.length})
             </span>
             <Button
               type="button"
-              size="sm"
               onClick={handleCreateNew}
-              className="h-8 rounded-xl bg-emerald-700 text-xs text-white hover:bg-emerald-800 shadow-xs"
+              className="h-11 w-full rounded-xl bg-emerald-700 text-[13px] font-bold text-white shadow-xs hover:bg-emerald-800 sm:h-9 sm:w-auto sm:text-xs"
             >
               ＋ Yeni Sayfa
             </Button>
@@ -185,27 +195,38 @@ export function PageSection({ pages }: { pages: PageRow[] }) {
           </div>
         </aside>
 
-        {/* Sağ Sütun: Sayfa İçerik Editörü (~8 Sütun) */}
-        <div className="lg:col-span-8">
+        {/* Sağ Sütun: Sayfa İçerik Editörü (~8 Sütun) — mobilde liste görünümünde gizle */}
+        <div
+          className={`lg:col-span-8 ${
+            mobilePane === "list" ? "hidden lg:block" : "block"
+          }`}
+        >
           <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
-              <div>
-                <CardTitle className="text-base font-bold text-slate-900">
+            <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <button
+                  type="button"
+                  onClick={handleBackToList}
+                  className="mb-2 inline-flex items-center gap-1 text-[13px] font-semibold text-slate-600 hover:text-slate-900 lg:hidden"
+                >
+                  ← Sayfa listesine dön
+                </button>
+                <CardTitle className="truncate text-base font-bold text-slate-900">
                   {form.id
                     ? `Sayfayı Düzenle: ${form.title}`
                     : "Yeni Sayfa Oluştur"}
                 </CardTitle>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="mt-0.5 text-xs text-slate-500">
                   Markdown formatında zengin metin düzenleme ve anlık önizleme.
                 </p>
               </div>
 
               {/* Edit vs Preview Toggle */}
-              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+              <div className="flex w-full items-center rounded-xl border border-slate-200 bg-slate-50 p-1 sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setTabMode("edit")}
-                  className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:flex-none sm:py-1 ${
                     tabMode === "edit"
                       ? "bg-white text-slate-900 shadow-2xs"
                       : "text-slate-500 hover:text-slate-900"
@@ -216,7 +237,7 @@ export function PageSection({ pages }: { pages: PageRow[] }) {
                 <button
                   type="button"
                   onClick={() => setTabMode("preview")}
-                  className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:flex-none sm:py-1 ${
                     tabMode === "preview"
                       ? "bg-white text-slate-900 shadow-2xs"
                       : "text-slate-500 hover:text-slate-900"
@@ -391,8 +412,8 @@ export function PageSection({ pages }: { pages: PageRow[] }) {
               </div>
 
               {/* Yayın Durumu ve Kaydet */}
-              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-4">
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 cursor-pointer">
+              <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+                <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-slate-800">
                   <input
                     type="checkbox"
                     checked={form.isPublished}
@@ -402,13 +423,13 @@ export function PageSection({ pages }: { pages: PageRow[] }) {
                   <span>Sayfayı Hemen Yayına Al</span>
                 </label>
 
-                <div className="flex items-center gap-2">
+                <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center">
                   {form.id ? (
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleCreateNew}
-                      className="rounded-xl text-xs"
+                      className="h-11 w-full rounded-xl text-[13px] sm:h-9 sm:w-auto sm:text-xs"
                     >
                       Yeni Sayfaya Geç
                     </Button>
@@ -420,11 +441,14 @@ export function PageSection({ pages }: { pages: PageRow[] }) {
                       run(
                         () => savePageAction(form.id, form),
                         () => {
-                          if (!form.id) setForm(blankPage);
+                          if (!form.id) {
+                            setForm(blankPage);
+                            setMobilePane("list");
+                          }
                         },
                       )
                     }
-                    className="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800 shadow-xs"
+                    className="h-11 w-full rounded-xl bg-emerald-700 text-[13px] font-bold text-white shadow-xs hover:bg-emerald-800 sm:h-9 sm:w-auto sm:text-xs"
                   >
                     {pending ? "Kaydediliyor..." : "Sayfayı Kaydet"}
                   </Button>

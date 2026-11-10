@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 async function AdminShell({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
   const nav = visibleNav(user.permissions, { b2bEnabled: features.b2b });
@@ -21,7 +27,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
     .toUpperCase();
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8fafc] text-[13px] leading-normal text-slate-700 antialiased md:pl-60">
+    <div className="flex min-h-dvh flex-col overflow-x-hidden bg-[#f8fafc] text-[13px] leading-normal text-slate-700 antialiased md:pl-60">
       <AdminSidebar
         nav={nav}
         user={{ name: user.name || "", email: user.email }}
@@ -77,7 +83,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 lg:p-6">
+        <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 lg:p-6">
           {children}
         </main>
       </div>

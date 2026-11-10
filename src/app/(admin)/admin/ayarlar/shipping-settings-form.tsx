@@ -199,7 +199,7 @@ export function ShippingSettingsForm({
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <p className="text-[12px] font-medium text-slate-500">
             {isDirty ? (
               <span className="inline-flex items-center gap-1.5 text-amber-700">
@@ -213,18 +213,23 @@ export function ShippingSettingsForm({
               </span>
             )}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             {isDirty ? (
               <Button
                 type="button"
                 variant="outline"
+                className="flex-1 sm:flex-none"
                 onClick={handleReset}
                 disabled={pending}
               >
                 Vazgeç
               </Button>
             ) : null}
-            <Button type="submit" disabled={pending || !isDirty}>
+            <Button
+              type="submit"
+              className="flex-1 sm:flex-none"
+              disabled={pending || !isDirty}
+            >
               {pending ? "Kaydediliyor…" : "Kaydet"}
             </Button>
           </div>

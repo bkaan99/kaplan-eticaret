@@ -171,7 +171,7 @@ export function AuditLogViewer({
           <div className="flex items-center gap-2">
             <Button
               type="submit"
-              className="h-9 bg-slate-900 px-5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+              className="min-h-10 bg-slate-900 px-5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer sm:h-9 sm:min-h-0"
             >
               Filtrele
             </Button>
@@ -181,7 +181,7 @@ export function AuditLogViewer({
                 type="button"
                 variant="outline"
                 onClick={handleClearFilters}
-                className="h-9 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="min-h-10 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer sm:h-9 sm:min-h-0"
               >
                 Temizle
               </Button>
@@ -242,7 +242,91 @@ export function AuditLogViewer({
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobil: kart listesi */}
+        <ul className="divide-y divide-slate-100 md:hidden">
+          {items.map((row) => {
+            const actionBadge = getActionBadge(row.action);
+            const dateObj = new Date(row.createdAt);
+            const hasBefore = row.before !== null && row.before !== undefined;
+            const hasAfter = row.after !== null && row.after !== undefined;
+
+            return (
+              <li key={row.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRow(row)}
+                  className="flex w-full min-h-[4.5rem] flex-col justify-center gap-1.5 px-4 py-3.5 text-left active:bg-slate-50"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[13px] font-bold text-slate-900">
+                      {dateObj.toLocaleDateString("tr-TR", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}{" "}
+                      <span className="font-mono text-[11px] font-normal text-slate-400">
+                        {dateObj.toLocaleTimeString("tr-TR")}
+                      </span>
+                    </span>
+                    <span
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${actionBadge.className}`}
+                    >
+                      <span>{actionBadge.icon}</span>
+                      <span>{actionBadge.label}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="truncate text-[13px] font-semibold text-slate-800">
+                      {row.actorName ?? "Sistem"}
+                    </span>
+                    <span className="shrink-0 rounded-lg border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-800">
+                      {row.entityType}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 text-[11px] text-slate-400">
+                    <code className="truncate font-mono font-semibold text-slate-600">
+                      {row.action}
+                    </code>
+                    <span className="shrink-0">
+                      {!hasBefore && hasAfter
+                        ? "Yeni nesne"
+                        : hasBefore && !hasAfter
+                          ? "Silindi"
+                          : hasBefore && hasAfter
+                            ? "Güncellendi"
+                            : "Olay"}
+                    </span>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+
+          {items.length === 0 ? (
+            <li className="px-4 py-12 text-center">
+              <span className="mb-2 block text-4xl">🔍</span>
+              <p className="text-sm font-bold text-slate-800">
+                Denetim kaydı bulunamadı
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">
+                Arama kriterlerinize uyan denetim kaydı bulunamadı. Filtreleri
+                sıfırlayarak tüm kayıtları görebilirsiniz.
+              </p>
+              {hasFilters ? (
+                <Button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="mt-4 min-h-10 bg-slate-900 text-xs font-bold text-white hover:bg-slate-800"
+                >
+                  Filtreleri Sıfırla
+                </Button>
+              ) : null}
+            </li>
+          ) : null}
+        </ul>
+
+        {/* Masaüstü: tablo */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50/80 border-b border-slate-200/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
               <tr>
@@ -407,7 +491,7 @@ export function AuditLogViewer({
 
       {/* Sayfalama */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-5 py-3.5 text-xs shadow-xs">
+        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 text-xs shadow-xs sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <span className="font-semibold text-slate-500">
             Toplam {total} kayıttan {(page - 1) * items.length + 1} -{" "}
             {Math.min(page * items.length, total)} arası gösteriliyor
@@ -421,17 +505,17 @@ export function AuditLogViewer({
                   ...(currentEntityType ? { varlik: currentEntityType } : {}),
                   sayfa: String(page - 1),
                 }).toString()}`}
-                className="inline-flex h-8 items-center rounded-xl border border-slate-200 bg-white px-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex min-h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 font-semibold text-slate-700 transition hover:bg-slate-50 sm:h-8 sm:min-h-0"
               >
                 ← Önceki
               </Link>
             ) : (
-              <span className="inline-flex h-8 items-center rounded-xl border border-transparent px-3 font-semibold text-slate-300">
+              <span className="inline-flex min-h-10 items-center rounded-xl border border-transparent px-3.5 font-semibold text-slate-300 sm:h-8 sm:min-h-0">
                 ← Önceki
               </span>
             )}
 
-            <span className="font-bold text-slate-800 px-2">
+            <span className="px-2 font-bold text-slate-800">
               {page} / {totalPages}
             </span>
 
@@ -442,12 +526,12 @@ export function AuditLogViewer({
                   ...(currentEntityType ? { varlik: currentEntityType } : {}),
                   sayfa: String(page + 1),
                 }).toString()}`}
-                className="inline-flex h-8 items-center rounded-xl border border-slate-200 bg-white px-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex min-h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 font-semibold text-slate-700 transition hover:bg-slate-50 sm:h-8 sm:min-h-0"
               >
                 Sonraki →
               </Link>
             ) : (
-              <span className="inline-flex h-8 items-center rounded-xl border border-transparent px-3 font-semibold text-slate-300">
+              <span className="inline-flex min-h-10 items-center rounded-xl border border-transparent px-3.5 font-semibold text-slate-300 sm:h-8 sm:min-h-0">
                 Sonraki →
               </span>
             )}

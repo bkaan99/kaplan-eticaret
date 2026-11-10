@@ -520,7 +520,7 @@ export function SettingsForm({
             </div>
           </Section>
 
-          <div className="sticky bottom-3 z-20 flex items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-white/95 px-3.5 py-2.5 shadow-sm backdrop-blur-md">
+          <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 flex flex-col gap-2 rounded-xl border border-slate-200/90 bg-white/95 px-3.5 py-2.5 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <p className="text-[12px] font-medium text-slate-500">
               {isDirty ? (
                 <span className="inline-flex items-center gap-1.5 text-amber-700">
@@ -535,18 +535,23 @@ export function SettingsForm({
               )}
             </p>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               {isDirty ? (
                 <Button
                   type="button"
                   variant="outline"
+                  className="flex-1 sm:flex-none"
                   onClick={handleReset}
                   disabled={pending}
                 >
                   Vazgeç
                 </Button>
               ) : null}
-              <Button type="submit" disabled={pending || !isDirty}>
+              <Button
+                type="submit"
+                className="flex-1 sm:flex-none"
+                disabled={pending || !isDirty}
+              >
                 {pending ? "Kaydediliyor…" : "Kaydet"}
               </Button>
             </div>
