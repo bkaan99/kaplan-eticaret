@@ -134,7 +134,7 @@ export function MobileNav({
               {/* Çekmece Başlığı: Logo & Kapat Butonu */}
               <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-5">
                 <div onClick={() => setIsOpen(false)}>
-                  <Logo />
+                  <Logo showBadge />
                 </div>
                 <button
                   type="button"

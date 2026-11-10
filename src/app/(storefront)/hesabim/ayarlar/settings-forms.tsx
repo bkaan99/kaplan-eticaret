@@ -9,8 +9,8 @@ import {
 } from "@/components/storefront/account-ui";
 import {
   sanitizeTurkishMobileInput,
-  TR_MOBILE_MAX_DIGITS,
-} from "@/modules/checkout/checkout.schema";
+  TR_MOBILE_INPUT_MAX_DIGITS,
+} from "@/shared/phone/tr-mobile";
 import {
   changePasswordAction,
   deleteAccountAction,
@@ -120,7 +120,7 @@ export function ProfileForm({
           className={accountField}
           type="tel"
           inputMode="numeric"
-          maxLength={TR_MOBILE_MAX_DIGITS}
+          maxLength={TR_MOBILE_INPUT_MAX_DIGITS}
           placeholder="05XXXXXXXXX"
           value={values.phone}
           onChange={(e) =>

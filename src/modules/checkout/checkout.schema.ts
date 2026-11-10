@@ -1,25 +1,20 @@
 import { TURKEY_DISTRICTS, isDistrictOf } from "@/shared/geo/turkey-districts";
+import {
+  normalizeTurkishMobile,
+  TR_MOBILE_INPUT_MAX_DIGITS,
+} from "@/shared/phone/tr-mobile";
 import { paymentMethodTypeValues } from "@/db/schema/enums";
 import { z } from "zod";
 
-/** Türkiye cep telefonu için beklenen hane sayısı (05XXXXXXXXX). */
-export const TR_MOBILE_MAX_DIGITS = 11;
+export {
+  normalizeTurkishMobile,
+  sanitizeTurkishMobileInput,
+  TR_MOBILE_INPUT_MAX_DIGITS,
+  TR_MOBILE_LOCAL_DIGITS,
+} from "@/shared/phone/tr-mobile";
 
-/** Input'tan yalnızca rakam bırakır ve 11 haneyle sınırlar. */
-export function sanitizeTurkishMobileInput(input: string): string {
-  return input.replace(/\D/g, "").slice(0, TR_MOBILE_MAX_DIGITS);
-}
-
-/** Türkiye cep telefonunu 05XXXXXXXXX biçimine getirir; geçersizse null. */
-export function normalizeTurkishMobile(input: string): string | null {
-  const digits = input.replace(/\D/g, "");
-  let local = digits;
-
-  if (local.startsWith("90") && local.length === 12) local = local.slice(2);
-  if (local.length === 10 && local.startsWith("5")) local = `0${local}`;
-
-  return /^05\d{9}$/.test(local) ? local : null;
-}
+/** @deprecated Yerine `TR_MOBILE_INPUT_MAX_DIGITS` / `TR_MOBILE_LOCAL_DIGITS`. */
+export const TR_MOBILE_MAX_DIGITS = TR_MOBILE_INPUT_MAX_DIGITS;
 
 /** T.C. kimlik numarası doğrulama algoritması. */
 export function isValidTckn(value: string): boolean {

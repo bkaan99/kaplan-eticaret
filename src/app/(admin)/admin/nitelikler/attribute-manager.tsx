@@ -3,15 +3,22 @@
 import { useActionRunner } from "@/components/admin/use-action-runner";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/shared/cn";
 import { deleteBrandAction } from "./actions";
 import { AttributeCard } from "./attribute-card";
 import { AttributeModal } from "./attribute-modal";
 import { type AttributeView, type BrandView } from "./attribute-types";
 import { BrandModal } from "./brand-modal";
 import { AttributeValueModal } from "./value-modal";
+
 export type { AttributeView, BrandView } from "./attribute-types";
+
+type TabId = "all" | "attributes" | "brands";
+
+function brandInitial(name: string): string {
+  return name.trim().charAt(0).toLocaleUpperCase("tr-TR") || "?";
+}
 
 export function AttributeManager({
   attributes,
@@ -22,7 +29,6 @@ export function AttributeManager({
 }) {
   const brandRunner = useActionRunner();
 
-  // Modallar
   const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState<{
     id: string | null;
@@ -42,11 +48,8 @@ export function AttributeManager({
   } | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "attributes" | "brands">(
-    "all",
-  );
+  const [activeTab, setActiveTab] = useState<TabId>("all");
 
-  // İstatistikler
   const stats = useMemo(() => {
     const totalAttr = attributes.length;
     const totalValues = attributes.reduce((acc, a) => acc + a.values.length, 0);
@@ -55,7 +58,6 @@ export function AttributeManager({
     return { totalAttr, totalValues, filterableCount, totalBrands };
   }, [attributes, brands]);
 
-  // Filtrelenmiş nitelikler
   const filteredAttributes = useMemo(() => {
     if (!searchQuery.trim()) return attributes;
     const q = searchQuery.toLowerCase().trim();
@@ -66,7 +68,6 @@ export function AttributeManager({
     );
   }, [attributes, searchQuery]);
 
-  // Filtrelenmiş markalar
   const filteredBrands = useMemo(() => {
     if (!searchQuery.trim()) return brands;
     const q = searchQuery.toLowerCase().trim();
@@ -112,9 +113,14 @@ export function AttributeManager({
     setIsBrandModalOpen(true);
   }
 
+  const tabs: { id: TabId; label: string; count?: number }[] = [
+    { id: "all", label: "Tümü" },
+    { id: "attributes", label: "Nitelikler", count: attributes.length },
+    { id: "brands", label: "Markalar", count: brands.length },
+  ];
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Modallar */}
+    <div className="flex flex-col gap-5">
       <AttributeModal
         isOpen={isAttributeModalOpen}
         onClose={() => setIsAttributeModalOpen(false)}
@@ -140,159 +146,116 @@ export function AttributeManager({
         editingValue={editingValue}
       />
 
-      {/* Üst İstatistik Kartları */}
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Toplam Nitelik</span>
-            <span className="text-base">🏷️</span>
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {[
+          { label: "Nitelik", value: stats.totalAttr },
+          { label: "Değer", value: stats.totalValues, hint: "Seçenekler" },
+          {
+            label: "Vitrin filtresi",
+            value: stats.filterableCount,
+            hint: "Mağazada görünür",
+          },
+          { label: "Marka", value: stats.totalBrands },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-2xs"
+          >
+            <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">
+              {item.label}
+            </p>
+            <p className="mt-1 text-xl font-semibold tracking-tight text-slate-900">
+              {item.value}
+            </p>
+            {item.hint ? (
+              <p className="mt-0.5 text-[11px] text-slate-400">{item.hint}</p>
+            ) : null}
           </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
-            {stats.totalAttr}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Tanımlı Değerler</span>
-            <span className="text-base">🔖</span>
-          </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-emerald-700">
-            {stats.totalValues}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Vitrin Filtresi</span>
-            <span className="text-base">⚡</span>
-          </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-sky-700">
-            {stats.filterableCount}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Kayıtlı Marka</span>
-            <span className="text-base">🏢</span>
-          </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
-            {stats.totalBrands}
-          </p>
-        </div>
+        ))}
       </div>
 
-      {/* Kontrol, Filtre ve Eylem Çubuğu */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        {/* Sol: Sekmeler ve Arama */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          {/* Sekmeler */}
-          <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1">
-            <button
-              type="button"
-              onClick={() => setActiveTab("all")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                activeTab === "all"
-                  ? "bg-white text-slate-900 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Tüm Görünüm
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("attributes")}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                activeTab === "attributes"
-                  ? "bg-white text-slate-900 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span>Nitelikler</span>
-              <span className="rounded-full bg-slate-200/70 px-1.5 py-0.2 text-[10px]">
-                {attributes.length}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("brands")}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                activeTab === "brands"
-                  ? "bg-white text-slate-900 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span>Markalar</span>
-              <span className="rounded-full bg-slate-200/70 px-1.5 py-0.2 text-[10px]">
-                {brands.length}
-              </span>
-            </button>
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5 sm:flex-row sm:items-center">
+          <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200/80 bg-slate-50/80 p-1">
+            {tabs.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-[12px] font-semibold transition",
+                    active
+                      ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80"
+                      : "text-slate-600 hover:text-slate-900",
+                  )}
+                >
+                  {tab.label}
+                  {typeof tab.count === "number" ? (
+                    <span className="ml-1 text-slate-400">{tab.count}</span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Arama Alanı */}
-          <div className="relative w-full sm:w-64">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-              🔍
-            </span>
+          <div className="relative w-full sm:max-w-xs">
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Nitelik, değer veya marka ara..."
-              className="h-9 pl-8 text-xs bg-white"
+              placeholder="Nitelik, değer veya marka ara…"
+              className="bg-white pr-8"
             />
-            {searchQuery && (
+            {searchQuery ? (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-[11px] text-slate-400 hover:text-slate-600"
+                aria-label="Aramayı temizle"
               >
                 ✕
               </button>
-            )}
+            ) : null}
           </div>
         </div>
 
-        {/* Sağ: Yeni Ekleme Modal Tetikleyici Butonları */}
-        <div className="flex items-center gap-2.5">
-          {(activeTab === "all" || activeTab === "attributes") && (
-            <Button
-              type="button"
-              onClick={handleCreateAttribute}
-              className="h-9 bg-emerald-700 px-4 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 cursor-pointer"
-            >
-              + Yeni Nitelik Tanımla
+        <div className="flex flex-wrap items-center gap-2">
+          {activeTab === "all" || activeTab === "attributes" ? (
+            <Button type="button" onClick={handleCreateAttribute}>
+              Yeni nitelik
             </Button>
-          )}
-
-          {(activeTab === "all" || activeTab === "brands") && (
+          ) : null}
+          {activeTab === "all" || activeTab === "brands" ? (
             <Button
               type="button"
+              variant={activeTab === "brands" ? "default" : "outline"}
               onClick={handleCreateBrand}
-              className="h-9 bg-slate-900 px-4 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 cursor-pointer"
             >
-              + Yeni Marka Ekle
+              Yeni marka
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {/* Ana Çift Kolonlu İçerik Alanı (Artık sayfa içinde açık formlar yok) */}
       <div
-        className={`grid gap-6 items-start ${
-          activeTab === "all" ? "lg:grid-cols-[1.3fr_1fr]" : "grid-cols-1"
-        }`}
+        className={cn(
+          "grid items-start gap-5",
+          activeTab === "all" ? "lg:grid-cols-[1.35fr_1fr]" : "grid-cols-1",
+        )}
       >
-        {/* Nitelikler Bölümü */}
-        {(activeTab === "all" || activeTab === "attributes") && (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                Tanımlı Nitelikler ({filteredAttributes.length})
-              </span>
+        {activeTab === "all" || activeTab === "attributes" ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12px] font-semibold text-slate-500">
+                Nitelikler
+                <span className="ml-1 font-medium text-slate-400">
+                  {filteredAttributes.length}
+                </span>
+              </p>
             </div>
 
-            <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-3">
               {filteredAttributes.map((attribute) => (
                 <AttributeCard
                   key={attribute.id}
@@ -303,144 +266,134 @@ export function AttributeManager({
                 />
               ))}
 
-              {filteredAttributes.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 px-4 rounded-3xl border border-dashed border-slate-200 bg-white text-center">
-                  <span className="text-3xl mb-2">🏷️</span>
-                  <p className="text-sm font-bold text-slate-800">
+              {filteredAttributes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-4 py-14 text-center">
+                  <p className="text-[14px] font-semibold text-slate-800">
                     Nitelik bulunamadı
                   </p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                  <p className="mt-1 max-w-sm text-[12px] text-slate-500">
                     {searchQuery
-                      ? `"${searchQuery}" aramasına uygun nitelik eşleşmedi.`
-                      : "Henüz hiçbir ürün niteliği tanımlanmamış."}
+                      ? `“${searchQuery}” ile eşleşen nitelik yok.`
+                      : "Henüz ürün niteliği tanımlanmamış."}
                   </p>
                   <Button
                     type="button"
                     onClick={handleCreateAttribute}
-                    className="mt-4 bg-emerald-700 text-xs font-semibold text-white hover:bg-emerald-800 cursor-pointer"
+                    className="mt-4"
                   >
-                    + İlk Niteliği Tanımla
+                    İlk niteliği oluştur
                   </Button>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
-        )}
+        ) : null}
 
-        {/* Markalar Bölümü */}
-        {(activeTab === "all" || activeTab === "brands") && (
-          <div className="flex flex-col gap-4">
-            <Card className="shadow-xs border-slate-200/80 overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 p-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-xs text-amber-900 font-bold shadow-2xs">
-                    🏢
-                  </span>
-                  <div>
-                    <CardTitle className="text-sm font-bold text-slate-900">
-                      Markalar ve Üreticiler
-                    </CardTitle>
-                    <p className="text-[11px] text-slate-500">
-                      {brands.length} kayıtlı marka
-                    </p>
-                  </div>
-                </div>
+        {activeTab === "all" || activeTab === "brands" ? (
+          <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
+            <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+              <div>
+                <h2 className="text-[13px] font-semibold text-slate-900">
+                  Markalar
+                </h2>
+                <p className="mt-0.5 text-[12px] text-slate-500">
+                  {filteredBrands.length} / {brands.length} marka
+                </p>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleCreateBrand}>
+                Marka ekle
+              </Button>
+            </header>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCreateBrand}
-                  className="h-8 px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
+            {brandRunner.error ? (
+              <p
+                role="alert"
+                className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-[12px] font-medium text-red-700"
+              >
+                {brandRunner.error}
+              </p>
+            ) : null}
+
+            <ul className="divide-y divide-slate-100">
+              {filteredBrands.map((brand) => (
+                <li
+                  key={brand.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-slate-50/60"
                 >
-                  + Marka Ekle
-                </Button>
-              </CardHeader>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-bold text-slate-700">
+                      {brandInitial(brand.name)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-semibold text-slate-900">
+                        {brand.name}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {brand.productCount === 0
+                          ? "Ürün bağlı değil"
+                          : `${brand.productCount} ürün`}
+                      </p>
+                    </div>
+                  </div>
 
-              <CardContent className="p-0">
-                {/* Marka Listesi */}
-                <div className="divide-y divide-slate-100 bg-white">
-                  {filteredBrands.map((brand) => (
-                    <div
-                      key={brand.id}
-                      className="group flex items-center justify-between p-3.5 transition hover:bg-slate-50/80"
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditBrand(brand)}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold text-slate-700 shadow-2xs">
-                          {brand.name.slice(0, 1).toUpperCase()}
-                        </span>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-950">
-                            {brand.name}
-                          </p>
-                          <span className="text-[11px] text-slate-500">
-                            {brand.productCount} ürün bağlı
-                          </span>
-                        </div>
-                      </div>
+                      Düzenle
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={
+                        brandRunner.pending || brand.productCount > 0
+                      }
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `“${brand.name}” markasını silmek istediğinize emin misiniz?`,
+                          )
+                        ) {
+                          brandRunner.run(() => deleteBrandAction(brand.id));
+                        }
+                      }}
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+                      title={
+                        brand.productCount > 0
+                          ? "Ürünü olan marka silinemez"
+                          : "Markayı sil"
+                      }
+                    >
+                      Sil
+                    </Button>
+                  </div>
+                </li>
+              ))}
 
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleEditBrand(brand)}
-                          className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-                          title="Markayı düzenle"
-                        >
-                          Düzenle
-                        </button>
-                        <button
-                          type="button"
-                          disabled={
-                            brandRunner.pending || brand.productCount > 0
-                          }
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `"${brand.name}" markasını silmek istediğinize emin misiniz?`,
-                              )
-                            ) {
-                              brandRunner.run(() =>
-                                deleteBrandAction(brand.id),
-                              );
-                            }
-                          }}
-                          className="rounded-lg p-1.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
-                          title={
-                            brand.productCount > 0
-                              ? "Ürünü olan marka silinemez"
-                              : "Markayı sil"
-                          }
-                        >
-                          ✕ Sil
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {filteredBrands.length === 0 && (
-                    <div className="py-12 px-4 text-center">
-                      <span className="text-3xl mb-1">🏢</span>
-                      <p className="text-xs font-bold text-slate-700">
-                        Marka bulunamadı
-                      </p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        {searchQuery
-                          ? `"${searchQuery}" ile eşleşen marka yok.`
-                          : "Henüz bir marka eklenmedi."}
-                      </p>
-                      <Button
-                        type="button"
-                        onClick={handleCreateBrand}
-                        className="mt-3 bg-slate-900 text-xs font-semibold text-white hover:bg-slate-800"
-                      >
-                        + Marka Ekle
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              {filteredBrands.length === 0 ? (
+                <li className="flex flex-col items-center justify-center px-4 py-14 text-center">
+                  <p className="text-[14px] font-semibold text-slate-800">
+                    Marka bulunamadı
+                  </p>
+                  <p className="mt-1 max-w-sm text-[12px] text-slate-500">
+                    {searchQuery
+                      ? `“${searchQuery}” ile eşleşen marka yok.`
+                      : "Henüz marka eklenmemiş."}
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={handleCreateBrand}
+                    className="mt-4"
+                  >
+                    Marka ekle
+                  </Button>
+                </li>
+              ) : null}
+            </ul>
+          </section>
+        ) : null}
       </div>
     </div>
   );

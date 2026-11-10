@@ -4,8 +4,8 @@ import { useState } from "react";
 import type { SavedAddress } from "@/modules/account/address.repository";
 import {
   sanitizeTurkishMobileInput,
-  TR_MOBILE_MAX_DIGITS,
-} from "@/modules/checkout/checkout.schema";
+  TR_MOBILE_INPUT_MAX_DIGITS,
+} from "@/shared/phone/tr-mobile";
 import { districtsOf } from "@/shared/geo/turkey-districts";
 import { TURKEY_PROVINCES } from "@/shared/geo/turkey-provinces";
 import { Field, inputClass } from "./checkout-form-field";
@@ -51,7 +51,7 @@ export function AddressFields({
           name={name("phone")}
           type="tel"
           inputMode="numeric"
-          maxLength={TR_MOBILE_MAX_DIGITS}
+          maxLength={TR_MOBILE_INPUT_MAX_DIGITS}
           defaultValue={saved?.phone}
           required
           autoComplete="tel"

@@ -28,6 +28,18 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/png",
         purpose: "any",
       },
+      {
+        src: "/images/logo/kaplan-badge-logo.jpg",
+        sizes: "512x512",
+        type: "image/jpeg",
+        purpose: "maskable",
+      },
+      {
+        src: "/images/logo/kaplan-badge-logo.jpg",
+        sizes: "512x512",
+        type: "image/jpeg",
+        purpose: "any",
+      },
     ],
   };
 }

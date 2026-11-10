@@ -3,7 +3,7 @@ import { siteConfig } from "@/config/site.config";
 import { catalogService } from "@/modules/catalog/container";
 import { buildProductFeedXml } from "@/modules/catalog/product-feed";
 import { listFeedProducts } from "@/modules/catalog/product-feed.repository";
-import { settingsService } from "@/modules/settings/container";
+import { getCachedShippingConfig } from "@/modules/settings/cached";
 import { getDb } from "@/shared/db";
 import { absoluteUrl, getSiteUrl } from "@/shared/site-url";
 
@@ -22,7 +22,7 @@ export async function GET() {
 
   const [categories, shipping] = await Promise.all([
     catalogService.getCategories(),
-    settingsService.getShippingConfig(),
+    getCachedShippingConfig(),
   ]);
   const products = await listFeedProducts(getDb(), categories, (url) =>
     url.startsWith("http") ? url : absoluteUrl(url),

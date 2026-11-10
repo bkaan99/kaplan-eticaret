@@ -28,6 +28,7 @@ import { PERMISSIONS } from "@/shared/permissions";
 export const metadata: Metadata = { title: "Müşteriler" };
 
 const PAGE_SIZE = 25;
+
 /** URL'deki değer → segment ("?segment=alici" gibi Türkçe kısa adlar). */
 const SEGMENT_PARAM: Record<CustomerSegment, string> = {
   all: "",
@@ -35,11 +36,19 @@ const SEGMENT_PARAM: Record<CustomerSegment, string> = {
   "no-orders": "siparissiz",
   unverified: "dogrulanmamis",
 };
+
 const SEGMENT_LABELS: Record<CustomerSegment, string> = {
   all: "Tümü",
   buyers: "Alışveriş yapan",
-  "no-orders": "Henüz sipariş yok",
+  "no-orders": "Siparişsiz",
   unverified: "Doğrulanmamış",
+};
+
+const SEGMENT_HINTS: Record<CustomerSegment, string> = {
+  all: "Kayıtlı üye",
+  buyers: "En az 1 tamamlanan sipariş",
+  "no-orders": "Henüz alışveriş yok",
+  unverified: "E-posta doğrulanmamış",
 };
 
 function parseSegment(value: string | undefined): CustomerSegment {
@@ -51,19 +60,22 @@ function parseSegment(value: string | undefined): CustomerSegment {
 function AccountStatus({ customer }: { customer: CustomerRow }) {
   if (!customer.isActive) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-rose-700">
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700">
         <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-        Pasif hesap
+        Pasif
       </span>
     );
   }
-  return customer.emailVerified ? (
-    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600">
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-      Doğrulandı
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-700">
+  if (customer.emailVerified) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        Doğrulandı
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
       <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
       Doğrulanmadı
     </span>
@@ -108,43 +120,52 @@ async function CustomersContent({
       : `“${SEGMENT_LABELS[segment]}” segmentinde müşteri yok`;
 
   return (
-    <div className="flex flex-col gap-4">
-      <AdminPanel>
-        <nav
-          aria-label="Müşteri segmenti"
-          className="flex gap-1 overflow-x-auto border-b border-slate-100 px-2 pt-2 [scrollbar-width:none]"
-        >
-          {CUSTOMER_SEGMENTS.map((key) => {
-            const active = segment === key;
-            return (
-              <Link
-                key={key}
-                href={hrefWith({ segment: key })}
-                aria-current={active ? "page" : undefined}
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {CUSTOMER_SEGMENTS.map((key) => {
+          const active = segment === key;
+          return (
+            <Link
+              key={key}
+              href={hrefWith({ segment: key })}
+              className={cn(
+                "rounded-xl border px-3.5 py-3 shadow-2xs transition",
+                active
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200/80 bg-white hover:border-slate-300",
+              )}
+            >
+              <p
                 className={cn(
-                  "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 pt-1.5 pb-2.5 text-[13px] font-medium whitespace-nowrap transition-colors",
-                  active
-                    ? "border-slate-900 text-slate-900"
-                    : "border-transparent text-slate-500 hover:text-slate-800",
+                  "text-[11px] font-medium tracking-wide uppercase",
+                  active ? "text-white/70" : "text-slate-400",
                 )}
               >
                 {SEGMENT_LABELS[key]}
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
-                    active
-                      ? "bg-slate-900 text-white"
-                      : "bg-slate-100 text-slate-500",
-                  )}
-                >
-                  {integer.format(counts[key])}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
+              </p>
+              <p
+                className={cn(
+                  "mt-1 text-xl font-semibold tracking-tight tabular-nums",
+                  active ? "text-white" : "text-slate-900",
+                )}
+              >
+                {integer.format(counts[key])}
+              </p>
+              <p
+                className={cn(
+                  "mt-0.5 text-[11px]",
+                  active ? "text-white/60" : "text-slate-400",
+                )}
+              >
+                {SEGMENT_HINTS[key]}
+              </p>
+            </Link>
+          );
+        })}
+      </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <AdminPanel>
+        <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
           <form
             action="/admin/musteriler"
             role="search"
@@ -166,7 +187,7 @@ async function CustomersContent({
                 name="q"
                 type="search"
                 defaultValue={search}
-                placeholder="Ad, soyad veya e-posta ara"
+                placeholder="Ad, soyad veya e-posta ara…"
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
               />
             </label>
@@ -185,36 +206,44 @@ async function CustomersContent({
               </Link>
             ) : null}
           </form>
+
           <p className="text-[12px] text-slate-500 tabular-nums">
             {result.total === 0
               ? "Sonuç yok"
-              : `${integer.format(result.total)} müşteriden ${first}–${last} arası`}
+              : `${integer.format(result.total)} müşteriden ${first}–${last}`}
           </p>
         </div>
 
-        {/* Mobil: kart listesi */}
-        <ul className="divide-y divide-slate-100 border-t border-slate-100 md:hidden">
+        {/* Mobil */}
+        <ul className="divide-y divide-slate-100 md:hidden">
           {result.items.map((customer) => (
             <li key={customer.id}>
               <Link
                 href={`/admin/musteriler/${customer.id}`}
-                className="flex items-center gap-3 px-4 py-3 active:bg-slate-50"
+                className="flex items-center gap-3 px-4 py-3.5 active:bg-slate-50"
               >
                 <CustomerAvatar name={customer.name || customer.email} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[13px] font-medium text-slate-900">
+                    <span className="truncate text-[13px] font-semibold text-slate-900">
                       {customer.name || "—"}
                     </span>
                     <span className="shrink-0 text-[13px] font-semibold text-slate-900 tabular-nums">
-                      {formatMoney(customer.totalSpent)}
+                      {customer.orderCount === 0
+                        ? "—"
+                        : formatMoney(customer.totalSpent)}
                     </span>
                   </span>
                   <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-slate-400">
                     <span className="truncate">{customer.email}</span>
                     <span className="shrink-0">
-                      {customer.orderCount} sipariş
+                      {customer.orderCount === 0
+                        ? "Sipariş yok"
+                        : `${customer.orderCount} sipariş`}
                     </span>
+                  </span>
+                  <span className="mt-1.5 block">
+                    <AccountStatus customer={customer} />
                   </span>
                 </span>
               </Link>
@@ -230,17 +259,18 @@ async function CustomersContent({
           ) : null}
         </ul>
 
-        {/* Masaüstü: tablo */}
-        <div className="hidden border-t border-slate-100 md:block">
+        {/* Masaüstü */}
+        <div className="hidden md:block">
           <Table>
             <THead>
               <tr>
                 <TH className="pl-4">Müşteri</TH>
                 <TH>Hesap</TH>
+                <TH className="hidden lg:table-cell">Telefon</TH>
                 <TH className="text-right">Sipariş</TH>
-                <TH className="text-right">Toplam harcama</TH>
+                <TH className="text-right">Harcama</TH>
                 <TH>Son sipariş</TH>
-                <TH className="hidden lg:table-cell">Kayıt</TH>
+                <TH className="hidden xl:table-cell">Kayıt</TH>
                 <TH className="w-8 pr-4">
                   <span className="sr-only">Aç</span>
                 </TH>
@@ -268,6 +298,11 @@ async function CustomersContent({
                   <TD className="py-2.5">
                     <AccountStatus customer={customer} />
                   </TD>
+                  <TD className="hidden py-2.5 text-[12px] whitespace-nowrap text-slate-600 tabular-nums lg:table-cell">
+                    {customer.phone || (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </TD>
                   <TD className="py-2.5 text-right text-slate-700 tabular-nums">
                     {customer.orderCount === 0 ? (
                       <span className="text-slate-400">—</span>
@@ -289,7 +324,7 @@ async function CustomersContent({
                       <span className="text-slate-400">—</span>
                     )}
                   </TD>
-                  <TD className="hidden py-2.5 text-[12px] whitespace-nowrap text-slate-400 lg:table-cell">
+                  <TD className="hidden py-2.5 text-[12px] whitespace-nowrap text-slate-400 xl:table-cell">
                     {formatAdminDate(customer.createdAt)}
                   </TD>
                   <TD className="py-2.5 pr-4 text-slate-300 group-hover:text-slate-500">
@@ -311,7 +346,7 @@ async function CustomersContent({
               ))}
               {result.items.length === 0 ? (
                 <tr>
-                  <TD colSpan={7} className="p-0">
+                  <TD colSpan={8} className="p-0">
                     <AdminEmpty
                       title={emptyTitle}
                       description="Aramayı veya segmenti değiştirerek tekrar deneyin."
@@ -340,7 +375,7 @@ export default function AdminCustomersPage({
     <>
       <PageHeader
         title="Müşteriler"
-        description="Kayıtlı üyeleri, alışveriş geçmişlerini ve hesap durumlarını inceleyin."
+        description="Kayıtlı üyeleri, hesap durumlarını ve alışveriş geçmişlerini inceleyin. Segment kartlarıyla hızlı filtreleyin."
       />
       <Suspense fallback={<AdminLoading label="Müşteriler yükleniyor..." />}>
         <CustomersContent searchParams={searchParams} />

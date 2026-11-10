@@ -20,10 +20,15 @@ function toFields(settings: ShippingSettings): ShippingFormFields {
 }
 
 function parseAmount(value: string): number | null {
-  const trimmed = value.trim();
+  const trimmed = value.trim().replace(/\s/g, "");
   if (!trimmed) return null;
-  const amount = Number(trimmed);
-  return Number.isFinite(amount) ? amount : null;
+  // TR: "49,9" / "1.234,56" → nokta ondalık
+  const normalized = trimmed.includes(",")
+    ? trimmed.replace(/\./g, "").replace(",", ".")
+    : trimmed;
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount)) return null;
+  return Math.round(amount * 100) / 100;
 }
 
 export function ShippingSettingsForm({
@@ -89,13 +94,27 @@ export function ShippingSettingsForm({
       className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs"
     >
       <header className="border-b border-slate-100 px-4 py-3.5 sm:px-5">
-        <h2 className="text-[13px] font-semibold text-slate-900">
-          Kargo kuralları
-        </h2>
-        <p className="mt-0.5 text-[12px] text-slate-500">
-          Ücretsiz kargo eşiği navbar şeridinde, sepette ve ödeme adımındaki gerçek
-          kargo hesabında kullanılır.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="text-[13px] font-semibold text-slate-900">
+              Kargo kuralları
+            </h2>
+            <p className="mt-0.5 text-[12px] text-slate-500">
+              Ücretsiz kargo eşiği navbar şeridinde, sepette ve ödeme adımındaki
+              gerçek kargo hesabında kullanılır.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {["Navbar", "Sepet", "Ödeme", "Ürün sayfası"].map((label) => (
+              <span
+                key={label}
+                className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-500"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
       </header>
 
       <div className="space-y-4 p-4 sm:p-5">

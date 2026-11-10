@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PERMISSION_GROUPS } from "@/shared/permissions";
+import { cn } from "@/shared/cn";
 
 export interface RoleModalProps {
   isOpen: boolean;
@@ -68,89 +69,82 @@ export function RoleModal({
   function toggleGroup(groupKeys: string[], allInGroupSelected: boolean) {
     const grantableGroupKeys = groupKeys.filter((k) => grantable.includes(k));
     if (allInGroupSelected) {
-      // Gruptaki tüm seçilileri kaldır
       setSelected((current) =>
         current.filter((k) => !grantableGroupKeys.includes(k)),
       );
     } else {
-      // Gruptaki verilebilir tüm yetkileri ekle
       setSelected((current) =>
         Array.from(new Set([...current, ...grantableGroupKeys])),
       );
     }
   }
 
+  const grantableCount = grantable.length;
+  const selectedGrantable = selected.filter((k) => grantable.includes(k)).length;
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="role-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
     >
-      {/* Backdrop */}
-      <div
+      <button
+        type="button"
+        aria-label="Kapat"
         onClick={onClose}
-        className="absolute inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity"
+        className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px]"
       />
 
-      {/* Modal Kutusu */}
-      <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/20 px-6 py-4.5">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-lg shadow-2xs">
-              🛡️
-            </span>
-            <div>
-              <h2
-                id="role-modal-title"
-                className="text-base font-bold text-slate-900"
-              >
-                {editingId ? "Yetki Rolünü Düzenle" : "Yeni Yetki Rolü Oluştur"}
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {editingId
-                  ? nameLocked
-                    ? `"${name}" sistem rolü — ad sabit, yetkiler ve açıklama güncellenebilir`
-                    : `"${name}" rolünün izin ve açıklamalarını güncelliyorsunuz`
-                  : "Personellerin yönetim panelindeki erişim sınırlarını belirleyin"}
-              </p>
-            </div>
+      <div className="relative z-10 flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h2
+              id="role-modal-title"
+              className="text-[15px] font-semibold text-slate-900"
+            >
+              {editingId ? "Rolü düzenle" : "Yeni rol oluştur"}
+            </h2>
+            <p className="mt-0.5 text-[12px] text-slate-500">
+              {editingId
+                ? nameLocked
+                  ? "Sistem rolü — ad sabit; yetkiler ve açıklama güncellenebilir."
+                  : "İzin setini ve açıklamayı güncelleyin."
+                : "Personelin panel erişimini bu rolle sınırlayın. Yalnızca sizde olan yetkileri devredebilirsiniz."}
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
             aria-label="Kapat"
           >
             ✕
           </button>
         </div>
 
-        {/* Modal Form Gövdesi (Kaydırılabilir) */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {message && (
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+          {message ? (
             <div
               role={message.error ? "alert" : "status"}
-              className={`rounded-2xl border p-3.5 text-xs font-semibold flex items-center gap-2 ${
+              className={cn(
+                "rounded-xl border px-3.5 py-2.5 text-[13px] font-medium",
                 message.error
                   ? "border-red-200 bg-red-50 text-red-800"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
-              }`}
+                  : "border-emerald-200 bg-emerald-50 text-emerald-800",
+              )}
             >
-              <span>{message.error ? "⚠️" : "✓"}</span>
-              <span>{message.text}</span>
+              {message.text}
             </div>
-          )}
+          ) : null}
 
-          {/* Temel Bilgiler */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label
                 htmlFor="role-name"
-                className="text-xs font-bold text-slate-700"
+                className="text-[13px] font-medium text-slate-700"
               >
-                Rol Adı <span className="text-red-500">*</span>
+                Rol adı <span className="text-red-500">*</span>
               </Label>
               <Input
                 autoFocus={!nameLocked}
@@ -159,8 +153,8 @@ export function RoleModal({
                 maxLength={40}
                 disabled={nameLocked}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Örn: Sipariş ve Kargo Sorumlusu"
-                className="h-9 text-xs font-semibold bg-white disabled:bg-slate-50 disabled:text-slate-500"
+                placeholder="Örn. Sipariş sorumlusu"
+                className="bg-white disabled:bg-slate-50 disabled:text-slate-500"
               />
               {nameLocked ? (
                 <p className="text-[11px] text-slate-400">
@@ -172,39 +166,40 @@ export function RoleModal({
             <div className="flex flex-col gap-1.5">
               <Label
                 htmlFor="role-description"
-                className="text-xs font-bold text-slate-700"
+                className="text-[13px] font-medium text-slate-700"
               >
-                Açıklama (İsteğe bağlı)
+                Açıklama
               </Label>
               <Input
                 id="role-description"
                 value={description}
                 maxLength={200}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Örn: Yalnızca sipariş ve kargo süreçlerini yönetir"
-                className="h-9 text-xs bg-white"
+                placeholder="Bu rol ne işe yarar?"
+                className="bg-white"
               />
             </div>
           </div>
 
-          {/* Yetki İzinleri Matrisi */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-2 border-b border-slate-100 pb-2.5">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  Yetki ve İzin Grupları
-                </span>
+                <p className="text-[13px] font-semibold text-slate-900">
+                  Yetki grupları
+                </p>
                 <p className="text-[11px] text-slate-500">
-                  Bu role atanacak modül izinlerini işaretleyin
+                  Devredebileceğiniz {grantableCount} yetkiden seçim yapın.
                 </p>
               </div>
-
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">
-                {selected.length} Yetki Seçildi
+              <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                {selected.length} seçili
+                {grantableCount > 0
+                  ? ` · ${selectedGrantable}/${grantableCount} verilebilir`
+                  : null}
               </span>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {PERMISSION_GROUPS.map((group) => {
                 const groupKeys = group.permissions.map((p) => p.key);
                 const grantableKeys = groupKeys.filter((k) =>
@@ -212,7 +207,7 @@ export function RoleModal({
                 );
                 const selectedInGroup = groupKeys.filter((k) =>
                   selected.includes(k),
-                );
+                ).length;
                 const allSelected =
                   grantableKeys.length > 0 &&
                   grantableKeys.every((k) => selected.includes(k));
@@ -220,24 +215,29 @@ export function RoleModal({
                 return (
                   <div
                     key={group.label}
-                    className="flex flex-col rounded-2xl border border-slate-200/90 bg-slate-50/60 p-4"
+                    className="flex flex-col rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5"
                   >
-                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-2 mb-3">
-                      <span className="text-xs font-bold text-slate-900">
-                        {group.label}
-                      </span>
-                      {grantableKeys.length > 0 && (
+                    <div className="mb-2.5 flex items-center justify-between gap-2 border-b border-slate-200/70 pb-2">
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-semibold text-slate-900">
+                          {group.label}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          {selectedInGroup}/{group.permissions.length}
+                        </p>
+                      </div>
+                      {grantableKeys.length > 0 ? (
                         <button
                           type="button"
                           onClick={() => toggleGroup(groupKeys, allSelected)}
-                          className="text-[11px] font-semibold text-emerald-700 hover:underline cursor-pointer"
+                          className="shrink-0 text-[11px] font-semibold text-emerald-700 hover:underline"
                         >
-                          {allSelected ? "Temizle" : "Tümünü Seç"}
+                          {allSelected ? "Temizle" : "Tümünü seç"}
                         </button>
-                      )}
+                      ) : null}
                     </div>
 
-                    <div className="flex flex-col gap-2.5">
+                    <div className="flex flex-col gap-2">
                       {group.permissions.map((permission) => {
                         const allowed = grantable.includes(permission.key);
                         const isChecked = selected.includes(permission.key);
@@ -245,11 +245,12 @@ export function RoleModal({
                         return (
                           <label
                             key={permission.key}
-                            className={`flex items-start gap-2.5 text-xs font-medium cursor-pointer select-none transition ${
+                            className={cn(
+                              "flex cursor-pointer items-start gap-2.5 text-[12px] font-medium select-none",
                               allowed
-                                ? "text-slate-800 hover:text-slate-950"
-                                : "text-slate-400 cursor-not-allowed opacity-60"
-                            }`}
+                                ? "text-slate-800"
+                                : "cursor-not-allowed text-slate-400 opacity-70",
+                            )}
                           >
                             <input
                               type="checkbox"
@@ -258,14 +259,16 @@ export function RoleModal({
                               onChange={() => togglePermission(permission.key)}
                               className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                             />
-                            <div className="flex flex-col">
-                              <span>{permission.label}</span>
-                              {!allowed && (
-                                <span className="text-[10px] text-slate-400 italic">
-                                  (Sizde bu yetki olmadığı için devredilemez)
+                            <span className="min-w-0">
+                              <span className="block leading-snug">
+                                {permission.label}
+                              </span>
+                              {!allowed ? (
+                                <span className="mt-0.5 block text-[10px] font-normal text-slate-400">
+                                  Sizde olmadığı için devredilemez
                                 </span>
-                              )}
-                            </div>
+                              ) : null}
+                            </span>
                           </label>
                         );
                       })}
@@ -277,40 +280,31 @@ export function RoleModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-4">
-          <span className="text-xs text-slate-500 font-medium">
-            Toplam <strong>{selected.length}</strong> yetki verilecek
-          </span>
-
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-3.5 sm:px-6">
+          <p className="text-[12px] text-slate-500">
+            {selected.length === 0
+              ? "Henüz yetki seçilmedi"
+              : `${selected.length} yetki atanacak`}
+          </p>
+          <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={pending}
-              className="h-9 px-3.5 text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer"
             >
               Vazgeç
             </Button>
-
             <Button
               type="button"
               disabled={pending || !name.trim()}
               onClick={onSave}
-              className="h-9 bg-emerald-700 px-4 text-[13px] font-semibold text-white shadow-2xs hover:bg-emerald-800 disabled:opacity-60 cursor-pointer"
             >
-              {pending ? (
-                <div className="flex items-center gap-2">
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Kaydediliyor...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <span>💾</span>
-                  <span>{editingId ? "Güncelle" : "Rolü Kaydet"}</span>
-                </div>
-              )}
+              {pending
+                ? "Kaydediliyor…"
+                : editingId
+                  ? "Güncelle"
+                  : "Rolü kaydet"}
             </Button>
           </div>
         </div>

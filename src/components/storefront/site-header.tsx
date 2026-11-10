@@ -77,18 +77,33 @@ const iconLinkClass =
 const secondaryLinkClass =
   "rounded-full px-2.5 py-2 text-[13px] font-bold whitespace-nowrap text-primary transition-colors hover:text-brand-dark hover:underline";
 
-export async function SiteHeader() {
+async function FreeShippingBanner() {
   const shipping = await getCachedShippingSettings();
+  return (
+    <div className="bg-primary text-white">
+      <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs font-medium sm:text-sm">
+        {formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde{" "}
+        <strong className="font-extrabold">kargo ücretsiz!</strong>
+      </p>
+    </div>
+  );
+}
 
+export async function SiteHeader() {
   return (
     <>
-      {/* Üst duyuru bandı: sayfayla birlikte kayar */}
-      <div className="bg-primary text-white">
-        <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs font-medium sm:text-sm">
-          {formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde{" "}
-          <strong className="font-extrabold">kargo ücretsiz!</strong>
-        </p>
-      </div>
+      {/* Üst duyuru bandı: sayfayla birlikte kayar; D1 çağrısı Suspense içinde */}
+      <Suspense
+        fallback={
+          <div className="bg-primary text-white">
+            <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs font-medium sm:text-sm">
+              &nbsp;
+            </p>
+          </div>
+        }
+      >
+        <FreeShippingBanner />
+      </Suspense>
 
       <header className="relative z-40 border-b border-slate-200 bg-white md:sticky md:top-0">
         {/* Satır 1: logo (sol) · arama (orta) · aksiyonlar (sağ). Tam genişlik;

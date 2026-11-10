@@ -3,8 +3,8 @@
 import { useActionState } from "react";
 import {
   sanitizeTurkishMobileInput,
-  TR_MOBILE_MAX_DIGITS,
-} from "@/modules/checkout/checkout.schema";
+  TR_MOBILE_INPUT_MAX_DIGITS,
+} from "@/shared/phone/tr-mobile";
 import { registerAction, type RegisterState } from "./actions";
 
 const initial: RegisterState = {};
@@ -51,7 +51,7 @@ export function RegisterForm({ captcha }: { captcha?: React.ReactNode }) {
           name="phone"
           type="tel"
           inputMode="numeric"
-          maxLength={TR_MOBILE_MAX_DIGITS}
+          maxLength={TR_MOBILE_INPUT_MAX_DIGITS}
           autoComplete="tel"
           placeholder="05XXXXXXXXX"
           className={input}

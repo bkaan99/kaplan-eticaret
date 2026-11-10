@@ -10,8 +10,8 @@ import {
 } from "@/components/storefront/account-ui";
 import {
   sanitizeTurkishMobileInput,
-  TR_MOBILE_MAX_DIGITS,
-} from "@/modules/checkout/checkout.schema";
+  TR_MOBILE_INPUT_MAX_DIGITS,
+} from "@/shared/phone/tr-mobile";
 import { districtsOf } from "@/shared/geo/turkey-districts";
 import { TURKEY_PROVINCES } from "@/shared/geo/turkey-provinces";
 import { deleteAddressAction, saveAddressAction } from "../actions";
@@ -244,7 +244,7 @@ export function AddressManager({ addresses }: { addresses: AddressView[] }) {
                 className={accountField}
                 type="tel"
                 inputMode="numeric"
-                maxLength={TR_MOBILE_MAX_DIGITS}
+                maxLength={TR_MOBILE_INPUT_MAX_DIGITS}
                 placeholder="05XXXXXXXXX"
                 value={form.phone}
                 onChange={(e) =>

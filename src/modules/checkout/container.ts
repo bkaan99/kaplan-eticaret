@@ -8,16 +8,17 @@ import { priceResolver } from "../catalog/container";
 import { customPickleService } from "../custom-pickle/container";
 import { D1DealerRepository } from "../b2b/dealer.repository";
 import { orderRepository } from "../orders/container";
-import { settingsService } from "../settings/container";
+import { getCachedShippingConfig } from "../settings/cached";
 import { D1CheckoutRepository } from "./checkout.repository";
 import { CheckoutService } from "./checkout.service";
 import { ConfiguredShippingRateCalculator } from "./shipping";
 
 export async function getCheckoutService(): Promise<CheckoutService> {
   // Ödeme modu panelden seçilir; kart ödemesi kullanılamıyorsa checkout bunu bilir.
+  // Kargo: navbar/sepet ile aynı önbellek (60s) — eşik tutarsızlığı olmasın.
   const [cardProvider, shipping] = await Promise.all([
     getCardProviderKind(),
-    settingsService.getShippingConfig(),
+    getCachedShippingConfig(),
   ]);
 
   return new CheckoutService({
