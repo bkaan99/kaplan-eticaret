@@ -21,6 +21,7 @@ import {
   XIcon,
 } from "./icons";
 import { Logo } from "./logo";
+import { MobileNavAdminLink } from "./storefront-shell";
 import { storefrontContact } from "@/config/storefront-contact";
 import { formatMoney } from "@/shared/money";
 
@@ -236,6 +237,8 @@ export function MobileNav({
                     Hesap & Sipariş
                   </span>
                   <div className="flex flex-col space-y-1 text-sm font-medium">
+                    <MobileNavAdminLink />
+
                     <Link
                       href="/hesabim"
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"

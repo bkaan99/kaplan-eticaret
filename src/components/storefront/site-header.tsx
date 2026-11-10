@@ -14,7 +14,10 @@ import { BidonThumb, HeartIcon, TruckIcon } from "./icons";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
 import { SearchForm } from "./search-form";
-import { StorefrontShellActions } from "./storefront-shell";
+import {
+  StorefrontShellActions,
+  StorefrontShellProvider,
+} from "./storefront-shell";
 
 async function MobileNavContainer() {
   const [tree, extra, contact, shipping] = await Promise.all([
@@ -132,13 +135,15 @@ export async function SiteHeader() {
                 <HeartIcon />
               </Link>
             ) : null}
-            {/* Sepet/hesap istemci kabuğu — HTML edge cache için SSR kişiselleştirme yok */}
-            <div className="flex items-center gap-0.5 sm:gap-1 max-sm:[&>div:first-child]:hidden">
-              <StorefrontShellActions accountClassName={iconLinkClass} />
-            </div>
-            <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
-              <MobileNavContainer />
-            </Suspense>
+            {/* Sepet/hesap/admin — tek shell isteği; mobilde Admin hamburger içinde */}
+            <StorefrontShellProvider>
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <StorefrontShellActions accountClassName={iconLinkClass} />
+              </div>
+              <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
+                <MobileNavContainer />
+              </Suspense>
+            </StorefrontShellProvider>
           </div>
         </div>
 
