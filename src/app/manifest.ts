@@ -13,19 +13,19 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       {
         src: "/favicon.ico",
-        sizes: "48x48",
+        sizes: "16x16 32x32 48x48",
         type: "image/x-icon",
       },
       {
-        src: "/images/logo/kaplan-badge-logo.jpg",
+        src: "/icon.png",
         sizes: "192x192",
-        type: "image/jpeg",
-        purpose: "maskable",
+        type: "image/png",
+        purpose: "any",
       },
       {
-        src: "/images/logo/kaplan-badge-logo.jpg",
-        sizes: "512x512",
-        type: "image/jpeg",
+        src: "/apple-icon.png",
+        sizes: "180x180",
+        type: "image/png",
         purpose: "any",
       },
     ],

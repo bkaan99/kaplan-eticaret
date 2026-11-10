@@ -32,6 +32,15 @@ export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: { default: siteConfig.name, template: `%s | ${siteConfig.name}` },
   description: siteConfig.description,
+  // Navbar rozetli logosu (kaplan-badge-logo) — app/icon.png + public/favicon.ico
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+    shortcut: "/favicon.ico",
+  },
   keywords: [
     "turşu",
     "çubuk turşusu",
