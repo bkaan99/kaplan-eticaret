@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { siteConfig } from "@/config/site.config";
 import { formatMoney } from "@/shared/money";
 import {
   ArrowRightIcon,
@@ -84,9 +83,11 @@ const quickCategories = [
   { label: "Karışık Ev Turşusu", href: "/ara?q=karışık" },
 ];
 
-export function EmptyCart() {
-  const freeShipping = siteConfig.shipping.freeShippingThreshold;
-
+export function EmptyCart({
+  freeShippingThreshold,
+}: {
+  freeShippingThreshold: number;
+}) {
   return (
     <div className="mx-auto my-4 flex w-full max-w-xl flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-12 text-center sm:px-10 sm:py-16">
       {/* Tek Renk Logo / Rozet */}
@@ -108,7 +109,8 @@ export function EmptyCart() {
       <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-50/80 border border-emerald-200/60 px-4 py-1.5 text-xs font-semibold text-emerald-800">
         <TruckIcon width={15} height={15} className="text-emerald-700" />
         <span>
-          {formatMoney(freeShipping)} ve üzeri siparişlerde kargo <strong>ücretsiz</strong>
+          {formatMoney(freeShippingThreshold)} ve üzeri siparişlerde kargo{" "}
+          <strong>ücretsiz</strong>
         </span>
       </div>
 

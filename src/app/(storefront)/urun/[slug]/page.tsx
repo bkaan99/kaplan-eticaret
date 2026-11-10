@@ -14,6 +14,8 @@ import { catalogService } from "@/modules/catalog/container";
 import { loadProduct } from "@/modules/catalog/loaders";
 import type { ProductDetail } from "@/modules/catalog/catalog.types";
 import { CUSTOM_PICKLE_PRODUCT_SLUG } from "@/modules/custom-pickle/custom-pickle.types";
+import { getCachedShippingSettings } from "@/modules/settings/cached";
+import type { ShippingSettings } from "@/modules/settings/settings.types";
 import { TrackOnMount } from "@/shared/analytics/track-on-mount";
 import { validGtin } from "@/shared/seo/gtin";
 import { absoluteUrl } from "@/shared/site-url";
@@ -102,11 +104,11 @@ async function RelatedProducts({
   );
 }
 
-function Highlights() {
+function Highlights({ shipping }: { shipping: ShippingSettings }) {
   const items = [
     {
       icon: TruckIcon,
-      text: `${formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri siparişlerde ücretsiz kargo`,
+      text: `${formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde ücretsiz kargo`,
     },
     { icon: JarIcon, text: "Kavanozlar kırılmaya karşı tek tek paketlenir" },
     {
@@ -129,13 +131,13 @@ function Highlights() {
   );
 }
 
-function ShippingInfo() {
+function ShippingInfo({ shipping }: { shipping: ShippingSettings }) {
   return (
     <div className="flex flex-col gap-2">
       <p>
-        {formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri
-        siparişlerde kargo ücretsizdir; altındaki siparişlerde{" "}
-        {formatMoney(siteConfig.shipping.flatRate)} kargo ücreti uygulanır.
+        {formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde kargo
+        ücretsizdir; altındaki siparişlerde {formatMoney(shipping.flatRate)}{" "}
+        kargo ücreti uygulanır.
       </p>
       <p>
         Teslim aldığınız tarihten itibaren{" "}
@@ -153,6 +155,7 @@ async function ProductContent({ product }: { product: ProductDetail }) {
   if (product.slug === CUSTOM_PICKLE_PRODUCT_SLUG)
     redirect("/kendi-tursunu-yap");
 
+  const shipping = await getCachedShippingSettings();
   const prices = product.variants.map((variant) => Number(variant.price));
   const lowPrice = Math.min(...prices);
   const highPrice = Math.max(...prices);
@@ -199,9 +202,9 @@ async function ProductContent({ product }: { product: ProductDetail }) {
       shippingRate: {
         "@type": "MonetaryAmount",
         value:
-          lowPrice >= siteConfig.shipping.freeShippingThreshold
+          lowPrice >= shipping.freeShippingThreshold
             ? "0.00"
-            : siteConfig.shipping.flatRate.toFixed(2),
+            : shipping.flatRate.toFixed(2),
         currency,
       },
       shippingDestination: {
@@ -326,8 +329,8 @@ async function ProductContent({ product }: { product: ProductDetail }) {
       <ProductView
         product={product}
         wishlistEnabled={isFeatureEnabled("wishlist")}
-        highlights={<Highlights />}
-        shippingInfo={<ShippingInfo />}
+        highlights={<Highlights shipping={shipping} />}
+        shippingInfo={<ShippingInfo shipping={shipping} />}
       />
 
       <Suspense fallback={null}>

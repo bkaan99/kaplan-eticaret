@@ -7,3 +7,8 @@ export interface ContactSettings {
   instagramUrl?: string | null;
   facebookUrl?: string | null;
 }
+
+export interface ShippingSettings {
+  freeShippingThreshold: number;
+  flatRate: number;
+}

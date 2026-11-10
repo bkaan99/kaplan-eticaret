@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { settingsService } from "./container";
-import type { ContactSettings } from "./settings.types";
+import type { ContactSettings, ShippingSettings } from "./settings.types";
 
 export const getCachedContactSettings: () => Promise<ContactSettings> =
   unstable_cache(
@@ -8,4 +8,11 @@ export const getCachedContactSettings: () => Promise<ContactSettings> =
     ["contact_settings_cache"],
     // OpenNext'te etiket önbelleği tanımlı değil: `revalidateTag` güvenilmez, bayatlık süreyle sınırlanır.
     { revalidate: 60, tags: ["settings", "contact_settings"] },
+  );
+
+export const getCachedShippingSettings: () => Promise<ShippingSettings> =
+  unstable_cache(
+    () => settingsService.getShippingSettings(),
+    ["shipping_settings_cache"],
+    { revalidate: 60, tags: ["settings", "shipping_settings"] },
   );

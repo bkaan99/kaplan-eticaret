@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { FreeShippingBar } from "@/components/storefront/free-shipping-bar";
 import { Price } from "@/components/storefront/price";
 import { getCurrentCart } from "@/modules/cart/cart.session";
+import { getCachedShippingSettings } from "@/modules/settings/cached";
 import { CartLines } from "./cart-lines";
 import { EmptyCart } from "./empty-cart";
 
@@ -13,16 +14,22 @@ export const metadata: Metadata = {
 };
 
 async function CartContent() {
-  const cart = await getCurrentCart();
+  const [cart, shipping] = await Promise.all([
+    getCurrentCart(),
+    getCachedShippingSettings(),
+  ]);
 
   if (cart.lines.length === 0) {
-    return <EmptyCart />;
+    return <EmptyCart freeShippingThreshold={shipping.freeShippingThreshold} />;
   }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <div className="flex flex-col gap-4">
-        <FreeShippingBar subtotal={cart.subtotal} />
+        <FreeShippingBar
+          subtotal={cart.subtotal}
+          threshold={shipping.freeShippingThreshold}
+        />
         <CartLines cart={cart} />
       </div>
       <aside className="flex h-fit flex-col gap-4 rounded-theme border border-border p-5">

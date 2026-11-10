@@ -8,6 +8,7 @@ import { adminPage } from "@/modules/admin/guard";
 import { settingsService } from "@/modules/settings/container";
 import { PERMISSIONS } from "@/shared/permissions";
 import { SettingsForm } from "./settings-form";
+import { ShippingSettingsForm } from "./shipping-settings-form";
 
 export const metadata: Metadata = { title: "Site & İletişim Ayarları" };
 
@@ -15,8 +16,17 @@ async function SettingsContent() {
   const user = await adminPage(PERMISSIONS.SETTING_MANAGE);
   if (!user) return <AccessDenied />;
 
-  const settings = await settingsService.getContactSettings();
-  return <SettingsForm initialSettings={settings} />;
+  const [contact, shipping] = await Promise.all([
+    settingsService.getContactSettings(),
+    settingsService.getShippingSettings(),
+  ]);
+
+  return (
+    <div className="flex flex-col gap-5">
+      <ShippingSettingsForm initialSettings={shipping} />
+      <SettingsForm initialSettings={contact} />
+    </div>
+  );
 }
 
 export default function AdminSettingsPage() {
@@ -24,7 +34,7 @@ export default function AdminSettingsPage() {
     <>
       <PageHeader
         title="Site & İletişim"
-        description="Telefon, WhatsApp, e-posta, adres ve sosyal bağlantılar — vitrin, footer ve iletişim sayfasında kullanılır."
+        description="Kargo kuralları, telefon, WhatsApp, e-posta, adres ve sosyal bağlantılar — vitrin, footer, navbar ve ödeme hesabında kullanılır."
         actions={
           <Link
             href="/iletisim"

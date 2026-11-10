@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { isFeatureEnabled } from "@/config/features";
-import { siteConfig } from "@/config/site.config";
 import { storefrontContact } from "@/config/storefront-contact";
 import { getCategoryTree } from "@/modules/catalog/cached";
 import { getCachedMenu } from "@/modules/content/cached";
-import { getCachedContactSettings } from "@/modules/settings/cached";
+import {
+  getCachedContactSettings,
+  getCachedShippingSettings,
+} from "@/modules/settings/cached";
 import { formatMoney } from "@/shared/money";
 import { HeaderNav } from "./header-nav";
 import { BidonThumb, HeartIcon, TruckIcon } from "./icons";
@@ -15,10 +17,11 @@ import { SearchForm } from "./search-form";
 import { StorefrontShellActions } from "./storefront-shell";
 
 async function MobileNavContainer() {
-  const [tree, extra, contact] = await Promise.all([
+  const [tree, extra, contact, shipping] = await Promise.all([
     getCategoryTree(),
     getCachedMenu("header"),
     getCachedContactSettings(),
+    getCachedShippingSettings(),
   ]);
 
   return (
@@ -29,7 +32,7 @@ async function MobileNavContainer() {
       sitePhoneTel={storefrontContact.phoneTel}
       siteEmail={contact.email}
       workingHours={storefrontContact.workingHours}
-      freeShippingThreshold={siteConfig.shipping.freeShippingThreshold}
+      freeShippingThreshold={shipping.freeShippingThreshold}
       wishlistEnabled={isFeatureEnabled("wishlist")}
       b2bEnabled={isFeatureEnabled("b2b")}
     />
@@ -74,14 +77,15 @@ const iconLinkClass =
 const secondaryLinkClass =
   "rounded-full px-2.5 py-2 text-[13px] font-bold whitespace-nowrap text-primary transition-colors hover:text-brand-dark hover:underline";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const shipping = await getCachedShippingSettings();
+
   return (
     <>
       {/* Üst duyuru bandı: sayfayla birlikte kayar */}
       <div className="bg-primary text-white">
         <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs font-medium sm:text-sm">
-          {formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri
-          siparişlerde{" "}
+          {formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde{" "}
           <strong className="font-extrabold">kargo ücretsiz!</strong>
         </p>
       </div>
