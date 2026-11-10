@@ -137,7 +137,7 @@ export function SearchForm({ className = "" }: SearchFormProps) {
           aria-label="Ürün ara"
           autoComplete="off"
           spellCheck="false"
-          className="h-12 w-full rounded-full border border-slate-200 bg-[#f4f5f0] pr-28 pl-5 text-sm font-semibold text-slate-900 transition-colors outline-none placeholder:font-semibold placeholder:text-slate-500 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+          className="h-12 w-full rounded-full border border-slate-200 bg-[#f4f5f0] pr-28 pl-5 text-sm font-semibold text-slate-900 transition-colors outline-none placeholder:font-semibold placeholder:text-slate-500 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
         />
 
         {/* Temizleme (X) Butonu */}
