@@ -75,15 +75,15 @@ export function MenuEditor({
             {items.map((item, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/50 p-2 text-xs"
+                className="flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-slate-50/50 p-2.5 text-xs sm:flex-row sm:items-center"
               >
                 {/* Sıralama Butonları */}
-                <div className="flex flex-col gap-0.5 shrink-0">
+                <div className="flex shrink-0 gap-1 sm:flex-col sm:gap-0.5">
                   <button
                     type="button"
                     disabled={index === 0}
                     onClick={() => move(index, "up")}
-                    className="rounded p-0.5 text-slate-400 hover:text-slate-800 disabled:opacity-20"
+                    className="flex min-h-10 min-w-10 items-center justify-center rounded-lg text-slate-400 hover:bg-white hover:text-slate-800 disabled:opacity-20 sm:min-h-0 sm:min-w-0 sm:rounded sm:p-0.5"
                     title="Yukarı Taşı"
                   >
                     ▲
@@ -92,7 +92,7 @@ export function MenuEditor({
                     type="button"
                     disabled={index === items.length - 1}
                     onClick={() => move(index, "down")}
-                    className="rounded p-0.5 text-slate-400 hover:text-slate-800 disabled:opacity-20"
+                    className="flex min-h-10 min-w-10 items-center justify-center rounded-lg text-slate-400 hover:bg-white hover:text-slate-800 disabled:opacity-20 sm:min-h-0 sm:min-w-0 sm:rounded sm:p-0.5"
                     title="Aşağı Taşı"
                   >
                     ▼
@@ -111,7 +111,7 @@ export function MenuEditor({
                       ),
                     )
                   }
-                  className="h-8 rounded-lg bg-white text-xs font-semibold"
+                  className="h-10 rounded-lg bg-white text-xs font-semibold sm:h-8"
                 />
 
                 {/* Adres Input */}
@@ -126,7 +126,7 @@ export function MenuEditor({
                       ),
                     )
                   }
-                  className="h-8 rounded-lg bg-white text-xs font-mono"
+                  className="h-10 rounded-lg bg-white font-mono text-xs sm:h-8"
                 />
 
                 {/* Sil Butonu */}
@@ -137,7 +137,7 @@ export function MenuEditor({
                   onClick={() =>
                     setItems((rows) => rows.filter((_, i) => i !== index))
                   }
-                  className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 rounded-lg shrink-0"
+                  className="h-10 w-full shrink-0 rounded-lg p-0 text-slate-400 hover:text-red-600 sm:h-8 sm:w-8"
                 >
                   ✕
                 </Button>

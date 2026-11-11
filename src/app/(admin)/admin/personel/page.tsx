@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { AdminLoading } from "@/components/admin/admin-list";
@@ -41,11 +42,18 @@ export default function StaffPage() {
     <>
       <PageHeader
         title="Personel"
-        description="Yönetim paneline erişecek personeli davet edin ve rollerini yönetin."
+        description="Yönetim paneline erişecek kişileri davet edin, rollerini atayın ve hesap durumunu yönetin."
+        actions={
+          <Link
+            href="/admin/roller"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            Roller ve yetkiler
+            <span className="text-slate-400">→</span>
+          </Link>
+        }
       />
-      <Suspense
-        fallback={<AdminLoading />}
-      >
+      <Suspense fallback={<AdminLoading label="Personel yükleniyor..." />}>
         <StaffContent />
       </Suspense>
     </>

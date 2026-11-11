@@ -1,4 +1,3 @@
-import { siteConfig } from "@/config/site.config";
 import { freeShippingProgress } from "@/modules/checkout/shipping";
 import { cn } from "@/shared/cn";
 import { formatMoney } from "@/shared/money";
@@ -7,12 +6,13 @@ import { TruckIcon } from "./icons";
 /** Sepet ara toplamına göre ücretsiz kargoya kalan tutarı gösteren çubuk. */
 export function FreeShippingBar({
   subtotal,
+  threshold,
   className,
 }: {
   subtotal: string;
+  threshold: number;
   className?: string;
 }) {
-  const threshold = siteConfig.shipping.freeShippingThreshold;
   const progress = freeShippingProgress(subtotal, threshold);
 
   return (

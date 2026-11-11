@@ -8,6 +8,10 @@ import {
   accountPrimaryBtn,
 } from "@/components/storefront/account-ui";
 import {
+  sanitizeTurkishMobileInput,
+  TR_MOBILE_INPUT_MAX_DIGITS,
+} from "@/shared/phone/tr-mobile";
+import {
   changePasswordAction,
   deleteAccountAction,
   updateProfileAction,
@@ -90,7 +94,7 @@ export function ProfileForm({
           readOnly
         />
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className={accountLabel}>
           Ad
           <input
@@ -114,8 +118,17 @@ export function ProfileForm({
         Cep telefonu
         <input
           className={accountField}
+          type="tel"
+          inputMode="numeric"
+          maxLength={TR_MOBILE_INPUT_MAX_DIGITS}
+          placeholder="05XXXXXXXXX"
           value={values.phone}
-          onChange={(e) => setValues({ ...values, phone: e.target.value })}
+          onChange={(e) =>
+            setValues({
+              ...values,
+              phone: sanitizeTurkishMobileInput(e.target.value),
+            })
+          }
         />
       </label>
       <button type="submit" disabled={pending} className={accountPrimaryBtn}>

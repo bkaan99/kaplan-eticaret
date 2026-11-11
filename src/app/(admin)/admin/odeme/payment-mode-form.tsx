@@ -209,11 +209,12 @@ export function PaymentModeForm({
             </p>
           ) : null}
 
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
             {dirty ? (
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => {
                   setSelected(saved);
                   setConfirmLive(false);
@@ -223,7 +224,12 @@ export function PaymentModeForm({
                 Vazgeç
               </Button>
             ) : null}
-            <Button type="button" onClick={save} disabled={!canSave}>
+            <Button
+              type="button"
+              className="w-full sm:w-auto"
+              onClick={save}
+              disabled={!canSave}
+            >
               {pending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>

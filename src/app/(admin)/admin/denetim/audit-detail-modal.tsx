@@ -61,7 +61,7 @@ export function AuditDetailModal({ row, onClose }: AuditDetailModalProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="audit-detail-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-4 animate-in fade-in duration-200"
     >
       {/* Backdrop */}
       <div
@@ -70,7 +70,7 @@ export function AuditDetailModal({ row, onClose }: AuditDetailModalProps) {
       />
 
       {/* Modal Kutusu */}
-      <div className="relative flex max-h-[92vh] w-full max-w-3xl flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
+      <div className="relative z-10 flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200 sm:rounded-3xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-50 to-emerald-50/20 px-6 py-4.5">
           <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export function AuditDetailModal({ row, onClose }: AuditDetailModalProps) {
         {/* Modal Gövdesi */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           {/* Olay Meta Kartları */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Tarih & Saat

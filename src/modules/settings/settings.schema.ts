@@ -1,5 +1,22 @@
 import { z } from "zod";
 
+export const shippingSettingsSchema = z.object({
+  /** Bu tutar ve üzeri siparişlerde kargo ücretsiz */
+  freeShippingThreshold: z.coerce
+    .number()
+    .finite()
+    .min(0, "Ücretsiz kargo eşiği 0 veya daha büyük olmalı")
+    .max(1_000_000, "Ücretsiz kargo eşiği çok yüksek"),
+  /** Eşiğin altındaki siparişlerde uygulanan sabit kargo ücreti */
+  flatRate: z.coerce
+    .number()
+    .finite()
+    .min(0, "Kargo ücreti 0 veya daha büyük olmalı")
+    .max(10_000, "Kargo ücreti çok yüksek"),
+});
+
+export type ShippingSettingsInput = z.infer<typeof shippingSettingsSchema>;
+
 export const contactSettingsSchema = z.object({
   phone: z
     .string()

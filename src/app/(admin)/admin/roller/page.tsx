@@ -24,17 +24,15 @@ export default function RolesPage() {
     <>
       <PageHeader
         title="Roller ve Yetkiler"
-        description="Yetki profillerini oluşturun veya düzenleyin; yalnızca sizde bulunan yetkileri devredebilirsiniz. Sistem rollerinin adı sabittir; kimseye atanmamış roller silinebilir."
+        description="Panel erişim profillerini yönetin. Yalnızca sizde bulunan yetkileri devredebilirsiniz; sistem rollerinin adı sabittir, atanmamış özel roller silinebilir."
         actions={
-          <div className="flex items-center gap-2">
-            <Link
-              href="/admin/personel"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
-            >
-              <span>👥 Personel Yönetimi</span>
-              <span className="text-slate-400">→</span>
-            </Link>
-          </div>
+          <Link
+            href="/admin/personel"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            Personel yönetimi
+            <span className="text-slate-400">→</span>
+          </Link>
         }
       />
       <Suspense fallback={<AdminLoading label="Yetki rolleri yükleniyor..." />}>

@@ -140,7 +140,7 @@ export function ProductForm({
       size="default"
       disabled={form.pending}
       onClick={form.submit}
-      className="min-w-36 cursor-pointer px-5"
+      className="w-full min-w-36 cursor-pointer px-5 sm:w-auto"
     >
       {form.pending ? (
         <>
@@ -233,7 +233,7 @@ export function ProductForm({
               role="tab"
               aria-selected={isActive}
               onClick={() => setActiveTab(tab.id)}
-              className={`-mb-px inline-flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-3 pt-2 pb-2.5 text-[13px] font-medium whitespace-nowrap transition-colors ${
+              className={`-mb-px inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 border-b-2 px-3 pt-2 pb-2.5 text-[13px] font-medium whitespace-nowrap transition-colors sm:min-h-0 ${
                 isActive
                   ? "border-slate-900 text-slate-900"
                   : "border-transparent text-slate-500 hover:text-slate-800"
@@ -349,17 +349,17 @@ export function ProductForm({
         className={
           isModal
             ? "sticky bottom-0 -mx-5 mt-2 border-t border-slate-200/80 bg-white/95 px-5 py-3.5 backdrop-blur-md"
-            : "fixed right-0 bottom-0 left-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_-4px_12px_-6px_rgb(15_23_42/0.12)] backdrop-blur-md sm:px-6 md:left-60"
+            : "fixed right-0 bottom-0 left-0 z-40 border-t border-slate-200/80 bg-white/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_-6px_rgb(15_23_42/0.12)] backdrop-blur-md sm:px-6 md:left-60"
         }
       >
         <div
           className={
             isModal
               ? "flex items-center justify-between gap-4"
-              : "mx-auto flex max-w-7xl items-center justify-between gap-4"
+              : "mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
           }
         >
-          <div className="flex items-center gap-3 text-xs text-slate-500">
+          <div className="hidden items-center gap-3 text-xs text-slate-500 sm:flex">
             {isCustomPickle ? (
               <span className="font-medium text-slate-700">
                 {form.variants.length} bidon boyutu tanımlı
@@ -373,14 +373,14 @@ export function ProductForm({
               </span>
             )}
             {form.saved ? (
-              <span className="hidden font-semibold text-emerald-700 sm:inline">
+              <span className="font-semibold text-emerald-700">
                 · Kaydedildi
               </span>
             ) : null}
           </div>
 
-          <div className="flex items-center gap-3">
-            {cancelControl}
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end sm:gap-3">
+            <div className="hidden sm:block">{cancelControl}</div>
             {saveButton}
           </div>
         </div>

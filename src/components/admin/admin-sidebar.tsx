@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/storefront/logo";
 import { siteConfig } from "@/config/site.config";
-import type { AdminNavItem } from "@/modules/admin/navigation";
+import {
+  ADMIN_NAV_GROUP_LABELS,
+  ADMIN_NAV_GROUP_ORDER,
+  type AdminNavGroup,
+  type AdminNavItem,
+} from "@/modules/admin/navigation";
+import { cn } from "@/shared/cn";
+import { AdminLogoutButton } from "./admin-logout-button";
 
 interface AdminSidebarProps {
   nav: AdminNavItem[];
@@ -20,8 +27,8 @@ interface AdminSidebarProps {
 function getNavIcon(href: string) {
   const props = {
     viewBox: "0 0 24 24",
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
     fill: "none",
     stroke: "currentColor",
     strokeWidth: 1.9,
@@ -153,6 +160,20 @@ function getNavIcon(href: string) {
           <path d="M5 12h14" />
         </svg>
       );
+    case "/admin/odeme":
+      return (
+        <svg {...props}>
+          <rect width="20" height="14" x="2" y="5" rx="2" />
+          <path d="M2 10h20" />
+        </svg>
+      );
+    case "/admin/ayarlar":
+      return (
+        <svg {...props}>
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
     default:
       return (
         <svg {...props}>
@@ -162,111 +183,208 @@ function getNavIcon(href: string) {
   }
 }
 
+function isItemActive(pathname: string, href: string) {
+  return href === "/admin"
+    ? pathname === "/admin"
+    : pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function AdminSidebar({
   nav,
-  user: _user,
-  siteName: _siteName,
+  user,
   version = siteConfig.version,
 }: AdminSidebarProps) {
-  void _user;
-  void _siteName;
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const activeItem = useMemo(
+    () =>
+      nav.find((item) => isItemActive(pathname, item.href)) ??
+      nav.find((item) => item.href === "/admin") ??
+      null,
+    [nav, pathname],
+  );
+
+  const grouped = useMemo(() => {
+    const map = new Map<AdminNavGroup, AdminNavItem[]>();
+    for (const group of ADMIN_NAV_GROUP_ORDER) map.set(group, []);
+    for (const item of nav) {
+      const list = map.get(item.group) ?? [];
+      list.push(item);
+      map.set(item.group, list);
+    }
+    return ADMIN_NAV_GROUP_ORDER.map((group) => ({
+      group,
+      label: ADMIN_NAV_GROUP_LABELS[group],
+      items: map.get(group) ?? [],
+    })).filter((section) => section.items.length > 0);
+  }, [nav]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mobileOpen]);
+
   return (
     <>
-      {/* Mobil Üst Bar */}
-      <div className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-[#0c1a13] px-4 text-white md:hidden">
-        <Logo showBadge inverted compact href="/admin" />
+      {/* Tek mobil üst bar */}
+      <div className="sticky top-0 z-40 flex min-h-14 items-center gap-3 border-b border-emerald-950/80 bg-[#0c1a13] px-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-white md:hidden">
         <button
           type="button"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 text-white"
-          aria-label="Menüyü aç/kapat"
+          onClick={() => setMobileOpen(true)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white transition active:bg-white/10"
+          aria-label="Menüyü aç"
+          aria-expanded={mobileOpen}
+          aria-controls="admin-mobile-drawer"
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="18" x2="21" y2="18" />
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <line x1="4" y1="7" x2="20" y2="7" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="17" x2="20" y2="17" />
           </svg>
         </button>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] font-semibold tracking-tight text-white">
+            {activeItem?.label ?? "Yönetim"}
+          </p>
+          <p className="truncate text-[11px] text-emerald-200/70">
+            {siteConfig.name}
+          </p>
+        </div>
+
+        <Link
+          href="/"
+          target="_blank"
+          className="inline-flex h-10 shrink-0 items-center rounded-xl border border-white/15 bg-white/5 px-2.5 text-[12px] font-medium text-emerald-100 transition active:bg-white/10"
+        >
+          Mağaza
+          <span className="ml-1 text-white/40">↗</span>
+        </Link>
       </div>
 
-      {/* Kenar Çubuğu — masaüstünde sabit (scroll etmez) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-60 flex-col bg-[#0c1a13] text-slate-300 transition-transform duration-300 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
+        id="admin-mobile-drawer"
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(20rem,88vw)] flex-col bg-[#0c1a13] text-slate-300 transition-transform duration-300 ease-out md:w-60",
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        )}
       >
-        {/* Logo — vitrin ile aynı amblem */}
-        <div className="flex h-14 items-center justify-between gap-2 border-b border-emerald-950/80 px-3.5">
+        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-emerald-950/80 px-3.5">
           <Logo showBadge inverted compact href="/admin" />
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
-            className="shrink-0 text-slate-400 hover:text-white md:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-white md:hidden"
             aria-label="Menüyü kapat"
           >
             ✕
           </button>
         </div>
 
-        {/* Canlı Sistem Rozeti */}
         <div className="px-3.5 pt-3 pb-1.5">
-          <div className="flex items-center justify-between rounded-lg border border-emerald-900/40 bg-emerald-950/40 px-2.5 py-1 text-[11px]">
+          <div className="flex items-center justify-between rounded-lg border border-emerald-900/40 bg-emerald-950/40 px-2.5 py-1.5 text-[11px]">
             <span className="flex items-center gap-1.5 font-medium text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Sistem Aktif
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+              Sistem aktif
             </span>
             <span className="text-[10px] text-slate-400">v{version}</span>
           </div>
         </div>
 
-        {/* Navigasyon Öğeleri */}
+        {user ? (
+          <div className="mx-3.5 mb-1 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5 md:hidden">
+            <p className="truncate text-[13px] font-semibold text-white">
+              {user.name || user.email}
+            </p>
+            <p className="truncate text-[11px] text-slate-400">{user.email}</p>
+          </div>
+        ) : null}
+
         <nav
           aria-label="Yönetim menüsü"
-          className="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-2 [scrollbar-width:none]"
+          className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-2.5 py-2 [scrollbar-width:thin]"
         >
-          {nav.map((item) => {
-            const isActive =
-              item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={`group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 ${
-                  isActive
-                    ? "border-l-2 border-emerald-400 bg-emerald-600/20 font-medium text-white shadow-2xs"
-                    : "text-slate-400 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <span
-                  className={`transition-colors ${
-                    isActive ? "text-emerald-400" : "text-slate-500 group-hover:text-slate-300"
-                  }`}
-                >
-                  {getNavIcon(item.href)}
-                </span>
-                <span className="flex-1 truncate">{item.label}</span>
-                {isActive && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                )}
-              </Link>
-            );
-          })}
+          {grouped.map((section) => (
+            <div key={section.group} className="space-y-1">
+              <p className="px-2.5 pb-0.5 text-[10px] font-bold tracking-[0.14em] text-slate-500 uppercase">
+                {section.label}
+              </p>
+              {section.items.map((item) => {
+                const active = isItemActive(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "group flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors md:min-h-0 md:gap-2.5 md:rounded-lg md:px-2.5 md:py-2 md:text-[13px]",
+                      active
+                        ? "bg-emerald-600/20 font-semibold text-white shadow-2xs ring-1 ring-emerald-500/30"
+                        : "text-slate-400 hover:bg-white/5 hover:text-white",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "transition-colors",
+                        active
+                          ? "text-emerald-400"
+                          : "text-slate-500 group-hover:text-slate-300",
+                      )}
+                    >
+                      {getNavIcon(item.href)}
+                    </span>
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {active ? (
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
+
+        <div className="shrink-0 space-y-2 border-t border-emerald-950/80 p-3 md:hidden">
+          <Link
+            href="/"
+            target="_blank"
+            onClick={() => setMobileOpen(false)}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-[13px] font-medium text-emerald-100 transition hover:bg-white/10"
+          >
+            Mağazayı aç
+            <span className="text-white/40">↗</span>
+          </Link>
+          <AdminLogoutButton variant="sidebar" />
+        </div>
       </aside>
 
-      {/* Masaüstünde sidebar için yer, layout'taki md:pl-60 ile ayrılır (ayrı spacer yok). */}
-
-      {/* Mobil Backdrop */}
       {mobileOpen ? (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
+        <button
+          type="button"
+          aria-label="Menüyü kapat"
+          className="fixed inset-0 z-40 bg-black/55 backdrop-blur-[2px] md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       ) : null}

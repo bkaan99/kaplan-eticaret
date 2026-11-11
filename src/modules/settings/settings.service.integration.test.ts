@@ -68,4 +68,33 @@ describe("SettingsService (veritabanı)", () => {
       }),
     );
   });
+
+  it("kargo kurallarını kaydeder ve okur", async () => {
+    const audit = { log: vi.fn().mockResolvedValue(undefined) };
+    const service = new SettingsService(
+      new D1SettingsRepository(() => db),
+      audit as never,
+    );
+
+    await service.saveShippingSettings(
+      { freeShippingThreshold: 750, flatRate: 59.9 },
+      { userId: "admin-1" },
+    );
+
+    const saved = await service.getShippingSettings();
+    expect(saved).toEqual({
+      freeShippingThreshold: 750,
+      flatRate: 59.9,
+    });
+
+    const config = await service.getShippingConfig();
+    expect(config.freeShippingThreshold).toBe(750);
+    expect(config.flatRate).toBe(59.9);
+    expect(audit.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "settings.shipping.update",
+        actorId: "admin-1",
+      }),
+    );
+  });
 });

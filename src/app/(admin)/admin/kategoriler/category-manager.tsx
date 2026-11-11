@@ -241,7 +241,7 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
             <Button
               type="button"
               onClick={() => handleCreateNew()}
-              className="h-9 bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 cursor-pointer"
+              className="h-10 w-full bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 cursor-pointer sm:h-9 sm:w-auto"
             >
               + Yeni Kategori Ekle
             </Button>
@@ -264,7 +264,7 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
                     key={category.id}
                     className="group flex flex-col gap-3 px-4 py-3.5 transition-all hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between"
                     style={{
-                      paddingLeft: `${Math.max(16, 16 + category.depth * 28)}px`,
+                      paddingLeft: `${Math.max(16, 16 + Math.min(category.depth, 3) * 16)}px`,
                     }}
                   >
                     {/* Sol Bilgiler */}
@@ -313,12 +313,12 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
                     </div>
 
                     {/* Sağ Eylemler */}
-                    <div className="flex shrink-0 items-center gap-1.5 self-end sm:self-center">
+                    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:items-center sm:gap-1.5 sm:self-center">
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleCreateNew(category.id)}
-                        className="h-7.5 px-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+                        className="h-10 w-full cursor-pointer px-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 sm:h-7.5 sm:w-auto"
                         title="Bu kategori altına alt kategori ekle"
                       >
                         + Alt Kategori
@@ -328,16 +328,17 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
                         href={`/kategori/${category.slug}`}
                         target="_blank"
                         title="Mağazada Görüntüle"
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs text-slate-600 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition"
+                        className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 sm:h-7.5 sm:w-7.5 sm:gap-0"
                       >
-                        ↗
+                        <span className="sm:hidden">Mağazada aç</span>
+                        <span aria-hidden="true">↗</span>
                       </Link>
 
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEdit(category)}
-                        className="h-7.5 px-3 text-xs font-semibold border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                        className="h-10 w-full cursor-pointer border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 sm:h-7.5 sm:w-auto"
                       >
                         Düzenle
                       </Button>
@@ -347,7 +348,7 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
                         variant="ghost"
                         disabled={pending || deleteBlocked}
                         onClick={() => remove(category.id, category.name)}
-                        className="h-7.5 w-7.5 p-0 text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer disabled:opacity-40"
+                        className="h-10 w-full cursor-pointer px-3 text-xs font-semibold text-rose-600 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40 sm:h-7.5 sm:w-7.5 sm:p-0 sm:font-normal sm:text-slate-400"
                         title={
                           category.productCount > 0
                             ? "Ürünü olan kategori silinemez"
@@ -356,7 +357,10 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
                               : "Kategoriyi sil"
                         }
                       >
-                        ✕
+                        <span className="sm:hidden">Sil</span>
+                        <span className="hidden sm:inline" aria-hidden="true">
+                          ✕
+                        </span>
                       </Button>
                     </div>
                   </li>

@@ -77,5 +77,5 @@ body {
 
 /* Kendi Turşunu Yap: sabit alt çubuk sayfa sonunu kapatmasın */
 body:has([data-builder-bar]) {
-  padding-bottom: 8rem;
+  padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
 }

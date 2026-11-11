@@ -47,25 +47,27 @@ export default function AdminAttributesPage() {
     <>
       <PageHeader
         title="Nitelikler ve Markalar"
-        description="Ürün filtreleme özellikleri, varyasyon etiketleri ve üretici markaları."
+        description="Ürün filtreleri, varyasyon değerleri ve üretici markalarını yönetin. Vitrin filtresi açık nitelikler mağaza aramasında görünür."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/admin/kategoriler"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
             >
-              <span>📁 Kategoriler</span>
+              Kategoriler
+              <span className="text-slate-400">→</span>
             </Link>
             <Link
               href="/admin/urunler"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-emerald-700 px-3.5 text-xs font-semibold text-white shadow-2xs hover:bg-emerald-800 transition"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
             >
-              <span>Ürün Listesine Git →</span>
+              Ürünler
+              <span className="text-slate-400">→</span>
             </Link>
           </div>
         }
       />
-      <Suspense fallback={<AdminLoading />}>
+      <Suspense fallback={<AdminLoading label="Nitelikler yükleniyor..." />}>
         <AttributesContent />
       </Suspense>
     </>

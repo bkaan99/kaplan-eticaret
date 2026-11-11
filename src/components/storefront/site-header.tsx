@@ -1,24 +1,30 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { isFeatureEnabled } from "@/config/features";
-import { siteConfig } from "@/config/site.config";
 import { storefrontContact } from "@/config/storefront-contact";
 import { getCategoryTree } from "@/modules/catalog/cached";
 import { getCachedMenu } from "@/modules/content/cached";
-import { getCachedContactSettings } from "@/modules/settings/cached";
+import {
+  getCachedContactSettings,
+  getCachedShippingSettings,
+} from "@/modules/settings/cached";
 import { formatMoney } from "@/shared/money";
 import { HeaderNav } from "./header-nav";
 import { BidonThumb, HeartIcon, TruckIcon } from "./icons";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
 import { SearchForm } from "./search-form";
-import { StorefrontShellActions } from "./storefront-shell";
+import {
+  StorefrontShellActions,
+  StorefrontShellProvider,
+} from "./storefront-shell";
 
 async function MobileNavContainer() {
-  const [tree, extra, contact] = await Promise.all([
+  const [tree, extra, contact, shipping] = await Promise.all([
     getCategoryTree(),
     getCachedMenu("header"),
     getCachedContactSettings(),
+    getCachedShippingSettings(),
   ]);
 
   return (
@@ -29,7 +35,7 @@ async function MobileNavContainer() {
       sitePhoneTel={storefrontContact.phoneTel}
       siteEmail={contact.email}
       workingHours={storefrontContact.workingHours}
-      freeShippingThreshold={siteConfig.shipping.freeShippingThreshold}
+      freeShippingThreshold={shipping.freeShippingThreshold}
       wishlistEnabled={isFeatureEnabled("wishlist")}
       b2bEnabled={isFeatureEnabled("b2b")}
     />
@@ -74,19 +80,35 @@ const iconLinkClass =
 const secondaryLinkClass =
   "rounded-full px-2.5 py-2 text-[13px] font-bold whitespace-nowrap text-primary transition-colors hover:text-brand-dark hover:underline";
 
-export function SiteHeader() {
+async function FreeShippingBanner() {
+  const shipping = await getCachedShippingSettings();
+  return (
+    <div className="bg-primary text-white">
+      <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs font-medium sm:text-sm">
+        {formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde{" "}
+        <strong className="font-extrabold">kargo ücretsiz!</strong>
+      </p>
+    </div>
+  );
+}
+
+export async function SiteHeader() {
   return (
     <>
-      {/* Üst duyuru bandı: sayfayla birlikte kayar */}
-      <div className="bg-primary text-white">
-        <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs font-medium sm:text-sm">
-          {formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri
-          siparişlerde{" "}
-          <strong className="font-extrabold">kargo ücretsiz!</strong>
-        </p>
-      </div>
+      {/* Üst duyuru bandı: sayfayla birlikte kayar; D1 çağrısı Suspense içinde */}
+      <Suspense
+        fallback={
+          <div className="bg-primary text-white">
+            <p className="mx-auto max-w-6xl px-4 py-2 text-center text-xs font-medium sm:text-sm">
+              &nbsp;
+            </p>
+          </div>
+        }
+      >
+        <FreeShippingBanner />
+      </Suspense>
 
-      <header className="relative z-40 border-b border-slate-200 bg-white md:sticky md:top-0">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         {/* Satır 1: logo (sol) · arama (orta) · aksiyonlar (sağ). Tam genişlik;
             dar ekranda arama alt satıra iner. */}
         <div className="mx-auto grid w-full max-w-[1600px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,40rem)_minmax(0,1fr)] md:gap-x-6 lg:px-8 2xl:px-12">
@@ -113,13 +135,15 @@ export function SiteHeader() {
                 <HeartIcon />
               </Link>
             ) : null}
-            {/* Sepet/hesap istemci kabuğu — HTML edge cache için SSR kişiselleştirme yok */}
-            <div className="flex items-center gap-0.5 sm:gap-1 max-sm:[&>div:first-child]:hidden">
-              <StorefrontShellActions accountClassName={iconLinkClass} />
-            </div>
-            <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
-              <MobileNavContainer />
-            </Suspense>
+            {/* Sepet/hesap/admin — tek shell isteği; mobilde Admin hamburger içinde */}
+            <StorefrontShellProvider>
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <StorefrontShellActions accountClassName={iconLinkClass} />
+              </div>
+              <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
+                <MobileNavContainer />
+              </Suspense>
+            </StorefrontShellProvider>
           </div>
         </div>
 

@@ -51,7 +51,7 @@ export function DealerApplyForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-theme bg-primary px-4 py-2 text-primary-foreground disabled:opacity-60"
+        className="min-h-11 rounded-theme bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
       >
         {pending ? "Gönderiliyor..." : "Başvuruyu gönder"}
       </button>

@@ -12,7 +12,10 @@ import { storefrontContact } from "@/config/storefront-contact";
 import { formatMoney } from "@/shared/money";
 import { absoluteUrl, getSiteUrl } from "@/shared/site-url";
 import { getCategoryTree } from "@/modules/catalog/cached";
-import { getCachedContactSettings } from "@/modules/settings/cached";
+import {
+  getCachedContactSettings,
+  getCachedShippingSettings,
+} from "@/modules/settings/cached";
 import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { catalogService } from "@/modules/catalog/container";
 import { customPickleService } from "@/modules/custom-pickle/container";
@@ -218,7 +221,7 @@ async function BuilderBand() {
           </ol>
         </div>
         <div className="flex flex-col gap-3">
-          <ul className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
             {data.sizes.map((size) => (
               <li
                 key={size.variantId}
@@ -397,7 +400,7 @@ function CustomerReviews() {
                 &ldquo;{r.comment}&rdquo;
               </p>
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+            <div className="mt-4 flex flex-col gap-1 border-t border-slate-100 pt-3 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2">
               <div>
                 <span className="font-bold text-slate-900">{r.name}</span>
                 <span className="text-slate-400"> · {r.city}</span>
@@ -413,37 +416,38 @@ function CustomerReviews() {
   );
 }
 
-const FAQ_ITEMS = [
-  {
-    q: "Turşularınızda koruyucu veya katkı maddesi var mı?",
-    a: "Hayır. Turşularımız kaya tuzu, kaynak suyu ve doğal fermantasyonla hazırlanır; kimyasal koruyucu kullanılmaz.",
-  },
-  {
-    q: "Turşuyu açtıktan sonra nasıl saklamalıyım?",
-    a: "Açılan kavanozu buzdolabında saklayın, ürünü temiz ve kuru bir kaşıkla alın, turşunun suyunun üzerini örtmesine dikkat edin.",
-  },
-  {
-    q: "Kargo ücreti ne kadar?",
-    a: `${formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri siparişlerde kargo ücretsizdir. Altındaki siparişlerde ücret ödeme adımında gösterilir.`,
-  },
-  {
-    q: "Ürünüm hasarlı gelirse ne yapmalıyım?",
-    a: `Ürünün fotoğrafıyla birlikte ${storefrontContact.phone} numarasından bize ulaşın. Yasal cayma süresi ${siteConfig.returns.withdrawalPeriodDays} gündür.`,
-  },
-  {
-    q: "Kendi turşumu nasıl hazırlatabilirim?",
-    a: "Kendi Turşunu Yap sayfasından bidon boyutunu seçip malzemeleri ekleyin, salamura ve acılığı belirleyin; siparişinizi tarifinize göre hazırlayalım.",
-  },
-];
+async function Faq() {
+  const shipping = await getCachedShippingSettings();
+  const items = [
+    {
+      q: "Turşularınızda koruyucu veya katkı maddesi var mı?",
+      a: "Hayır. Turşularımız kaya tuzu, kaynak suyu ve doğal fermantasyonla hazırlanır; kimyasal koruyucu kullanılmaz.",
+    },
+    {
+      q: "Turşuyu açtıktan sonra nasıl saklamalıyım?",
+      a: "Açılan kavanozu buzdolabında saklayın, ürünü temiz ve kuru bir kaşıkla alın, turşunun suyunun üzerini örtmesine dikkat edin.",
+    },
+    {
+      q: "Kargo ücreti ne kadar?",
+      a: `${formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde kargo ücretsizdir. Altındaki siparişlerde ücret ödeme adımında gösterilir.`,
+    },
+    {
+      q: "Ürünüm hasarlı gelirse ne yapmalıyım?",
+      a: `Ürünün fotoğrafıyla birlikte ${storefrontContact.phone} numarasından bize ulaşın. Yasal cayma süresi ${siteConfig.returns.withdrawalPeriodDays} gündür.`,
+    },
+    {
+      q: "Kendi turşumu nasıl hazırlatabilirim?",
+      a: "Kendi Turşunu Yap sayfasından bidon boyutunu seçip malzemeleri ekleyin, salamura ve acılığı belirleyin; siparişinizi tarifinize göre hazırlayalım.",
+    },
+  ];
 
-function Faq() {
   return (
     <section className="flex flex-col gap-6">
       <JsonLd
         data={{
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: FAQ_ITEMS.map((item) => ({
+          mainEntity: items.map((item) => ({
             "@type": "Question",
             name: item.q,
             acceptedAnswer: {
@@ -455,7 +459,7 @@ function Faq() {
       />
       <SectionHeading title="Sıkça Sorulan Sorular" />
       <div className="divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white">
-        {FAQ_ITEMS.map((item) => (
+        {items.map((item) => (
           <details key={item.q} className="group px-5 sm:px-6">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm font-semibold text-slate-900 sm:text-base [&::-webkit-details-marker]:hidden">
               {item.q}
@@ -516,7 +520,9 @@ export default function HomePage() {
       <Process />
       <GiftCallout />
       <CustomerReviews />
-      <Faq />
+      <Suspense fallback={null}>
+        <Faq />
+      </Suspense>
     </div>
   );
 }

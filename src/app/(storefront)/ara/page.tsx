@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FilterPanel } from "@/components/storefront/filter-panel";
+import { MobileFilterDrawer } from "@/components/storefront/mobile-filter-drawer";
 import { Pagination } from "@/components/storefront/pagination";
 import { ProductGrid } from "@/components/storefront/product-grid";
 import { SortLinks } from "@/components/storefront/sort-links";
@@ -74,7 +75,7 @@ async function SearchContent({
         ) : null}
       </div>
       <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
-        <aside aria-label="Filtreler">
+        <aside className="hidden lg:block" aria-label="Filtreler">
           <FilterPanel
             action="/ara"
             query={query}
@@ -83,7 +84,17 @@ async function SearchContent({
           />
         </aside>
         <div className="flex flex-col gap-6">
-          <SortLinks basePath="/ara" query={query} />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <MobileFilterDrawer>
+              <FilterPanel
+                action="/ara"
+                query={query}
+                attributeFacets={result.attributeFacets}
+                brandFacet={result.brandFacet}
+              />
+            </MobileFilterDrawer>
+            <SortLinks basePath="/ara" query={query} />
+          </div>
           {result.items.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border py-16 text-center">
               <p className="text-muted-foreground">

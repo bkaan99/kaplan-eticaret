@@ -137,7 +137,7 @@ export function SearchForm({ className = "" }: SearchFormProps) {
           aria-label="Ürün ara"
           autoComplete="off"
           spellCheck="false"
-          className="h-12 w-full rounded-full border border-slate-200 bg-[#f4f5f0] pr-28 pl-5 text-sm font-semibold text-slate-900 transition-colors outline-none placeholder:font-semibold placeholder:text-slate-500 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+          className="h-12 w-full rounded-full border border-slate-200 bg-[#f4f5f0] pr-28 pl-5 text-sm font-semibold text-slate-900 transition-colors outline-none placeholder:font-semibold placeholder:text-slate-500 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
         />
 
         {/* Temizleme (X) Butonu */}
@@ -146,7 +146,7 @@ export function SearchForm({ className = "" }: SearchFormProps) {
             type="button"
             onClick={handleClear}
             aria-label="Aramayı temizle"
-            className="absolute inset-y-0 right-24 my-auto flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+            className="absolute inset-y-0 right-24 my-auto flex h-11 w-11 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
           >
             <XIcon width={14} height={14} />
           </button>

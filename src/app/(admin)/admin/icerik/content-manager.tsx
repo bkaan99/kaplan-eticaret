@@ -29,18 +29,18 @@ export function ContentManager({
   return (
     <div className="flex flex-col gap-6">
       {/* Üst Sekmeler */}
-      <div className="flex items-center border-b border-slate-200/80 bg-white px-4 rounded-2xl shadow-2xs">
+      <div className="flex items-center overflow-x-auto rounded-2xl border-b border-slate-200/80 bg-white px-2 shadow-2xs [scrollbar-width:none] sm:px-4">
         <button
           type="button"
           onClick={() => setActiveTab("banners")}
-          className={`flex items-center gap-2 border-b-2 py-4 px-4 text-xs font-bold transition-all cursor-pointer ${
+          className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-4 text-xs font-bold transition-all cursor-pointer sm:px-4 ${
             activeTab === "banners"
               ? "border-emerald-700 text-emerald-800"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
           <span>🖼️ Vitrin Bannerları</span>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 font-semibold">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
             {banners.length}
           </span>
         </button>
@@ -48,14 +48,14 @@ export function ContentManager({
         <button
           type="button"
           onClick={() => setActiveTab("pages")}
-          className={`flex items-center gap-2 border-b-2 py-4 px-4 text-xs font-bold transition-all cursor-pointer ${
+          className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-4 text-xs font-bold transition-all cursor-pointer sm:px-4 ${
             activeTab === "pages"
               ? "border-emerald-700 text-emerald-800"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
           <span>📄 Statik & Kurumsal Sayfalar</span>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 font-semibold">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
             {pages.length}
           </span>
         </button>
@@ -63,14 +63,14 @@ export function ContentManager({
         <button
           type="button"
           onClick={() => setActiveTab("menus")}
-          className={`flex items-center gap-2 border-b-2 py-4 px-4 text-xs font-bold transition-all cursor-pointer ${
+          className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-4 text-xs font-bold transition-all cursor-pointer sm:px-4 ${
             activeTab === "menus"
               ? "border-emerald-700 text-emerald-800"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
           <span>🧭 Menü & Navigasyon</span>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 font-semibold">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
             {headerMenu.length + footerMenu.length}
           </span>
         </button>

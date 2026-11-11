@@ -42,7 +42,7 @@ export function BuilderBar({ builder }: { builder: CustomPickleBuilderState }) {
   return (
     <div
       data-builder-bar
-      className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-amber-300 bg-primary text-white shadow-[0_-8px_24px_rgba(11,35,24,0.25)]"
+      className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-amber-300 bg-primary pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-8px_24px_rgba(11,35,24,0.25)]"
     >
       {message ? (
         <p

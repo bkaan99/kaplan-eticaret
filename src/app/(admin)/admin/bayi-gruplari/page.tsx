@@ -67,21 +67,40 @@ async function GroupsContent({
               (örn. 10:90, 50:75); adet kademesi daha düşükse en düşük fiyat
               geçerli olur.
             </p>
-            <form action="/admin/bayi-gruplari" className="flex gap-2">
+            <form
+              action="/admin/bayi-gruplari"
+              className="flex w-full flex-col gap-2 sm:flex-row sm:items-center"
+            >
               <input type="hidden" name="grup" value={selected.id} />
               <Input
                 name="q"
                 defaultValue={search}
                 placeholder="Ürün adı veya SKU"
-                className="max-w-xs"
+                className="w-full sm:max-w-xs"
                 aria-label="Ürün ara"
               />
-              <Button type="submit" variant="outline">
+              <Button type="submit" variant="outline" className="w-full sm:w-auto">
                 Ara
               </Button>
             </form>
 
-            <div className="overflow-x-auto">
+            <ul className="flex flex-col gap-3 md:hidden">
+              {rows.map((row) => (
+                <VariantPriceRow
+                  key={`m-${selected.id}-${row.variantId}`}
+                  groupId={selected.id}
+                  row={row}
+                  layout="card"
+                />
+              ))}
+              {rows.length === 0 ? (
+                <li className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-muted-foreground">
+                  Ürün bulunamadı.
+                </li>
+              ) : null}
+            </ul>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead className="border-b border-border text-left text-muted-foreground">
                   <tr>

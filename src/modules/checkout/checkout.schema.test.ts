@@ -4,6 +4,7 @@ import {
   checkoutSchema,
   isValidTckn,
   normalizeTurkishMobile,
+  sanitizeTurkishMobileInput,
 } from "./checkout.schema";
 
 const baseAddress = {
@@ -14,6 +15,22 @@ const baseAddress = {
   district: "Kadıköy",
   addressLine: "Örnek Sokak No: 12 Daire 3",
 };
+
+describe("sanitizeTurkishMobileInput", () => {
+  it("harf ve özel karakterleri temizler, yerel numarayı 11 haneyle sınırlar", () => {
+    expect(sanitizeTurkishMobileInput("05ab55-123-45-678999")).toBe(
+      "05551234567",
+    );
+    expect(sanitizeTurkishMobileInput("abc")).toBe("");
+  });
+
+  it("+90 / 90 önekli yapıştırmayı 12 haneye kadar korur", () => {
+    expect(sanitizeTurkishMobileInput("+90 555 123 45 67")).toBe(
+      "905551234567",
+    );
+    expect(sanitizeTurkishMobileInput("90555123456799")).toBe("905551234567");
+  });
+});
 
 describe("normalizeTurkishMobile", () => {
   it.each([
