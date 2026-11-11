@@ -37,8 +37,8 @@ export function Logo({
         <Image
           src={
             showBadge
-              ? "/images/logo/kaplan-badge-logo.jpg"
-              : "/images/logo/kaplan-minimal-logo.jpg"
+              ? "/images/logo/kaplan-badge-logo.webp"
+              : "/images/logo/kaplan-minimal-logo.webp"
           }
           alt="Kaplan Gurme Turşu Amblemi"
           width={144}

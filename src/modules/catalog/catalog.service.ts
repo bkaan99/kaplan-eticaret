@@ -1,6 +1,7 @@
 import { productBadges } from "./product-badges";
 import type Decimal from "decimal.js";
 import { NotFoundError } from "@/shared/errors";
+import { resizeImageUrl } from "@/shared/media/image-url";
 import { toDecimal } from "@/shared/money";
 import { availableQuantity, isInStock } from "./availability";
 import type {
@@ -315,7 +316,10 @@ export class CatalogService {
       slug: record.slug,
       name: record.name,
       brandName: record.brandName,
-      imageUrl: record.imageUrl ?? PLACEHOLDER_IMAGE,
+      imageUrl: resizeImageUrl(record.imageUrl ?? PLACEHOLDER_IMAGE, {
+        width: 600,
+        quality: 75,
+      }),
       imageAlt: record.imageAlt?.trim() || record.name,
       priceVisible,
       price: priceVisible ? min.toFixed(2) : "0.00",
@@ -385,7 +389,7 @@ export class CatalogService {
       images:
         record.images.length > 0
           ? record.images.map((image) => ({
-              url: image.url,
+              url: resizeImageUrl(image.url, { width: 1200, quality: 80 }),
               alt: image.alt?.trim() || record.name,
               optionValueId: image.optionValueId,
             }))

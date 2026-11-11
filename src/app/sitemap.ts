@@ -32,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "daily",
       priority: 1,
-      images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
+      images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.webp")],
     },
     {
       url: absoluteUrl("/ara"),
@@ -51,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.6,
-      images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
+      images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.webp")],
     },
     ...categories.map((category) => ({
       url: absoluteUrl(`/kategori/${category.slug}`),

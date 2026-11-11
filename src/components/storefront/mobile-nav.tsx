@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { EASE_OUT } from "@/components/motion/motion";
 
 const emptySubscribe = () => () => {};
 import {
@@ -96,33 +94,21 @@ export function MobileNav({
   }, [isOpen]);
 
   const drawer =
-    mounted
+    mounted && isOpen
       ? createPortal(
-          <AnimatePresence>
-            {isOpen ? (
-              <>
-                <motion.div
-                  key="mobile-nav-backdrop"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+          <>
+                <div
                   onClick={() => setIsOpen(false)}
-                  className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-xs md:hidden"
+                  className="fixed inset-0 z-[100] animate-[fade-in_200ms_ease-out] bg-black/50 backdrop-blur-xs md:hidden"
                   aria-hidden="true"
                 />
 
-                <motion.aside
-                  key="mobile-nav-panel"
+                <aside
                   id="mobile-nav-drawer"
                   role="dialog"
                   aria-modal="true"
                   aria-label="Gezinti Menüsü"
-                  initial={{ x: "-100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "-100%" }}
-                  transition={{ duration: 0.3, ease: EASE_OUT }}
-                  className="fixed inset-y-0 left-0 z-[100] flex w-[85vw] max-w-sm flex-col bg-white pt-[env(safe-area-inset-top)] shadow-2xl md:hidden"
+                  className="fixed inset-y-0 left-0 z-[100] flex w-[85vw] max-w-sm animate-[drawer-in-left_280ms_ease-out] flex-col bg-white pt-[env(safe-area-inset-top)] shadow-2xl md:hidden"
                 >
               {/* Çekmece Başlığı: Logo & Kapat Butonu */}
               <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-5">
@@ -342,10 +328,8 @@ export function MobileNav({
               <div className="border-t border-slate-100 bg-slate-50/70 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-[11px] text-slate-400">
                 <span>🌿 Doğal Fermantasyon Ev Turşusu</span>
               </div>
-                </motion.aside>
-              </>
-            ) : null}
-          </AnimatePresence>,
+                </aside>
+          </>,
           document.body,
         )
       : null;

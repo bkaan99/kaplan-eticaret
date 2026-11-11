@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { isGoogleAuthEnabled } from "@/auth";
-import { Reveal } from "@/components/motion/motion";
 import { TurnstileWidget } from "@/components/storefront/turnstile-widget";
 import { siteConfig } from "@/config/site.config";
 import { GoogleSignInButton } from "./google-sign-in-button";
@@ -70,7 +69,7 @@ export default function LoginPage({ searchParams }: PageProps<"/giris">) {
         {/* Ürün görseli — kenardan kenara, kart yok */}
         <div className="relative min-h-52 overflow-hidden sm:min-h-72 lg:min-h-full">
           <Image
-            src="/images/hero/hero-tursu-kavanozlar.jpg"
+            src="/images/hero/hero-tursu-kavanozlar.webp"
             alt=""
             fill
             priority
@@ -81,7 +80,7 @@ export default function LoginPage({ searchParams }: PageProps<"/giris">) {
             aria-hidden
             className="absolute inset-0 bg-linear-to-t from-brand-dark/80 via-brand-dark/25 to-transparent lg:bg-linear-to-r lg:from-transparent lg:via-brand-dark/20 lg:to-brand-dark/55"
           />
-          <Reveal className="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-8 lg:p-10">
+          <div className="absolute inset-x-0 bottom-0 z-10 animate-[fade-up_500ms_ease-out] p-6 sm:p-8 lg:p-10">
             <p className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">
               Kaplan
             </p>
@@ -91,7 +90,7 @@ export default function LoginPage({ searchParams }: PageProps<"/giris">) {
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/80">
               {siteConfig.description}
             </p>
-          </Reveal>
+          </div>
         </div>
 
         {/* Form paneli — hero’daki yeşil panel dili */}
@@ -101,7 +100,7 @@ export default function LoginPage({ searchParams }: PageProps<"/giris">) {
             className="pointer-events-none absolute inset-y-0 left-0 hidden w-px bg-brand-gold/70 lg:block"
           />
 
-          <Reveal y={16} className="mx-auto w-full max-w-md">
+          <div className="mx-auto w-full max-w-md animate-[fade-up_500ms_ease-out]">
             <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
               Giriş yap
             </h1>
@@ -139,7 +138,7 @@ export default function LoginPage({ searchParams }: PageProps<"/giris">) {
                 </Link>
               </p>
             </div>
-          </Reveal>
+          </div>
         </div>
       </div>
     </section>

@@ -22,7 +22,7 @@ import { customPickleService } from "@/modules/custom-pickle/container";
 import { maxIngredientsForSize } from "@/modules/custom-pickle/custom-pickle.types";
 
 const HOME_TITLE = "Geleneksel Ev Yapımı Çubuk Turşuları ve Şalgam Suyu";
-const HOME_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.jpg";
+const HOME_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.webp";
 
 export const metadata: Metadata = {
   title: HOME_TITLE,
@@ -106,10 +106,10 @@ async function SiteJsonLd() {
           "@type": ["Organization", "Store"],
           name: siteConfig.name,
           url,
-          logo: absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+          logo: absoluteUrl("/images/logo/kaplan-badge-logo.webp"),
           image: [
-            absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg"),
-            absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+            absoluteUrl("/images/hero/hero-tursu-kavanozlar.webp"),
+            absoluteUrl("/images/logo/kaplan-badge-logo.webp"),
           ],
           description: siteConfig.description,
           email: contact.email,
@@ -336,7 +336,7 @@ function GiftCallout() {
         </div>
         <div className="relative min-h-[300px] w-full md:col-span-5 md:h-full bg-slate-900">
           <Image
-            src="/images/urunler/aile-boyu-tursu-kutusu.jpg"
+            src="/images/urunler/aile-boyu-tursu-kutusu.webp"
             alt="Kaplan Gurme Hediye Kutusu"
             fill
             sizes="(min-width: 768px) 45vw, 100vw"

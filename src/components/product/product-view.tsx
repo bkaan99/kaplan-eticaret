@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
-import { EASE_OUT } from "@/components/motion/motion";
+import { EASE_OUT, MotionProvider } from "@/components/motion/motion";
 import type { ProductDetail } from "@/modules/catalog/catalog.types";
 import { formatMoney } from "@/shared/money";
 import { useProductView } from "./use-product-view";
@@ -28,6 +28,7 @@ export function ProductView({
   const { variant } = state;
 
   return (
+    <MotionProvider>
     <div className="grid gap-8 md:grid-cols-2 lg:gap-14">
       {/* Sol Sütun: Ürün Görsel Galerisi */}
       <ProductGallery state={state} />
@@ -109,5 +110,6 @@ export function ProductView({
         <ProductAccordions product={product} shippingInfo={shippingInfo} />
       </motion.div>
     </div>
+    </MotionProvider>
   );
 }

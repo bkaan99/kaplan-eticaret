@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, like, sql } from "drizzle-orm";
 import { SYSTEM_ROLES } from "../src/shared/permissions";
 import { slugify } from "../src/shared/slug";
 import {
@@ -30,8 +30,26 @@ export async function runSeed(db: Db): Promise<void> {
   await seedRoles(db);
   await seedCustomerGroups(db);
   await seedDemoCatalog(db);
+  await migratePublicImagesToWebp(db);
   await seedCustomPickle(db);
   await seedLegalPages(db);
+}
+
+/** public/images JPG→WebP geçişi: mevcut kategori/ürün URL'lerini günceller. */
+async function migratePublicImagesToWebp(db: Db): Promise<void> {
+  await db
+    .update(category)
+    .set({
+      imageUrl: sql`replace(${category.imageUrl}, '.jpg', '.webp')`,
+    })
+    .where(like(category.imageUrl, "/images/%.jpg"));
+
+  await db
+    .update(productImage)
+    .set({
+      url: sql`replace(${productImage.url}, '.jpg', '.webp')`,
+    })
+    .where(like(productImage.url, "/images/%.jpg"));
 }
 
 async function seedRoles(db: Db): Promise<void> {
@@ -258,7 +276,7 @@ async function seedDemoCatalog(db: Db): Promise<void> {
     const id = await ensureId(db, category, demoCategory.slug, {
       name: demoCategory.name,
       sortOrder: index,
-      imageUrl: `/images/kategoriler/${demoCategory.slug}.jpg`,
+      imageUrl: `/images/kategoriler/${demoCategory.slug}.webp`,
       parentId: demoCategory.parent ? categoryIds.get(demoCategory.parent) : null,
     });
     categoryIds.set(demoCategory.slug, id);
@@ -320,7 +338,7 @@ async function seedDemoCatalog(db: Db): Promise<void> {
       }),
       db.insert(productImage).values({
         productId,
-        url: `/images/urunler/${demo.slug}.jpg`,
+        url: `/images/urunler/${demo.slug}.webp`,
         alt: demo.name,
       }),
       ...attributeLinks.map((attributeValueId) =>

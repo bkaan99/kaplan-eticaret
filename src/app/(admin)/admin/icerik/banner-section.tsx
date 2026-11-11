@@ -79,21 +79,14 @@ export function BannerModal({
   async function handleFileUpload(file: File) {
     setUploadError(null);
     setUploading(true);
-    const body = new FormData();
-    body.set("file", file);
     try {
-      const response = await fetch("/admin/yukle", { method: "POST", body });
-      const result = (await response.json()) as {
-        url?: string;
-        error?: string;
-      };
-      if (!response.ok || !result.url) {
-        setUploadError(result.error ?? "Görsel yüklenemedi.");
+      const { uploadImageFile } = await import("@/shared/media/upload-image");
+      const result = await uploadImageFile(file);
+      if ("error" in result) {
+        setUploadError(result.error);
         return;
       }
       onChange("imageUrl", result.url);
-    } catch {
-      setUploadError("Görsel yüklenirken bağlantı hatası oluştu.");
     } finally {
       setUploading(false);
     }

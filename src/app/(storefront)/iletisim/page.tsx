@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg"),
+        url: absoluteUrl("/images/hero/hero-tursu-kavanozlar.webp"),
         width: 1200,
         height: 630,
         alt: `${siteConfig.name} İletişim & Fabrika Satış Mağazası`,
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `İletişim & Fabrika Satış Mağazası | ${siteConfig.name}`,
     description: `${siteConfig.name} telefon, WhatsApp, adres ve iletişim formu.`,
-    images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
+    images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.webp")],
   },
 };
 
@@ -101,10 +101,10 @@ export default async function ContactPage() {
             telephone: phoneDisplay,
             email: emailDisplay,
             priceRange: "₺₺",
-            logo: absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+            logo: absoluteUrl("/images/logo/kaplan-badge-logo.webp"),
             image: [
-              absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg"),
-              absoluteUrl("/images/logo/kaplan-badge-logo.jpg"),
+              absoluteUrl("/images/hero/hero-tursu-kavanozlar.webp"),
+              absoluteUrl("/images/logo/kaplan-badge-logo.webp"),
             ],
             address: {
               "@type": "PostalAddress",

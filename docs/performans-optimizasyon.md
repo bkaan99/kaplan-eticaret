@@ -17,37 +17,31 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 ---
 
-### 2. Hero / logo kaynak görselleri
+### 2. Hero / logo kaynak görselleri — yapıldı
 
-**Nerede:** `public/images/hero/` (ör. `hero-gift-boxes.jpg` ~874KB, `hero-salgam.jpg` ~754KB), kategori/ürün JPEG’leri ~500–825KB; `src/components/storefront/logo.tsx` (`kaplan-badge-logo.jpg` ~482KB, `priority`)
+**Nerede:** `public/images/**`, `logo.tsx`, `hero-slider.tsx`
 
-**Sorun:** Kaynak dosyalar ağır. `next/image` ve CF Images yardımcı olsa da LCP’yi kaynak boyutu belirler.
-
-**Yön:** WebP/AVIF üretimi, uygun boyutlar, logo için daha küçük varyant.
+**Yapılan:** Büyük JPEG’ler yeniden boyutlandırılıp sıkıştırıldı; hot-path WebP’ye alındı (`scripts/optimize-public-images.mjs`). Logo ~482KB → ~14KB WebP.
 
 **Etki:** Yüksek
 
 ---
 
-### 3. R2 yükleme ve görsel pipeline
+### 3. R2 yükleme ve görsel pipeline — yapıldı
 
-**Nerede:** `src/app/(admin)/admin/yukle/route.ts`, `src/shared/media/image-url.ts` (`resizeImageUrl`), `next.config.ts` (`images.remotePatterns`)
+**Nerede:** `prepare-image-upload.ts` / `upload-image.ts`, `next.config.ts` (`remotePatterns`), `resizeImageUrl` (kart/PDP)
 
-**Sorun:** Admin yüklemede yeniden boyutlandırma yok (orijinal, max 5MB). `resizeImageUrl` kullanılmıyor. R2 `*.r2.dev` için remote pattern eksik olabilir; PLP/PDP büyük orijinallere dayanabilir.
-
-**Yön:** Yüklemede resize / CF Image Resizing; remotePatterns; kart ve detay için `sizes` + doğru URL’ler.
+**Yapılan:** Admin yüklemede istemci tarafı max 2000px WebP; R2 `remotePatterns`; `resizeImageUrl` kart (600) / detay (1200) için bağlandı (CF custom domain + `CF_IMAGE_RESIZING=true` ile aktif).
 
 **Etki:** Yüksek
 
 ---
 
-### 4. Vitrin client JS (`motion`)
+### 4. Vitrin client JS (`motion`) — yapıldı
 
-**Nerede:** `src/app/(storefront)/layout.tsx` (`MotionProvider`), `product-grid.tsx`, `header-nav.tsx`, `cart-count.tsx`, `mobile-nav.tsx`, ürün detay bileşenleri, builder adımları
+**Nerede:** storefront layout, product-grid, header-nav, cart-count, mobile-nav, filter drawer
 
-**Sorun:** `motion/react` birçok yüzeye yayılmış; repoda `next/dynamic` kullanımı yok.
-
-**Yön:** Kritik olmayan animasyonları lazy yükle; motion’ı daha küçük client sınırlarına indir.
+**Yapılan:** `MotionProvider` global layout’tan çıkarıldı; PLP/header/drawer CSS’e alındı. Motion yalnızca PDP (`ProductView`) ve builder’da yükleniyor.
 
 **Etki:** Yüksek
 
@@ -158,5 +152,5 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 ## Notlar
 
 - Birçok yerde `sizes` / `priority` kullanımı zaten doğru (`product-card`, hero, gallery).
-- Asıl boşluklar: kaynak dosya boyutu, R2 pipeline, PLP sorgu modeli, motion’un geniş client sınırı.
-- Önerilen uygulama sırası: **1 → 2 → 3 → 4**, ardından 5–6.
+- Yüksek öncelikli 1–4 tamamlandı. Sonraki: **5 → 6**, sonra orta maddeler.
+- `resizeImageUrl` r2.dev’de no-op; custom CDN + `CF_IMAGE_RESIZING=true` gerekir. CF `IMAGES` binding zaten `/_next/image` için var.

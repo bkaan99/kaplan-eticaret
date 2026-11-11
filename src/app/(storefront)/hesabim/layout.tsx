@@ -1,5 +1,4 @@
 import { AccountNav } from "@/components/storefront/account-nav";
-import { Reveal } from "@/components/motion/motion";
 import { requireUser } from "@/modules/auth/session";
 
 export default async function AccountLayout({
@@ -10,8 +9,8 @@ export default async function AccountLayout({
 
   return (
     <div className="full-bleed -mt-6 min-h-[70vh] bg-[#f3f4ef]">
-      <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-8 2xl:px-12 py-8 sm:py-10">
-        <Reveal y={12} className="border-b border-slate-900/10 pb-6">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:py-10 lg:px-8 2xl:px-12">
+        <div className="animate-[fade-up_500ms_ease-out] border-b border-slate-900/10 pb-6">
           <p className="text-[11px] font-bold tracking-[0.2em] text-primary uppercase">
             Hesabım
           </p>
@@ -19,7 +18,7 @@ export default async function AccountLayout({
             Merhaba, {firstName}
           </h1>
           <p className="mt-1.5 text-sm text-slate-600">{user.email}</p>
-        </Reveal>
+        </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:gap-12">
           <AccountNav />

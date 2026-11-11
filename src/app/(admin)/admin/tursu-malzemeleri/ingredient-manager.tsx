@@ -119,21 +119,14 @@ export function IngredientManager({
   async function upload(file: File) {
     setError(null);
     setUploading(true);
-    const body = new FormData();
-    body.set("file", file);
     try {
-      const response = await fetch("/admin/yukle", { method: "POST", body });
-      const result = (await response.json()) as {
-        url?: string;
-        error?: string;
-      };
-      if (!response.ok || !result.url) {
-        setError(result.error ?? "Yükleme başarısız");
+      const { uploadImageFile } = await import("@/shared/media/upload-image");
+      const result = await uploadImageFile(file);
+      if ("error" in result) {
+        setError(result.error);
         return;
       }
       update("imageUrl", result.url);
-    } catch {
-      setError("Yükleme başarısız, bağlantınızı kontrol edin");
     } finally {
       setUploading(false);
     }

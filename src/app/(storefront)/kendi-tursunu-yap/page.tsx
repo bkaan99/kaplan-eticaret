@@ -13,7 +13,7 @@ import { Builder } from "./builder";
 const PAGE_TITLE = "Kendi Turşunu Yap";
 const PAGE_DESCRIPTION =
   "Bidon boyutunu seç, sevdiğin sebzeleri ve baharatları ekle, salamurasına ve acılığına sen karar ver. Senin tarifinle hazırlayıp gönderelim.";
-const PAGE_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.jpg";
+const PAGE_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.webp";
 const PAGE_URL = absoluteUrl("/kendi-tursunu-yap");
 
 export const metadata: Metadata = {

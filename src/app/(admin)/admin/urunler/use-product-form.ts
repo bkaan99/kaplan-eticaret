@@ -143,26 +143,15 @@ export function useProductForm({
 
   async function uploadImage(file: File, index: number) {
     setUploadError(null);
-    const body = new FormData();
-    body.set("file", file);
-
-    try {
-      const response = await fetch("/admin/yukle", { method: "POST", body });
-      const result = (await response.json()) as {
-        url?: string;
-        error?: string;
-      };
-      if (!response.ok || !result.url) {
-        setUploadError(result.error ?? "Yükleme başarısız");
-        return;
-      }
-      const url = result.url;
-      setImages((rows) =>
-        rows.map((row, i) => (i === index ? { ...row, url } : row)),
-      );
-    } catch {
-      setUploadError("Yükleme başarısız, bağlantınızı kontrol edin");
+    const { uploadImageFile } = await import("@/shared/media/upload-image");
+    const result = await uploadImageFile(file);
+    if ("error" in result) {
+      setUploadError(result.error);
+      return;
     }
+    setImages((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, url: result.url } : row)),
+    );
   }
 
   const parsedOptions = useMemo(

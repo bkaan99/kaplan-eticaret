@@ -29,13 +29,13 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any",
       },
       {
-        src: "/images/logo/kaplan-badge-logo.jpg",
+        src: "/images/logo/kaplan-badge-logo.webp",
         sizes: "512x512",
         type: "image/jpeg",
         purpose: "maskable",
       },
       {
-        src: "/images/logo/kaplan-badge-logo.jpg",
+        src: "/images/logo/kaplan-badge-logo.webp",
         sizes: "512x512",
         type: "image/jpeg",
         purpose: "any",

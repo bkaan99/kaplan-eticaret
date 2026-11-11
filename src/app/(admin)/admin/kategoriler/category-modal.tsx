@@ -244,7 +244,7 @@ export function CategoryModal({
               <Input
                 value={form.imageUrl}
                 onChange={(e) => set("imageUrl", e.target.value)}
-                placeholder="/images/kategori/klasik.jpg veya https://..."
+                placeholder="/images/kategoriler/klasik-tursular.webp veya https://..."
                 className="h-9 text-xs font-mono flex-1 bg-white"
               />
               {form.imageUrl && (

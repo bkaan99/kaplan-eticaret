@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: [
       {
-        url: "/images/hero/hero-tursu-kavanozlar.jpg",
+        url: "/images/hero/hero-tursu-kavanozlar.webp",
         width: 1200,
         height: 630,
         alt: `${siteConfig.name} - Doğal Fermente Ev Turşuları`,
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
-    images: ["/images/hero/hero-tursu-kavanozlar.jpg"],
+    images: ["/images/hero/hero-tursu-kavanozlar.webp"],
   },
   robots: {
     index: true,

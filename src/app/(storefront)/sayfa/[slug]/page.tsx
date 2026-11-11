@@ -10,7 +10,7 @@ import { LEGAL_PAGE_TEMPLATES } from "@/modules/content/legal-templates";
 import { storefrontContact } from "@/config/storefront-contact";
 import { isAppError } from "@/shared/errors";
 
-const PAGE_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.jpg";
+const PAGE_OG_IMAGE = "/images/hero/hero-tursu-kavanozlar.webp";
 
 /** Markdown `## Soru` bloklarından FAQPage şeması üretir. */
 function faqFromMarkdown(content: string): { q: string; a: string }[] {
