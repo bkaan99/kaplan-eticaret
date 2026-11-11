@@ -10,6 +10,7 @@ import {
   XIcon,
 } from "@/components/storefront/icons";
 import { formatMoney } from "@/shared/money";
+import { isCdnResizedImageUrl } from "@/shared/media/image-url";
 import type { ProductCard } from "@/modules/catalog/catalog.types";
 import { liveSearchAction } from "./search-actions";
 
@@ -208,6 +209,7 @@ export function SearchForm({ className = "" }: SearchFormProps) {
                             alt={product.imageAlt || product.name}
                             fill
                             sizes="48px"
+                            unoptimized={isCdnResizedImageUrl(product.imageUrl)}
                             className="object-cover transition-transform group-hover:scale-105"
                           />
                         </div>

@@ -8,9 +8,7 @@ import {
   exists,
   inArray,
   isNull,
-  notInArray,
   or,
-  isNotNull,
   ne,
   sql,
   type SQL,
@@ -159,20 +157,14 @@ export interface CatalogRepository {
 }
 
 /** Listeleme koşulu; `product` tablosuna bağlı ilişkili alt sorgular (exists) kullanır. */
-function buildWhere(db: Db, filter: Partial<ProductFilter>): SQL {
+function buildWhere(
+  db: Db,
+  filter: Partial<ProductFilter>,
+  options: { requireActiveVariant?: boolean } = {},
+): SQL {
   const conditions: (SQL | undefined)[] = [
     eq(product.status, "ACTIVE"),
-    exists(
-      db
-        .select({ one: productVariant.id })
-        .from(productVariant)
-        .where(
-          and(
-            eq(productVariant.productId, product.id),
-            eq(productVariant.isActive, true),
-          ),
-        ),
-    ),
+    options.requireActiveVariant === false ? undefined : hasActiveVariant(db),
     filter.categoryIds
       ? inArray(product.categoryId, filter.categoryIds)
       : undefined,
@@ -253,13 +245,23 @@ function buildWhere(db: Db, filter: Partial<ProductFilter>): SQL {
   return and(...conditions)!;
 }
 
+function needsPriceFilter(query: ListingQuery): boolean {
+  return query.minPrice !== undefined || query.maxPrice !== undefined;
+}
+
 function needsPriceJoin(query: ListingQuery): boolean {
   return (
     query.sort === "price-asc" ||
     query.sort === "price-desc" ||
-    query.minPrice !== undefined ||
-    query.maxPrice !== undefined
+    needsPriceFilter(query)
   );
+}
+
+function activeVariantJoin(): SQL {
+  return and(
+    eq(productVariant.productId, product.id),
+    eq(productVariant.isActive, true),
+  )!;
 }
 
 function priceHaving(query: ListingQuery): SQL | undefined {
@@ -347,9 +349,19 @@ export class D1CatalogRepository implements CatalogRepository {
   }
 
   async searchListingPage(query: ListingQuery): Promise<ListingPage> {
+    if (query.page <= 1) {
+      const [total, ids] = await Promise.all([
+        this.countListingMatches(query),
+        this.selectListingIds(query, query.pageSize, 0),
+      ]);
+      return total === 0
+        ? { ids: [], total: 0, page: 1 }
+        : { ids, total, page: 1 };
+    }
+
     const total = await this.countListingMatches(query);
     const totalPages = Math.max(1, Math.ceil(total / query.pageSize));
-    const page = Math.min(Math.max(1, query.page), totalPages);
+    const page = Math.min(query.page, totalPages);
     if (total === 0) return { ids: [], total: 0, page: 1 };
 
     const ids = await this.selectListingIds(
@@ -362,27 +374,21 @@ export class D1CatalogRepository implements CatalogRepository {
 
   private async countListingMatches(query: ListingQuery): Promise<number> {
     const db = this.db();
-    const where = buildWhere(db, query);
 
-    if (!needsPriceJoin(query)) {
+    if (!needsPriceFilter(query)) {
       const [row] = await db
         .select({ total: count() })
         .from(product)
-        .where(where);
+        .where(buildWhere(db, query));
       return row?.total ?? 0;
     }
 
+    // INNER JOIN ProductVariant (isActive=true) aktif varyant varlığını zaten doğrular.
     const filtered = db
       .select({ id: product.id })
       .from(product)
-      .innerJoin(
-        productVariant,
-        and(
-          eq(productVariant.productId, product.id),
-          eq(productVariant.isActive, true),
-        ),
-      )
-      .where(where)
+      .innerJoin(productVariant, activeVariantJoin())
+      .where(buildWhere(db, query, { requireActiveVariant: false }))
       .groupBy(product.id)
       .having(priceHaving(query))
       .as("filtered_listing");
@@ -397,7 +403,6 @@ export class D1CatalogRepository implements CatalogRepository {
     offset: number,
   ): Promise<string[]> {
     const db = this.db();
-    const where = buildWhere(db, query);
     const withPrice = needsPriceJoin(query);
     const orderBy = listingOrderBy(query.sort, withPrice);
 
@@ -405,7 +410,7 @@ export class D1CatalogRepository implements CatalogRepository {
       const rows = await db
         .select({ id: product.id })
         .from(product)
-        .where(where)
+        .where(buildWhere(db, query))
         .orderBy(orderBy)
         .limit(limit)
         .offset(offset);
@@ -415,14 +420,8 @@ export class D1CatalogRepository implements CatalogRepository {
     const rows = await db
       .select({ id: product.id })
       .from(product)
-      .innerJoin(
-        productVariant,
-        and(
-          eq(productVariant.productId, product.id),
-          eq(productVariant.isActive, true),
-        ),
-      )
-      .where(where)
+      .innerJoin(productVariant, activeVariantJoin())
+      .where(buildWhere(db, query, { requireActiveVariant: false }))
       .groupBy(product.id)
       .having(priceHaving(query))
       .orderBy(orderBy)
@@ -487,8 +486,11 @@ export class D1CatalogRepository implements CatalogRepository {
         valuePosition: attributeValue.position,
         count: count(),
       })
-      .from(productAttributeValue)
-      .innerJoin(product, eq(product.id, productAttributeValue.productId))
+      .from(product)
+      .innerJoin(
+        productAttributeValue,
+        eq(productAttributeValue.productId, product.id),
+      )
       .innerJoin(
         attributeValue,
         eq(attributeValue.id, productAttributeValue.attributeValueId),
@@ -514,10 +516,7 @@ export class D1CatalogRepository implements CatalogRepository {
       .from(product)
       .innerJoin(brand, eq(brand.id, product.brandId))
       .where(
-        and(
-          buildWhere(db, { ...filter, brandSlugs: [], attributeFilters: {} }),
-          isNotNull(product.brandId),
-        ),
+        buildWhere(db, { ...filter, brandSlugs: [], attributeFilters: {} }),
       )
       .groupBy(brand.id);
   }
@@ -628,6 +627,7 @@ export class D1CatalogRepository implements CatalogRepository {
   }
 
   async findFeaturedIds(limit: number): Promise<string[]> {
+    if (limit <= 0) return [];
     const db = this.db();
     const base = and(eq(product.status, "ACTIVE"), hasActiveVariant(db));
     const featured = await db
@@ -638,18 +638,11 @@ export class D1CatalogRepository implements CatalogRepository {
       .limit(limit);
     if (featured.length >= limit) return featured.map((row) => row.id);
 
+    // featured.length < limit tüm aktif öne çıkanları kapsadığından, tamamlayıcılar isFeatured=false'tur.
     const filler = await db
       .select({ id: product.id })
       .from(product)
-      .where(
-        and(
-          base,
-          notInArray(
-            product.id,
-            featured.map((row) => row.id),
-          ),
-        ),
-      )
+      .where(and(base, eq(product.isFeatured, false)))
       .orderBy(desc(product.createdAt))
       .limit(limit - featured.length);
     return [...featured, ...filler].map((row) => row.id);

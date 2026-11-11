@@ -19,7 +19,11 @@ import {
   StorefrontShellProvider,
 } from "./storefront-shell";
 
-async function MobileNavContainer() {
+async function MobileNavContainer({
+  drawerFontClassName,
+}: {
+  drawerFontClassName?: string;
+}) {
   const [tree, extra, contact, shipping] = await Promise.all([
     getCategoryTree(),
     getCachedMenu("header"),
@@ -38,6 +42,7 @@ async function MobileNavContainer() {
       freeShippingThreshold={shipping.freeShippingThreshold}
       wishlistEnabled={isFeatureEnabled("wishlist")}
       b2bEnabled={isFeatureEnabled("b2b")}
+      drawerFontClassName={drawerFontClassName}
     />
   );
 }
@@ -92,7 +97,11 @@ async function FreeShippingBanner() {
   );
 }
 
-export async function SiteHeader() {
+export async function SiteHeader({
+  drawerFontClassName,
+}: {
+  drawerFontClassName?: string;
+} = {}) {
   return (
     <>
       {/* Üst duyuru bandı: sayfayla birlikte kayar; D1 çağrısı Suspense içinde */}
@@ -141,7 +150,7 @@ export async function SiteHeader() {
                 <StorefrontShellActions accountClassName={iconLinkClass} />
               </div>
               <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
-                <MobileNavContainer />
+                <MobileNavContainer drawerFontClassName={drawerFontClassName} />
               </Suspense>
             </StorefrontShellProvider>
           </div>

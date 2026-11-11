@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
@@ -7,6 +8,16 @@ import { features } from "@/config/features";
 import { siteConfig } from "@/config/site.config";
 import { visibleNav } from "@/modules/admin/navigation";
 import { requireStaff } from "@/modules/auth/session";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin", "latin-ext"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: { default: "Yönetim Paneli", template: "%s | Yönetim Paneli" },
@@ -42,7 +53,9 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
             <p className="truncate text-[13px] font-semibold text-slate-900">
               {siteConfig.name}
             </p>
-            <p className="truncate text-[11px] text-slate-500">Yönetim Paneli</p>
+            <p className="truncate text-[11px] text-slate-500">
+              Yönetim Paneli
+            </p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -93,17 +106,21 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-slate-50">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-            <span>Yönetim paneli yükleniyor...</span>
-          </div>
-        </div>
-      }
+    <div
+      className={`${geistSans.variable} ${geistMono.variable} contents font-sans`}
     >
-      <AdminShell>{children}</AdminShell>
-    </Suspense>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-slate-50">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+              <span>Yönetim paneli yükleniyor...</span>
+            </div>
+          </div>
+        }
+      >
+        <AdminShell>{children}</AdminShell>
+      </Suspense>
+    </div>
   );
 }

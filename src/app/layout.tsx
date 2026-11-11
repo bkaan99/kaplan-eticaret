@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { siteConfig } from "@/config/site.config";
 import { themeToCss } from "@/config/theme";
 import { getSiteUrl } from "@/shared/site-url";
@@ -10,29 +9,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
 };
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin", "latin-ext"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin", "latin-ext"],
-});
-
-/** Vitrin gövde yazı tipi (yönetim paneli Geist kalır) */
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
-  subsets: ["latin", "latin-ext"],
-});
-
-/** Başlıklar için serif yazı tipi (vitrin) */
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin", "latin-ext"],
-  axes: ["SOFT", "opsz"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
@@ -96,10 +72,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang={siteConfig.locale}
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${montserrat.variable} h-full antialiased`}
-    >
+    <html lang={siteConfig.locale} className="h-full antialiased">
       <head>
         <style dangerouslySetInnerHTML={{ __html: themeToCss() }} />
       </head>

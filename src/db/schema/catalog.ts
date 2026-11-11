@@ -84,6 +84,17 @@ export const product = sqliteTable(
     index("Product_categoryId_idx").on(t.categoryId),
     index("Product_brandId_idx").on(t.brandId),
     index("Product_status_idx").on(t.status),
+    index("Product_status_createdAt_idx").on(t.status, t.createdAt),
+    index("Product_status_isFeatured_createdAt_idx").on(
+      t.status,
+      t.isFeatured,
+      t.createdAt,
+    ),
+    index("Product_status_categoryId_createdAt_idx").on(
+      t.status,
+      t.categoryId,
+      t.createdAt,
+    ),
   ],
 );
 
@@ -134,7 +145,14 @@ export const productVariant = sqliteTable(
       .$defaultFn(() => new Date())
       .$onUpdateFn(() => new Date()),
   },
-  (t) => [index("ProductVariant_productId_idx").on(t.productId)],
+  (t) => [
+    index("ProductVariant_productId_idx").on(t.productId),
+    index("ProductVariant_productId_isActive_price_idx").on(
+      t.productId,
+      t.isActive,
+      t.price,
+    ),
+  ],
 );
 
 export const variantOptionValue = sqliteTable(

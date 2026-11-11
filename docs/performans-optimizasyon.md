@@ -9,9 +9,9 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 ### 1. Ürün listesi / arama sorgusu (PLP) — yapıldı
 
-**Nerede:** `src/modules/catalog/catalog.repository.ts` (`searchListingPage`), `src/modules/catalog/catalog.service.ts` (`list` / `searchQuick`), `src/components/storefront/search-actions.ts`
+**Nerede:** `src/modules/catalog/catalog.repository.ts`, `src/db/schema/catalog.ts`, `db/migrations/0005_catalog_listing_indexes.sql`, `src/modules/catalog/catalog.service.ts` (`list` / `searchQuick`), `src/components/storefront/search-actions.ts`
 
-**Yapılan:** Sıralama, fiyat filtresi ve sayfalama SQL’e alındı (`LIMIT`/`OFFSET` + `COUNT`). Navbar canlı araması facet’siz `searchQuick` kullanıyor.
+**Yapılan:** Sıralama, fiyat filtresi ve sayfalama SQL’e alındı (`LIMIT`/`OFFSET` + `COUNT`). Navbar canlı araması facet’siz `searchQuick` kullanıyor. Sonrasında bileşik `Product` / `ProductVariant` indeksleri (`0005_catalog_listing_indexes.sql`), sayfa-1 paralel sayım+ID sorgusu ve fiyat sınırı olmayan sıralamalarda gereksiz varyant `COUNT` join’inin kaldırılması eklendi.
 
 **Etki:** Yüksek
 
@@ -31,7 +31,7 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 **Nerede:** `prepare-image-upload.ts` / `upload-image.ts`, `next.config.ts` (`remotePatterns`), `resizeImageUrl` (kart/PDP)
 
-**Yapılan:** Admin yüklemede istemci tarafı max 2000px WebP; R2 `remotePatterns`; `resizeImageUrl` kart (600) / detay (1200) için bağlandı (CF custom domain + `CF_IMAGE_RESIZING=true` ile aktif).
+**Yapılan:** Admin yüklemede istemci tarafı max 2000px WebP; R2 `remotePatterns`; `resizeImageUrl` kart (600) / detay (1200) için bağlandı (`CF_IMAGE_RESIZING === "true"` + custom domain kontrolü ile aktif, `<Image unoptimized={isCdnResizedImageUrl(...)}>` sayesinde `/_next/image` çift proxy önlendi).
 
 **Etki:** Yüksek
 
@@ -95,27 +95,23 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 ---
 
-### 9. Ürün kartı mikro-adaları
+### 9. Ürün kartı mikro-adaları — yapıldı
 
-**Nerede:** `src/components/storefront/product-card.tsx` → `QuickAddButton`, `WishlistButton`
+**Nerede:** `src/components/storefront/product-grid.tsx`, `src/components/storefront/product-grid-interactions.tsx`, `src/components/storefront/product-card.tsx`
 
-**Sorun:** Grid’de kart başına hydrate; wishlist store her kartta `useSyncExternalStore`.
-
-**Yön:** Favori/hızlı eklemeyi tek parent store veya daha az client sınırına topla.
+**Yapılan:** Kart başına `QuickAddButton` + `WishlistButton` client adaları kaldırıldı; `ProductCard` tamamen sunucu bileşeni olarak `data-*` düğmelerini basıyor. Tüm grid etkileşimleri (olay delegasyonu ile hızlı ekleme + tek `useSyncExternalStore` favori senkronizasyonu) tek `ProductGridInteractions` istemci sarmalayıcısında toplandı (`WishlistButton` yalnızca PDP içinde kullanılıyor).
 
 **Etki:** Orta
 
 ---
 
-### 10. Kök layout fontları
+### 10. Kök layout fontları — yapıldı
 
-**Nerede:** `src/app/layout.tsx` — Geist, Geist Mono, Montserrat, Fraunces (`latin-ext`, Fraunces axes)
+**Nerede:** `src/app/layout.tsx`, `src/app/(storefront)/layout.tsx`, `src/app/(admin)/admin/layout.tsx`, `src/app/globals.css`, `src/components/storefront/mobile-nav.tsx`
 
-**Sorun:** Vitrin ve admin aynı kök layout’ta dört font ailesi yüklüyor.
+**Yapılan:** Dört font ailesi kök layout’tan çıkarıldı. Vitrin (`Montserrat`, `Fraunces`) ve admin (`Geist`, `Geist_Mono`) fontları kendi grup layout’larına ayrıldı; `Fraunces` için kullanılmayan `SOFT`/`opsz` değişken eksenleri ve `Geist_Mono` için `latin-ext` ön yüklemesi kaldırıldı (`Montserrat`, `Fraunces` ve `Geist` için Türkçe glifler nedeniyle `latin-ext` korundu). Vitrin portalları (`MobileNav`) ve mono fallback’ler uyarlandı.
 
-**Yön:** Vitrin / admin font yüklemesini ayır; kullanılmayan subset’leri daralt.
-
-**Etki:** Orta
+**Etki:** Orta (vitrin ön yüklemesi ~404 KB → `169.9 KB`, admin ~404 KB → `67.3 KB`)
 
 ---
 
@@ -123,7 +119,7 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 **Nerede:** `src/config/cache-policy.ts`, `proxy.ts`, `shared/cache/registry.ts`, `settings/cached.ts`, `modules/admin/action.ts`
 
-**Yapılan:** Anonim HTML `s-maxage=300` + SWR 1 saat; süreç TTL 3 dk (admin’de invalidate); settings cache 5 dk; her admin yazısında `revalidatePath("/", "layout")` (OpenNext incremental).
+**Yapılan:** Anonim HTML `s-maxage=300` + SWR 1 saat; süreç TTL 3 dk (admin’de invalidate); settings cache 5 dk; admin yazılarında `revalidatePath("/", "layout")`, sepet/hızlı ekle/tekrar sipariş mutasyonlarında yalnızca `revalidate: ["/sepet"]`.
 
 **Etki:** Orta
 
@@ -148,6 +144,6 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 ## Notlar
 
 - Birçok yerde `sizes` / `priority` kullanımı zaten doğru (`product-card`, hero, gallery).
-- Yüksek 1–4 ve madde 5–6 + 11 tamamlandı. Kalan orta: **7–10**, düşük: **12**.
+- Yüksek 1–4 ve madde 5–6, 9–11 tamamlandı. Kalan orta: **7–8**, düşük: **12**.
 - `resizeImageUrl` r2.dev’de no-op; custom CDN + `CF_IMAGE_RESIZING=true` gerekir. CF `IMAGES` binding zaten `/_next/image` için var.
 - Madde 11: edge HTML bayatlığı ve purge kısıtı için yukarıdaki **Not (edge bayatlık)** maddesine bakın.

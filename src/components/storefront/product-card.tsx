@@ -1,11 +1,11 @@
 import { discountPercent } from "@/shared/money";
+import { isCdnResizedImageUrl } from "@/shared/media/image-url";
 import Image from "next/image";
 import Link from "next/link";
 import { isFeatureEnabled } from "@/config/features";
 import type { ProductCard as ProductCardData } from "@/modules/catalog/catalog.types";
-import { WishlistButton } from "@/components/wishlist/wishlist-button";
+import { BagIcon, HeartIcon } from "./icons";
 import { Price } from "./price";
-import { QuickAddButton } from "./quick-add-button";
 
 export function ProductCard({
   product,
@@ -30,6 +30,7 @@ export function ProductCard({
             alt={product.imageAlt}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            unoptimized={isCdnResizedImageUrl(product.imageUrl)}
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
           <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5">
@@ -94,11 +95,20 @@ export function ProductCard({
       </Link>
 
       {product.quickAddVariantId ? (
-        <QuickAddButton
-          variantId={product.quickAddVariantId}
-          product={product}
+        <button
+          type="button"
+          data-quick-add={product.quickAddVariantId}
+          data-product-id={product.id}
+          data-product-name={product.name}
+          data-product-price={product.price}
+          data-product-currency={product.currency}
           className={`${buttonClass} bg-primary text-white hover:bg-brand-dark disabled:opacity-70`}
-        />
+        >
+          <BagIcon width={16} height={16} />
+          <span data-quick-add-label aria-live="polite">
+            Sepete Ekle
+          </span>
+        </button>
       ) : (
         <Link
           href={`/urun/${product.slug}`}
@@ -109,10 +119,15 @@ export function ProductCard({
       )}
 
       {isFeatureEnabled("wishlist") ? (
-        <WishlistButton
-          productId={product.id}
-          className="absolute top-2.5 right-2.5 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-slate-600 shadow-md backdrop-blur-xs transition hover:bg-white hover:text-brand-pepper"
-        />
+        <button
+          type="button"
+          data-wishlist-id={product.id}
+          aria-pressed={false}
+          aria-label="Favorilere ekle"
+          className="absolute top-2.5 right-2.5 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/90 text-slate-600 shadow-md backdrop-blur-xs transition hover:bg-white hover:text-brand-pepper aria-pressed:text-brand-pepper aria-pressed:[&_svg]:fill-current"
+        >
+          <HeartIcon width={18} height={18} strokeWidth={2} />
+        </button>
       ) : null}
     </article>
   );

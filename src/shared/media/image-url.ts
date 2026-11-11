@@ -1,13 +1,22 @@
 /**
+ * Cloudflare Image Resizing yolu (`/cdn-cgi/image/...`) üretildiyse true döner.
+ * Next `<Image>` bileşeninin `/_next/image` üzerinden çift proxy yapmasını
+ * önlemek için `unoptimized={isCdnResizedImageUrl(src)}` olarak kullanılır.
+ */
+export function isCdnResizedImageUrl(src: string | null | undefined): boolean {
+  return Boolean(src?.startsWith("/cdn-cgi/image/"));
+}
+
+/**
  * Opsiyonel Cloudflare Image Resizing (/cdn-cgi/image/...).
- * Yalnızca UPLOADS_PUBLIC_BASE_URL kendi CF zone’unuzdayken anlamlıdır
- * (r2.dev bu yolu desteklemez). Aksi halde orijinal URL döner.
+ * Yalnızca CF_IMAGE_RESIZING="true" ve UPLOADS_PUBLIC_BASE_URL kendi CF zone'unuzdayken
+ * anlamlıdır (r2.dev bu yolu desteklemez). Aksi halde orijinal URL döner.
  */
 export function resizeImageUrl(
   src: string,
   options: { width?: number; height?: number; quality?: number } = {},
 ): string {
-  if (!src || !process.env.CF_IMAGE_RESIZING) return src;
+  if (!src || process.env.CF_IMAGE_RESIZING !== "true") return src;
 
   const base = process.env.UPLOADS_PUBLIC_BASE_URL?.replace(/\/$/, "");
   if (!base || (!src.startsWith(base) && !src.startsWith("/uploads/"))) {

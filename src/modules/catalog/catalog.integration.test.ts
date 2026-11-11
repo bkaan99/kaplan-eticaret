@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { attribute, attributeValue, brand, type Db } from "@/db";
 import { createTestDb, type TestDb } from "../../../tests/support/test-db";
@@ -166,5 +167,52 @@ describe("Catalog (veritabanı)", () => {
     await expect(service.getProductBySlug(slug("yok"))).rejects.toThrow(
       "Ürün bulunamadı",
     );
+  });
+
+  it("fiyat sınırı olmadan price-asc sıralar ve sayfa sınırını kırpar", async () => {
+    const sorted = await list({ sirala: "price-asc" }, slug("kok"));
+    expect(sorted.total).toBe(3);
+    expect(sorted.items.map((i) => i.price)).toEqual([
+      "100.00",
+      "200.00",
+      "300.00",
+    ]);
+
+    const clamped = await service.list(
+      parseListQuery(
+        { sayfa: "9" },
+        { categorySlug: slug("kok"), pageSize: 2 },
+      ),
+    );
+    expect(clamped.total).toBe(3);
+    expect(clamped.page).toBe(2);
+    expect(clamped.items).toHaveLength(1);
+  });
+
+  it("marka facet sayıları ve bileşik indeksleri doğrular", async () => {
+    const result = await list({}, slug("kok"));
+    expect(result.brandFacet?.values).toEqual([
+      { slug: slug("marka-a"), value: `Marka A ${tag}`, count: 2 },
+      { slug: slug("marka-b"), value: `Marka B ${tag}`, count: 1 },
+    ]);
+
+    const repo = new D1CatalogRepository(() => db);
+    const featured = await repo.findFeaturedIds(3);
+    expect(featured).toHaveLength(3);
+
+    const indexes = await db.all<{ name: string }>(
+      sql`SELECT name FROM sqlite_master WHERE type = 'index' AND name IN (
+        'Product_status_createdAt_idx',
+        'Product_status_isFeatured_createdAt_idx',
+        'Product_status_categoryId_createdAt_idx',
+        'ProductVariant_productId_isActive_price_idx'
+      )`,
+    );
+    expect(indexes.map((row) => row.name).sort()).toEqual([
+      "ProductVariant_productId_isActive_price_idx",
+      "Product_status_categoryId_createdAt_idx",
+      "Product_status_createdAt_idx",
+      "Product_status_isFeatured_createdAt_idx",
+    ]);
   });
 });

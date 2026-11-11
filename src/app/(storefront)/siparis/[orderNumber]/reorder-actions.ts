@@ -39,7 +39,7 @@ export async function reorderAction(
       actionName: "reorder",
       context: { orderNumber },
       fallbackErrorMessage: "Ürünler sepete eklenemedi.",
-      revalidate: ["/"],
+      revalidate: ["/sepet"],
     },
   );
 

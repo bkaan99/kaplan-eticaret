@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { EASE_OUT } from "@/components/motion/motion";
+import { isCdnResizedImageUrl } from "@/shared/media/image-url";
 import type { ProductViewState } from "./use-product-view";
 
 export function ProductGallery({ state }: { state: ProductViewState }) {
@@ -31,6 +32,7 @@ export function ProductGallery({ state }: { state: ProductViewState }) {
               fill
               priority
               sizes="(min-width: 768px) 50vw, 100vw"
+              unoptimized={isCdnResizedImageUrl(image.url)}
               className="object-cover"
             />
           </motion.div>
@@ -67,6 +69,7 @@ export function ProductGallery({ state }: { state: ProductViewState }) {
                   alt=""
                   fill
                   sizes="80px"
+                  unoptimized={isCdnResizedImageUrl(item.url)}
                   className="object-cover"
                 />
               </button>

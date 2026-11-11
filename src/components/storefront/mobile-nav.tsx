@@ -47,6 +47,8 @@ export interface MobileNavProps {
   freeShippingThreshold: number;
   wishlistEnabled?: boolean;
   b2bEnabled?: boolean;
+  /** Portal body'ye taşındığı için vitrin font değişkenlerini çekmeceye aktarır. */
+  drawerFontClassName?: string;
 }
 
 function isActive(pathname: string, href: string) {
@@ -63,11 +65,16 @@ export function MobileNav({
   freeShippingThreshold,
   wishlistEnabled = true,
   b2bEnabled = false,
+  drawerFontClassName,
 }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const [navPath, setNavPath] = useState(pathname);
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   // Rota değişince menüyü kapat (render sırasında state ayarı)
   if (pathname !== navPath) {
@@ -97,19 +104,19 @@ export function MobileNav({
     mounted && isOpen
       ? createPortal(
           <>
-                <div
-                  onClick={() => setIsOpen(false)}
-                  className="fixed inset-0 z-[100] animate-[fade-in_200ms_ease-out] bg-black/50 backdrop-blur-xs md:hidden"
-                  aria-hidden="true"
-                />
+            <div
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 z-[100] animate-[fade-in_200ms_ease-out] bg-black/50 backdrop-blur-xs md:hidden"
+              aria-hidden="true"
+            />
 
-                <aside
-                  id="mobile-nav-drawer"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label="Gezinti Menüsü"
-                  className="fixed inset-y-0 left-0 z-[100] flex w-[85vw] max-w-sm animate-[drawer-in-left_280ms_ease-out] flex-col bg-white pt-[env(safe-area-inset-top)] shadow-2xl md:hidden"
-                >
+            <aside
+              id="mobile-nav-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Gezinti Menüsü"
+              className={`fixed inset-y-0 left-0 z-[100] flex w-[85vw] max-w-sm animate-[drawer-in-left_280ms_ease-out] flex-col bg-white pt-[env(safe-area-inset-top)] shadow-2xl md:hidden${drawerFontClassName ? ` ${drawerFontClassName}` : ""}`}
+            >
               {/* Çekmece Başlığı: Logo & Kapat Butonu */}
               <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-5">
                 <div onClick={() => setIsOpen(false)}>
@@ -170,7 +177,11 @@ export function MobileNav({
                       }`}
                     >
                       <span>Tüm Ürünler</span>
-                      <ChevronRightIcon width={16} height={16} className="text-slate-400" />
+                      <ChevronRightIcon
+                        width={16}
+                        height={16}
+                        className="text-slate-400"
+                      />
                     </Link>
 
                     {categories.map((category) => {
@@ -190,7 +201,9 @@ export function MobileNav({
                           <ChevronRightIcon
                             width={16}
                             height={16}
-                            className={active ? "text-primary" : "text-slate-400"}
+                            className={
+                              active ? "text-primary" : "text-slate-400"
+                            }
                           />
                         </Link>
                       );
@@ -203,7 +216,11 @@ export function MobileNav({
                         className="flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
                       >
                         <span>{item.label}</span>
-                        <ChevronRightIcon width={16} height={16} className="text-slate-400" />
+                        <ChevronRightIcon
+                          width={16}
+                          height={16}
+                          className="text-slate-400"
+                        />
                       </Link>
                     ))}
                   </nav>
@@ -221,7 +238,11 @@ export function MobileNav({
                       href="/hesabim"
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
                     >
-                      <UserIcon width={18} height={18} className="text-slate-400" />
+                      <UserIcon
+                        width={18}
+                        height={18}
+                        className="text-slate-400"
+                      />
                       <span>Hesabım & Siparişlerim</span>
                     </Link>
 
@@ -229,7 +250,11 @@ export function MobileNav({
                       href="/siparis-sorgula"
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
                     >
-                      <TruckIcon width={18} height={18} className="text-slate-400" />
+                      <TruckIcon
+                        width={18}
+                        height={18}
+                        className="text-slate-400"
+                      />
                       <span>Sipariş Sorgulama</span>
                     </Link>
 
@@ -238,7 +263,11 @@ export function MobileNav({
                         href="/favoriler"
                         className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
                       >
-                        <HeartIcon width={18} height={18} className="text-slate-400" />
+                        <HeartIcon
+                          width={18}
+                          height={18}
+                          className="text-slate-400"
+                        />
                         <span>Favorilerim</span>
                       </Link>
                     ) : null}
@@ -257,7 +286,11 @@ export function MobileNav({
                       href="/iletisim"
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
                     >
-                      <MapPinIcon width={18} height={18} className="text-slate-400" />
+                      <MapPinIcon
+                        width={18}
+                        height={18}
+                        className="text-slate-400"
+                      />
                       <span>İletişim & Mağazamız</span>
                     </Link>
                   </div>
@@ -266,9 +299,14 @@ export function MobileNav({
                 {/* İletişim & Kargo Güvencesi */}
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs space-y-3">
                   <div className="flex items-start gap-2.5 text-slate-600">
-                    <TruckIcon width={16} height={16} className="shrink-0 text-emerald-800" />
+                    <TruckIcon
+                      width={16}
+                      height={16}
+                      className="shrink-0 text-emerald-800"
+                    />
                     <span>
-                      <strong>{formatMoney(freeShippingThreshold)}</strong> üzeri siparişlerde kargo ücretsiz
+                      <strong>{formatMoney(freeShippingThreshold)}</strong>{" "}
+                      üzeri siparişlerde kargo ücretsiz
                     </span>
                   </div>
 
@@ -277,14 +315,22 @@ export function MobileNav({
                       href={`tel:${sitePhoneTel ?? sitePhone.replace(/\s/g, "")}`}
                       className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
                     >
-                      <PhoneIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <PhoneIcon
+                        width={20}
+                        height={20}
+                        className="mt-0.5 size-5 shrink-0 text-slate-400"
+                      />
                       <span>{sitePhone}</span>
                     </a>
                     <a
                       href={`mailto:${siteEmail}`}
                       className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
                     >
-                      <MailIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <MailIcon
+                        width={20}
+                        height={20}
+                        className="mt-0.5 size-5 shrink-0 text-slate-400"
+                      />
                       <span>{siteEmail}</span>
                     </a>
                     <a
@@ -293,7 +339,11 @@ export function MobileNav({
                       rel="noopener noreferrer"
                       className="flex items-start gap-2.5 text-sm leading-snug text-slate-600 transition hover:text-primary"
                     >
-                      <MapPinIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <MapPinIcon
+                        width={20}
+                        height={20}
+                        className="mt-0.5 size-5 shrink-0 text-slate-400"
+                      />
                       <span>{storefrontContact.address}</span>
                     </a>
                     <a
@@ -302,7 +352,11 @@ export function MobileNav({
                       rel="noopener noreferrer"
                       className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
                     >
-                      <InstagramIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <InstagramIcon
+                        width={20}
+                        height={20}
+                        className="mt-0.5 size-5 shrink-0 text-slate-400"
+                      />
                       <span>Instagram</span>
                     </a>
                     <a
@@ -311,12 +365,20 @@ export function MobileNav({
                       rel="noopener noreferrer"
                       className="flex items-start gap-2.5 text-sm leading-snug font-medium text-slate-700 transition hover:text-primary"
                     >
-                      <BagIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                      <BagIcon
+                        width={20}
+                        height={20}
+                        className="mt-0.5 size-5 shrink-0 text-slate-400"
+                      />
                       <span>Trendyol Mağazası</span>
                     </a>
                     {workingHours ? (
                       <p className="flex items-start gap-2.5 text-sm leading-snug text-slate-600">
-                        <ClockIcon width={20} height={20} className="mt-0.5 size-5 shrink-0 text-slate-400" />
+                        <ClockIcon
+                          width={20}
+                          height={20}
+                          className="mt-0.5 size-5 shrink-0 text-slate-400"
+                        />
                         <span>{workingHours}</span>
                       </p>
                     ) : null}
@@ -328,7 +390,7 @@ export function MobileNav({
               <div className="border-t border-slate-100 bg-slate-50/70 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-[11px] text-slate-400">
                 <span>🌿 Doğal Fermantasyon Ev Turşusu</span>
               </div>
-                </aside>
+            </aside>
           </>,
           document.body,
         )

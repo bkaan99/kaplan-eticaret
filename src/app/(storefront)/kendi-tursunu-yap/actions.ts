@@ -36,7 +36,7 @@ export async function addCustomPickleAction(
     },
     {
       actionName: "customPickle",
-      revalidate: ["/"],
+      revalidate: ["/sepet"],
     },
   );
 }
