@@ -7,15 +7,11 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 ## Yüksek öncelik
 
-### 1. Ürün listesi / arama sorgusu (PLP)
+### 1. Ürün listesi / arama sorgusu (PLP) — yapıldı
 
-**Nerede:** `src/modules/catalog/catalog.repository.ts` (`searchListing`), `src/modules/catalog/catalog.service.ts` (`list`), `src/components/storefront/search-actions.ts`
+**Nerede:** `src/modules/catalog/catalog.repository.ts` (`searchListingPage`), `src/modules/catalog/catalog.service.ts` (`list` / `searchQuick`), `src/components/storefront/search-actions.ts`
 
-**Sorun:** Eşleşen ürün + varyant fiyatları D1’den toplu çekilip bellekte sıralanıyor / filtreleniyor / sayfalanıyor. Navbar canlı araması da aynı yolu kullanıyor (facet’ler dahil).
-
-**Neden önemli:** Katalog büyüdükçe her PLP ve arama Worker + D1 süresini şişirir.
-
-**Yön:** SQL tarafında sıralama + limit/offset (veya keyset) sayfalama; aramada hafif / daraltılmış sorgu.
+**Yapılan:** Sıralama, fiyat filtresi ve sayfalama SQL’e alındı (`LIMIT`/`OFFSET` + `COUNT`). Navbar canlı araması facet’siz `searchQuick` kullanıyor.
 
 **Etki:** Yüksek
 

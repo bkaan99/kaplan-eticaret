@@ -12,6 +12,7 @@ import {
   or,
   isNotNull,
   ne,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import {
@@ -29,13 +30,28 @@ import {
   type Db,
 } from "@/db";
 import type { BadgeAttribute } from "./product-badges";
-import type { CategoryNode } from "./catalog.types";
+import type { CategoryNode, SortOption } from "./catalog.types";
 
 export interface ProductFilter {
   categoryIds?: string[];
   search?: string;
   brandSlugs: string[];
   attributeFilters: Record<string, string[]>;
+}
+
+/** PLP: filtre + sıralama + sayfa; SQL tarafında limit/offset. */
+export interface ListingQuery extends ProductFilter {
+  sort: SortOption;
+  minPrice?: number;
+  maxPrice?: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ListingPage {
+  ids: string[];
+  total: number;
+  page: number;
 }
 
 export interface ListingRow {
@@ -118,7 +134,7 @@ export interface ProductDetailRecord {
 
 export interface CatalogRepository {
   listCategories(): Promise<CategoryNode[]>;
-  searchListing(filter: ProductFilter): Promise<ListingRow[]>;
+  searchListingPage(query: ListingQuery): Promise<ListingPage>;
   findCards(ids: string[]): Promise<ProductCardRecord[]>;
   countAttributeFacets(
     filter: Omit<ProductFilter, "attributeFilters">,
@@ -237,6 +253,44 @@ function buildWhere(db: Db, filter: Partial<ProductFilter>): SQL {
   return and(...conditions)!;
 }
 
+function needsPriceJoin(query: ListingQuery): boolean {
+  return (
+    query.sort === "price-asc" ||
+    query.sort === "price-desc" ||
+    query.minPrice !== undefined ||
+    query.maxPrice !== undefined
+  );
+}
+
+function priceHaving(query: ListingQuery): SQL | undefined {
+  const parts: SQL[] = [];
+  if (query.minPrice !== undefined) {
+    parts.push(sql`min(${productVariant.price}) >= ${query.minPrice}`);
+  }
+  if (query.maxPrice !== undefined) {
+    parts.push(sql`min(${productVariant.price}) <= ${query.maxPrice}`);
+  }
+  return parts.length > 0 ? and(...parts) : undefined;
+}
+
+function listingOrderBy(sort: SortOption, withPrice: boolean): SQL {
+  switch (sort) {
+    case "price-asc":
+      return withPrice
+        ? sql`min(${productVariant.price}) asc`
+        : desc(product.createdAt);
+    case "price-desc":
+      return withPrice
+        ? sql`min(${productVariant.price}) desc`
+        : desc(product.createdAt);
+    case "name":
+      return sql`${product.name} collate nocase asc`;
+    case "newest":
+    default:
+      return desc(product.createdAt);
+  }
+}
+
 /** Aktif varyantlar fiyata göre artan sırada, seçenek değer kimlikleriyle. */
 const activeVariants = {
   where: eq(productVariant.isActive, true),
@@ -292,28 +346,89 @@ export class D1CatalogRepository implements CatalogRepository {
     }));
   }
 
-  async searchListing(filter: ProductFilter): Promise<ListingRow[]> {
-    const db = this.db();
-    const rows = await db.query.product.findMany({
-      where: buildWhere(db, filter),
-      columns: { id: true, name: true, createdAt: true },
-      with: {
-        variants: {
-          where: eq(productVariant.isActive, true),
-          columns: { price: true },
-        },
-      },
-    });
+  async searchListingPage(query: ListingQuery): Promise<ListingPage> {
+    const total = await this.countListingMatches(query);
+    const totalPages = Math.max(1, Math.ceil(total / query.pageSize));
+    const page = Math.min(Math.max(1, query.page), totalPages);
+    if (total === 0) return { ids: [], total: 0, page: 1 };
 
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      createdAt: row.createdAt,
-      minPrice: row.variants.reduce(
-        (min, variant) => (variant.price.lt(min) ? variant.price : min),
-        row.variants[0]!.price,
-      ),
-    }));
+    const ids = await this.selectListingIds(
+      query,
+      query.pageSize,
+      (page - 1) * query.pageSize,
+    );
+    return { ids, total, page };
+  }
+
+  private async countListingMatches(query: ListingQuery): Promise<number> {
+    const db = this.db();
+    const where = buildWhere(db, query);
+
+    if (!needsPriceJoin(query)) {
+      const [row] = await db
+        .select({ total: count() })
+        .from(product)
+        .where(where);
+      return row?.total ?? 0;
+    }
+
+    const filtered = db
+      .select({ id: product.id })
+      .from(product)
+      .innerJoin(
+        productVariant,
+        and(
+          eq(productVariant.productId, product.id),
+          eq(productVariant.isActive, true),
+        ),
+      )
+      .where(where)
+      .groupBy(product.id)
+      .having(priceHaving(query))
+      .as("filtered_listing");
+
+    const [row] = await db.select({ total: count() }).from(filtered);
+    return row?.total ?? 0;
+  }
+
+  private async selectListingIds(
+    query: ListingQuery,
+    limit: number,
+    offset: number,
+  ): Promise<string[]> {
+    const db = this.db();
+    const where = buildWhere(db, query);
+    const withPrice = needsPriceJoin(query);
+    const orderBy = listingOrderBy(query.sort, withPrice);
+
+    if (!withPrice) {
+      const rows = await db
+        .select({ id: product.id })
+        .from(product)
+        .where(where)
+        .orderBy(orderBy)
+        .limit(limit)
+        .offset(offset);
+      return rows.map((row) => row.id);
+    }
+
+    const rows = await db
+      .select({ id: product.id })
+      .from(product)
+      .innerJoin(
+        productVariant,
+        and(
+          eq(productVariant.productId, product.id),
+          eq(productVariant.isActive, true),
+        ),
+      )
+      .where(where)
+      .groupBy(product.id)
+      .having(priceHaving(query))
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
+    return rows.map((row) => row.id);
   }
 
   async findCards(ids: string[]): Promise<ProductCardRecord[]> {

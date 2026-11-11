@@ -111,11 +111,16 @@ export class CatalogService {
 
     const baseFilter = { categoryIds, search: query.search };
 
-    const [rows, attributeFacetRecords, brandRecords] = await Promise.all([
-      this.repository.searchListing({
+    const [listing, attributeFacetRecords, brandRecords] = await Promise.all([
+      this.repository.searchListingPage({
         ...baseFilter,
         brandSlugs: query.brandSlugs,
         attributeFilters: query.attributeFilters,
+        minPrice: query.minPrice,
+        maxPrice: query.maxPrice,
+        sort: query.sort,
+        page: query.page,
+        pageSize: query.pageSize,
       }),
       this.repository.countAttributeFacets({
         ...baseFilter,
@@ -124,23 +129,13 @@ export class CatalogService {
       this.repository.countBrands(baseFilter),
     ]);
 
-    const priced = filterByPrice(rows, query.minPrice, query.maxPrice);
-    const sorted = sortListing(priced, query.sort);
-
-    const total = sorted.length;
-    const totalPages = Math.max(1, Math.ceil(total / query.pageSize));
-    const page = Math.min(query.page, totalPages);
-    const start = (page - 1) * query.pageSize;
-    const pageIds = sorted
-      .slice(start, start + query.pageSize)
-      .map((r) => r.id);
-
-    const cards = await this.getCardsInOrder(pageIds, identity);
+    const cards = await this.getCardsInOrder(listing.ids, identity);
+    const totalPages = Math.max(1, Math.ceil(listing.total / query.pageSize));
 
     return {
       items: cards,
-      total,
-      page,
+      total: listing.total,
+      page: listing.page,
       pageSize: query.pageSize,
       totalPages,
       attributeFacets: this.buildAttributeFacets(attributeFacetRecords),
@@ -155,6 +150,24 @@ export class CatalogService {
             }
           : null,
     };
+  }
+
+  /** Navbar canlı arama: facet yok, yalnızca sayfalı sonuç. */
+  async searchQuick(
+    term: string,
+    limit: number,
+    identity: PricingIdentity = ANONYMOUS,
+  ): Promise<{ items: ProductCard[]; total: number }> {
+    const listing = await this.repository.searchListingPage({
+      search: term,
+      brandSlugs: [],
+      attributeFilters: {},
+      sort: "newest",
+      page: 1,
+      pageSize: limit,
+    });
+    const items = await this.getCardsInOrder(listing.ids, identity);
+    return { items, total: listing.total };
   }
 
   async getCardsInOrder(

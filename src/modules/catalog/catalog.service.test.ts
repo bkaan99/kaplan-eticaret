@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import { describe, expect, it } from "vitest";
 import type {
   CatalogRepository,
+  ListingQuery,
   ListingRow,
   ProductCardRecord,
   VariantRecord,
@@ -69,9 +70,19 @@ class FakeRepository implements CatalogRepository {
   async listCategories() {
     return this.categories;
   }
-  async searchListing(filter: unknown) {
-    this.lastFilter = filter;
-    return this.rows;
+  async searchListingPage(query: ListingQuery) {
+    this.lastFilter = query;
+    const priced = filterByPrice(this.rows, query.minPrice, query.maxPrice);
+    const sorted = sortListing(priced, query.sort);
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / query.pageSize));
+    const page = Math.min(Math.max(1, query.page), totalPages);
+    const start = (page - 1) * query.pageSize;
+    return {
+      ids: sorted.slice(start, start + query.pageSize).map((r) => r.id),
+      total,
+      page,
+    };
   }
   async findCards(ids: string[]) {
     return this.cards.filter((c) => ids.includes(c.id));

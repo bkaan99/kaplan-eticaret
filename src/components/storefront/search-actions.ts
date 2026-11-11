@@ -20,20 +20,5 @@ export async function liveSearchAction(term: string): Promise<LiveSearchResult> 
   }
 
   const pricing = await getRequestPricing();
-  const result = await catalogService.list(
-    {
-      search: query,
-      brandSlugs: [],
-      attributeFilters: {},
-      sort: "newest",
-      page: 1,
-      pageSize: 5,
-    },
-    pricing,
-  );
-
-  return {
-    items: result.items,
-    total: result.total,
-  };
+  return catalogService.searchQuick(query, 5, pricing);
 }
