@@ -119,13 +119,11 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 ---
 
-### 11. HTML / katalog önbelleği
+### 11. HTML / katalog önbelleği — yapıldı
 
-**Nerede:** `next.config.ts` (`cacheComponents`), `src/config/cache-policy.ts`, `src/modules/catalog/cached.ts`, `src/modules/content/cached.ts`, settings `unstable_cache`
+**Nerede:** `src/config/cache-policy.ts`, `proxy.ts`, `shared/cache/registry.ts`, `settings/cached.ts`, `modules/admin/action.ts`
 
-**Sorun:** Edge HTML TTL kısa (ör. s-maxage 60); süreç içi TTL; OpenNext’te `revalidateTag` güvenilirliği sınırlı. Anonim hit oranı düşük kalabilir → Worker/D1 tekrarları.
-
-**Yön:** Güvenli tag invalidation stratejisi; anonim sayfalar için daha uzun edge cache (içerik değişince purge).
+**Yapılan:** Anonim HTML `s-maxage=300` + SWR 1 saat; süreç TTL 3 dk (admin’de invalidate); settings cache 5 dk; her admin yazısında `revalidatePath("/", "layout")` (OpenNext incremental).
 
 **Etki:** Orta
 
@@ -148,5 +146,5 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 ## Notlar
 
 - Birçok yerde `sizes` / `priority` kullanımı zaten doğru (`product-card`, hero, gallery).
-- Yüksek 1–4 ve madde 5–6 tamamlandı. Sonraki: orta maddeler (7–11).
+- Yüksek 1–4 ve madde 5–6 + 11 tamamlandı. Kalan orta: **7–10**, düşük: **12**.
 - `resizeImageUrl` r2.dev’de no-op; custom CDN + `CF_IMAGE_RESIZING=true` gerekir. CF `IMAGES` binding zaten `/_next/image` için var.

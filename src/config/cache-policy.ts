@@ -4,16 +4,17 @@ export const CACHE_PRIVATE =
   "private, no-store, no-cache, max-age=0, must-revalidate";
 
 /**
- * Anonim vitrin HTML — edge kısa TTL + SWR.
- * Yönetim paneli değişiklikleri edge önbelleğini temizleyemez (workers.dev'de purge yok),
- * bu yüzden bayat süre en fazla ~2 dk tutulur: s-maxage 60 + SWR 60.
+ * Anonim vitrin HTML — edge TTL + SWR.
+ * Yönetim yazıları aynı isolate’ta süreç önbelleğini temizler; OpenNext
+ * incremental cache `revalidatePath` ile düşer. workers.dev’de edge purge
+ * yok → `s-maxage` bayatlık üst sınırı (sonra SWR ile arka planda yenilenir).
  */
 export const CACHE_PUBLIC_HTML =
-  "public, s-maxage=60, stale-while-revalidate=60";
+  "public, s-maxage=300, stale-while-revalidate=3600";
 
-/** Public katalog API (varsa) — daha kısa edge TTL. */
+/** Public katalog API (varsa). */
 export const CACHE_CATALOG_API =
-  "public, s-maxage=30, stale-while-revalidate=120";
+  "public, s-maxage=120, stale-while-revalidate=600";
 
 /** sitemap / robots / llms / feed — edge 1 saat + SWR. */
 export const CACHE_SEO_FEED =
@@ -24,6 +25,15 @@ export const CACHE_UPLOAD_ASSET = "public, max-age=31536000, immutable";
 
 /** Edge-only TTL; tarayıcıya sızmaz (Workers Caching). */
 export const CDN_CACHE_UPLOAD = "public, max-age=31536000, immutable";
+
+/**
+ * Süreç içi vitrin okuma (kategori / menü / banner).
+ * Admin yazınca `invalidateStorefrontCaches` ile anında temizlenir.
+ */
+export const STOREFRONT_PROCESS_TTL_MS = 180_000;
+
+/** `unstable_cache` settings süresi (saniye). Tag invalidation OpenNext’te zayıf. */
+export const SETTINGS_CACHE_REVALIDATE_SECONDS = 300;
 
 const PRIVATE_PREFIXES = [
   "/admin",

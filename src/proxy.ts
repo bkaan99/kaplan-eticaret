@@ -47,7 +47,7 @@ function withCacheHeaders(headers: Record<string, string>): NextResponse {
 /**
  * Admin oturum yönlendirmesi + path/çerez bazlı Cache-Control.
  * Kişiselleştirme (oturum / sepet) varsa HTML asla edge’de paylaşılmaz.
- * Anonim vitrin sayfaları kısa TTL ile Worker’ı baypas eder.
+ * Anonim vitrin sayfaları edge TTL + SWR ile Worker’ı baypas eder.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

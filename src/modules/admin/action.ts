@@ -28,6 +28,8 @@ export async function runAdminAction(
     const user = await requirePermission(permission);
     await handler({ userId: user.id, ip: await getClientIp() }, user);
     invalidateStorefrontCaches();
+    // OpenNext incremental cache: vitrin layout’unu düşür (edge TTL ayrı).
+    revalidatePath("/", "layout");
     for (const path of revalidate) revalidatePath(path);
     return { ok: true };
   } catch (error) {
