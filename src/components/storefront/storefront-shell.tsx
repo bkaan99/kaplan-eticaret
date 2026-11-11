@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -30,6 +30,9 @@ type ShellState = {
 
 const ShellContext = createContext<ShellState | null>(null);
 
+/** Başka sekmeden dönüşte en fazla bu aralıkta bir yenile. */
+const VISIBILITY_REFRESH_MS = 30_000;
+
 function useStorefrontShell(): ShellState {
   const state = useContext(ShellContext);
   if (!state) {
@@ -44,9 +47,10 @@ export function StorefrontShellProvider({ children }: { children: ReactNode }) {
     cartCount: 0,
     user: null,
   });
-  const pathname = usePathname();
+  const lastLoadAt = useRef(0);
 
   const load = useCallback(() => {
+    lastLoadAt.current = Date.now();
     void fetch("/api/storefront/shell", { credentials: "same-origin" })
       .then(async (res) => {
         if (!res.ok) throw new Error("shell");
@@ -74,14 +78,24 @@ export function StorefrontShellProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     load();
+
     const onRefresh = () => load();
     window.addEventListener(STOREFRONT_SHELL_REFRESH, onRefresh);
-    window.addEventListener("focus", onRefresh);
+
+    // pathname / window.focus ile her seferinde çekme; yalnızca sekme görünür
+    // olduğunda ve son yüklemeden 30 sn geçmişse yenile (başka sekme senaryosu).
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastLoadAt.current < VISIBILITY_REFRESH_MS) return;
+      load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       window.removeEventListener(STOREFRONT_SHELL_REFRESH, onRefresh);
-      window.removeEventListener("focus", onRefresh);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [load, pathname]);
+  }, [load]);
 
   const value = useMemo(() => state, [state]);
   return (

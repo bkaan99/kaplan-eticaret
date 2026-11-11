@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import type { ProductDetail } from "@/modules/catalog/catalog.types";
 

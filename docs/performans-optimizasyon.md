@@ -49,25 +49,21 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 ## Orta–yüksek öncelik
 
-### 5. Ürün detay (PDP) tek büyük client ada
+### 5. Ürün detay (PDP) tek büyük client ada — yapıldı
 
-**Nerede:** `src/components/product/product-view.tsx` (+ gallery, options, purchase, accordions)
+**Nerede:** `product-view.tsx` (RSC), `product-interactive.tsx` (client), `product-accordions.tsx` (RSC)
 
-**Sorun:** Galeri + seçenekler + sepete ekle + akordeon tek `"use client"` sınırında; statik başlık/SEO HTML’i de hydrate oluyor.
-
-**Yön:** Sunucu bileşenlerine ayır; yalnızca etkileşimli parçaları client yap.
+**Yapılan:** `h1` / nitelik rozetleri / akordeon sunucuda; galeri + fiyat + seçenek + sepete ekle `ProductInteractive` client adasında. Slot composition ile SEO HTML hydrate edilmiyor.
 
 **Etki:** Orta–yüksek
 
 ---
 
-### 6. Header shell API yenilemesi
+### 6. Header shell API yenilemesi — yapıldı
 
-**Nerede:** `src/components/storefront/site-header.tsx`, `src/components/storefront/storefront-shell.tsx`, `/api/storefront/shell`
+**Nerede:** `src/components/storefront/storefront-shell.tsx`, `/api/storefront/shell`
 
-**Sorun:** Her `pathname` değişimi ve `window.focus`’ta shell API tekrar çekiliyor (sepet / oturum / wishlist). Sticky header + `backdrop-blur` ek maliyet.
-
-**Yön:** Daha seyrek yenileme, cache, veya event tabanlı güncelleme; gereksiz focus refetch’i kaldır.
+**Yapılan:** `pathname` ve `window.focus` refetch kaldırıldı. Yükleme: mount + `refreshStorefrontShell` olayları; sekme görünür olunca en fazla 30 sn’de bir.
 
 **Etki:** Orta–yüksek
 
@@ -152,5 +148,5 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 ## Notlar
 
 - Birçok yerde `sizes` / `priority` kullanımı zaten doğru (`product-card`, hero, gallery).
-- Yüksek öncelikli 1–4 tamamlandı. Sonraki: **5 → 6**, sonra orta maddeler.
+- Yüksek 1–4 ve madde 5–6 tamamlandı. Sonraki: orta maddeler (7–11).
 - `resizeImageUrl` r2.dev’de no-op; custom CDN + `CF_IMAGE_RESIZING=true` gerekir. CF `IMAGES` binding zaten `/_next/image` için var.
