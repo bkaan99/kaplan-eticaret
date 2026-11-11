@@ -1,9 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { siteConfig } from "@/config/site.config";
 import { themeToCss } from "@/config/theme";
 import { getSiteUrl } from "@/shared/site-url";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

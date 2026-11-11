@@ -221,7 +221,7 @@ async function BuilderBand() {
           </ol>
         </div>
         <div className="flex flex-col gap-3">
-          <ul className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
             {data.sizes.map((size) => (
               <li
                 key={size.variantId}
@@ -400,7 +400,7 @@ function CustomerReviews() {
                 &ldquo;{r.comment}&rdquo;
               </p>
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+            <div className="mt-4 flex flex-col gap-1 border-t border-slate-100 pt-3 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2">
               <div>
                 <span className="font-bold text-slate-900">{r.name}</span>
                 <span className="text-slate-400"> · {r.city}</span>

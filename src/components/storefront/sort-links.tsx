@@ -32,8 +32,8 @@ export function SortLinks({
           aria-current={query.sort === option ? "true" : undefined}
           className={
             query.sort === option
-              ? "font-semibold underline"
-              : "text-muted-foreground hover:text-foreground"
+              ? "inline-flex min-h-11 items-center rounded-theme bg-primary px-3.5 text-sm font-semibold text-primary-foreground"
+              : "inline-flex min-h-11 items-center rounded-theme border border-border px-3.5 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
           }
         >
           {LABELS[option]}

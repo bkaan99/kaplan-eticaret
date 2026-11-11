@@ -23,8 +23,11 @@ async function CartContent() {
     return <EmptyCart freeShippingThreshold={shipping.freeShippingThreshold} />;
   }
 
+  const checkoutClassName =
+    "block rounded-theme bg-primary px-4 py-3 text-center text-primary-foreground";
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+    <div className="grid gap-8 pb-24 lg:grid-cols-[1fr_320px] lg:pb-0">
       <div className="flex flex-col gap-4">
         <FreeShippingBar
           subtotal={cart.subtotal}
@@ -42,24 +45,39 @@ async function CartContent() {
           KDV dahildir. Kargo ücreti ödeme adımında hesaplanır; kupon indirimi
           ücretsiz kargo limitini etkileyebilir.
         </p>
-        {cart.hasIssues ? (
-          <span className="rounded-theme bg-primary px-4 py-3 text-center text-primary-foreground opacity-50">
-            Ödemeye geç
-          </span>
-        ) : (
-          <Link
-            href="/odeme"
-            className="rounded-theme bg-primary px-4 py-3 text-center text-primary-foreground"
-          >
-            Ödemeye geç
-          </Link>
-        )}
+        <div className="hidden lg:block">
+          {cart.hasIssues ? (
+            <span className={`${checkoutClassName} opacity-50`}>Ödemeye geç</span>
+          ) : (
+            <Link href="/odeme" className={checkoutClassName}>
+              Ödemeye geç
+            </Link>
+          )}
+        </div>
         {cart.hasIssues ? (
           <p className="text-xs text-red-600">
             Sepetinizde satın alınamayan ürünler var.
           </p>
         ) : null}
       </aside>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.25)] backdrop-blur-md lg:hidden">
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            Ara toplam ({cart.itemCount} ürün)
+          </span>
+          <span className="font-semibold">
+            <Price value={cart.subtotal} currency={cart.currency} />
+          </span>
+        </div>
+        {cart.hasIssues ? (
+          <span className={`${checkoutClassName} opacity-50`}>Ödemeye geç</span>
+        ) : (
+          <Link href="/odeme" className={checkoutClassName}>
+            Ödemeye geç
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

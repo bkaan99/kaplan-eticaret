@@ -108,7 +108,7 @@ export async function SiteHeader() {
         <FreeShippingBanner />
       </Suspense>
 
-      <header className="relative z-40 border-b border-slate-200 bg-white md:sticky md:top-0">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         {/* Satır 1: logo (sol) · arama (orta) · aksiyonlar (sağ). Tam genişlik;
             dar ekranda arama alt satıra iner. */}
         <div className="mx-auto grid w-full max-w-[1600px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,40rem)_minmax(0,1fr)] md:gap-x-6 lg:px-8 2xl:px-12">

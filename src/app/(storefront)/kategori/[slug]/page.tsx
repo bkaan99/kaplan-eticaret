@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/storefront/breadcrumbs";
 import { FilterPanel } from "@/components/storefront/filter-panel";
 import { JsonLd } from "@/components/storefront/json-ld";
+import { MobileFilterDrawer } from "@/components/storefront/mobile-filter-drawer";
 import { Pagination } from "@/components/storefront/pagination";
 import { ProductGrid } from "@/components/storefront/product-grid";
 import { SortLinks } from "@/components/storefront/sort-links";
@@ -167,7 +168,7 @@ async function CategoryContent({
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
-        <aside aria-label="Filtreler">
+        <aside className="hidden lg:block" aria-label="Filtreler">
           <FilterPanel
             action={basePath}
             query={query}
@@ -177,7 +178,19 @@ async function CategoryContent({
         </aside>
         <div className="flex flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-muted-foreground">{result.total} ürün</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <MobileFilterDrawer>
+                <FilterPanel
+                  action={basePath}
+                  query={query}
+                  attributeFacets={result.attributeFacets}
+                  brandFacet={result.brandFacet}
+                />
+              </MobileFilterDrawer>
+              <p className="text-sm text-muted-foreground">
+                {result.total} ürün
+              </p>
+            </div>
             <SortLinks basePath={basePath} query={query} />
           </div>
           <ProductGrid products={result.items} />

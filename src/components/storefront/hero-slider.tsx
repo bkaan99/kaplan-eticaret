@@ -218,7 +218,7 @@ export function HeroSlider() {
         </button>
 
         {/* Göstergeler */}
-        <div className="absolute inset-x-0 bottom-4 z-20 flex justify-center gap-2">
+        <div className="absolute inset-x-0 bottom-2 z-20 flex justify-center gap-0.5">
           {SLIDES.map((slide, index) => (
             <button
               key={slide.id}
@@ -226,12 +226,16 @@ export function HeroSlider() {
               onClick={() => setCurrent(index)}
               aria-label={`Slayt ${index + 1}: ${slide.titleLight}`}
               aria-current={index === current}
-              className={`h-1.5 w-8 rounded-full transition-colors ${
-                index === current
-                  ? "bg-amber-300"
-                  : "bg-white/40 hover:bg-white/70"
-              }`}
-            />
+              className="inline-flex min-h-11 min-w-11 items-center justify-center"
+            >
+              <span
+                className={`block h-1.5 w-8 rounded-full transition-colors ${
+                  index === current
+                    ? "bg-amber-300"
+                    : "bg-white/40 hover:bg-white/70"
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>

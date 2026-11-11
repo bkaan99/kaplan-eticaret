@@ -146,7 +146,7 @@ export function SearchForm({ className = "" }: SearchFormProps) {
             type="button"
             onClick={handleClear}
             aria-label="Aramayı temizle"
-            className="absolute inset-y-0 right-24 my-auto flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+            className="absolute inset-y-0 right-24 my-auto flex h-11 w-11 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
           >
             <XIcon width={14} height={14} />
           </button>

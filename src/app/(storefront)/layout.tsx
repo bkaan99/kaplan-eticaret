@@ -15,7 +15,7 @@ export default async function StorefrontLayout({ children }: LayoutProps<"/">) {
       {/* `contents`: yerleşimi bozmadan vitrin yazı tipini uygular */}
       <div className="contents font-storefront">
         <SiteHeader />
-        <main className="mx-auto w-full max-w-[1600px] px-4 lg:px-8 2xl:px-12 flex-1 py-6">
+        <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 overflow-x-hidden px-4 py-6 lg:px-8 2xl:px-12">
           {children}
         </main>
         <SiteFooter />

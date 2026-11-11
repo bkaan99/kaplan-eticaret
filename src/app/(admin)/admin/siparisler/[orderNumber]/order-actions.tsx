@@ -14,6 +14,82 @@ import {
   shipOrderAction,
 } from "../actions";
 
+function OrderPrimaryButtons({
+  orderNumber,
+  pending,
+  canProcess,
+  canDeliver,
+  canConfirmBankTransfer,
+  canCollectDeferred,
+  run,
+}: {
+  orderNumber: string;
+  pending: boolean;
+  canProcess: boolean;
+  canDeliver: boolean;
+  canConfirmBankTransfer: boolean;
+  canCollectDeferred: boolean;
+  run: (action: () => Promise<{ ok: boolean; error?: string }>) => void;
+}) {
+  return (
+    <>
+      {canConfirmBankTransfer ? (
+        <Button
+          className="w-full sm:w-auto"
+          disabled={pending}
+          onClick={() => {
+            if (
+              window.confirm(
+                "Havale/EFT hesaba geçti mi? Sipariş ödenmiş sayılacak.",
+              )
+            ) {
+              run(() => confirmBankTransferAction(orderNumber));
+            }
+          }}
+        >
+          Havale alındı
+        </Button>
+      ) : null}
+      {canProcess ? (
+        <Button
+          className="w-full sm:w-auto"
+          disabled={pending}
+          onClick={() => run(() => markProcessingAction(orderNumber))}
+        >
+          Hazırlanıyor
+        </Button>
+      ) : null}
+      {canDeliver ? (
+        <Button
+          className="w-full sm:w-auto"
+          disabled={pending}
+          onClick={() => run(() => markDeliveredAction(orderNumber))}
+        >
+          Teslim edildi
+        </Button>
+      ) : null}
+      {canCollectDeferred ? (
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          disabled={pending}
+          onClick={() => {
+            if (
+              window.confirm(
+                "Vadeli ödeme tahsil edildi olarak işaretlensin mi?",
+              )
+            ) {
+              run(() => markDeferredCollectedAction(orderNumber));
+            }
+          }}
+        >
+          Tahsil edildi
+        </Button>
+      ) : null}
+    </>
+  );
+}
+
 export function OrderActions({
   orderNumber,
   canProcess,
@@ -62,72 +138,22 @@ export function OrderActions({
     );
   }
 
-  function PrimaryButtons() {
-    return (
-      <>
-        {canConfirmBankTransfer ? (
-          <Button
-            className="w-full sm:w-auto"
-            disabled={pending}
-            onClick={() => {
-              if (
-                window.confirm(
-                  "Havale/EFT hesaba geçti mi? Sipariş ödenmiş sayılacak.",
-                )
-              ) {
-                run(() => confirmBankTransferAction(orderNumber));
-              }
-            }}
-          >
-            Havale alındı
-          </Button>
-        ) : null}
-        {canProcess ? (
-          <Button
-            className="w-full sm:w-auto"
-            disabled={pending}
-            onClick={() => run(() => markProcessingAction(orderNumber))}
-          >
-            Hazırlanıyor
-          </Button>
-        ) : null}
-        {canDeliver ? (
-          <Button
-            className="w-full sm:w-auto"
-            disabled={pending}
-            onClick={() => run(() => markDeliveredAction(orderNumber))}
-          >
-            Teslim edildi
-          </Button>
-        ) : null}
-        {canCollectDeferred ? (
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto"
-            disabled={pending}
-            onClick={() => {
-              if (
-                window.confirm(
-                  "Vadeli ödeme tahsil edildi olarak işaretlensin mi?",
-                )
-              ) {
-                run(() => markDeferredCollectedAction(orderNumber));
-              }
-            }}
-          >
-            Tahsil edildi
-          </Button>
-        ) : null}
-      </>
-    );
-  }
+  const primaryProps = {
+    orderNumber,
+    pending,
+    canProcess,
+    canDeliver,
+    canConfirmBankTransfer,
+    canCollectDeferred,
+    run,
+  };
 
   return (
     <>
       <div className="flex flex-col gap-4">
         {hasPrimary ? (
           <div className="hidden flex-col gap-2 sm:flex-row sm:flex-wrap md:flex">
-            <PrimaryButtons />
+            <OrderPrimaryButtons {...primaryProps} />
           </div>
         ) : null}
 
@@ -212,7 +238,7 @@ export function OrderActions({
           </p>
           {hasPrimary ? (
             <div className="flex flex-col gap-2">
-              <PrimaryButtons />
+              <OrderPrimaryButtons {...primaryProps} />
             </div>
           ) : null}
           {canCancel ? (

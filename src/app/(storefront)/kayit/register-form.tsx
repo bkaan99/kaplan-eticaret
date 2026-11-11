@@ -15,7 +15,7 @@ export function RegisterForm({ captcha }: { captcha?: React.ReactNode }) {
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           Ad
           <input

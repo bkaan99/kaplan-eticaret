@@ -111,7 +111,7 @@ export function ProductCard({
       {isFeatureEnabled("wishlist") ? (
         <WishlistButton
           productId={product.id}
-          className="absolute top-2.5 right-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-600 shadow-md backdrop-blur-xs transition hover:bg-white hover:text-brand-pepper"
+          className="absolute top-2.5 right-2.5 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-slate-600 shadow-md backdrop-blur-xs transition hover:bg-white hover:text-brand-pepper"
         />
       ) : null}
     </article>
