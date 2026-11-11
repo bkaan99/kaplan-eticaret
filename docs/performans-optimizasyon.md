@@ -127,6 +127,8 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 
 **Etki:** Orta
 
+**Not (edge bayatlık):** Admin’de ürün/kategori değişince sunucu önbelleği hemen temizlenir. Edge’deki HTML kopyası ise `workers.dev` üzerinde purge edilemediği için en fazla ~5 dk (`s-maxage`) eski kalabilir; süre dolunca SWR ile taze sayfa çekilir. Özel alan adı + Cloudflare Cache Purge API bağlanınca admin yazısında edge de anında düşürülebilir. Katalog seyrek değişen mağaza için bilinçli trade-off (daha yüksek anonim hit, daha az Worker/D1).
+
 ---
 
 ## Düşük–orta öncelik
@@ -148,3 +150,4 @@ Vitrin ve yönetim paneli için pratik performans denetimi özeti.
 - Birçok yerde `sizes` / `priority` kullanımı zaten doğru (`product-card`, hero, gallery).
 - Yüksek 1–4 ve madde 5–6 + 11 tamamlandı. Kalan orta: **7–10**, düşük: **12**.
 - `resizeImageUrl` r2.dev’de no-op; custom CDN + `CF_IMAGE_RESIZING=true` gerekir. CF `IMAGES` binding zaten `/_next/image` için var.
+- Madde 11: edge HTML bayatlığı ve purge kısıtı için yukarıdaki **Not (edge bayatlık)** maddesine bakın.
