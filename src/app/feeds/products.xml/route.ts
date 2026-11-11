@@ -3,6 +3,7 @@ import { siteConfig } from "@/config/site.config";
 import { catalogService } from "@/modules/catalog/container";
 import { buildProductFeedXml } from "@/modules/catalog/product-feed";
 import { listFeedProducts } from "@/modules/catalog/product-feed.repository";
+import { getCachedShippingConfig } from "@/modules/settings/cached";
 import { getDb } from "@/shared/db";
 import { absoluteUrl, getSiteUrl } from "@/shared/site-url";
 
@@ -19,7 +20,10 @@ export async function GET() {
     return new Response("Not Found", { status: 404 });
   }
 
-  const categories = await catalogService.getCategories();
+  const [categories, shipping] = await Promise.all([
+    catalogService.getCategories(),
+    getCachedShippingConfig(),
+  ]);
   const products = await listFeedProducts(getDb(), categories, (url) =>
     url.startsWith("http") ? url : absoluteUrl(url),
   );
@@ -28,7 +32,7 @@ export async function GET() {
     siteName: siteConfig.name,
     siteUrl: getSiteUrl(),
     defaultBrand: siteConfig.name,
-    shipping: siteConfig.shipping,
+    shipping,
     productUrl: (slug) => absoluteUrl(`/urun/${slug}`),
     // Google taxonomy: Condiment / sauce (turşu, salamura, fermente gıda)
     googleProductCategory: "422",

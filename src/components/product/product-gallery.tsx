@@ -52,9 +52,9 @@ export function ProductGallery({ state }: { state: ProductViewState }) {
       </div>
 
       {images.length > 1 ? (
-        <ul className="flex gap-3">
+        <ul className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
           {images.map((item, index) => (
-            <li key={`${item.url}-${index}`}>
+            <li key={`${item.url}-${index}`} className="shrink-0">
               <button
                 type="button"
                 onClick={() => setImageIndex(index)}

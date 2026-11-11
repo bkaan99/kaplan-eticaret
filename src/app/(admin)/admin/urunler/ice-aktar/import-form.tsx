@@ -34,17 +34,24 @@ export function ImportForm() {
           />
         </label>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Button
             type="submit"
             name="intent"
             value="preview"
             variant="outline"
+            className="w-full sm:w-auto"
             disabled={pending}
           >
             Önizle (kaydetme)
           </Button>
-          <Button type="submit" name="intent" value="apply" disabled={pending}>
+          <Button
+            type="submit"
+            name="intent"
+            value="apply"
+            className="w-full sm:w-auto"
+            disabled={pending}
+          >
             {pending ? "İşleniyor..." : "İçe aktar"}
           </Button>
         </div>
@@ -97,22 +104,44 @@ function Report({
       </div>
 
       {report.issues.length > 0 ? (
-        <Table>
-          <THead>
-            <tr>
-              <TH>Satır</TH>
-              <TH>Sorun</TH>
-            </tr>
-          </THead>
-          <TBody>
+        <>
+          {/* Mobil: kart listesi */}
+          <ul className="flex flex-col gap-2 md:hidden">
             {report.issues.map((issue, index) => (
-              <TR key={`${issue.row}-${index}`}>
-                <TD>{issue.row}</TD>
-                <TD>{issue.message}</TD>
-              </TR>
+              <li
+                key={`${issue.row}-${index}`}
+                className="rounded-xl border border-amber-200/80 bg-amber-50/40 px-3.5 py-3"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+                  Satır {issue.row}
+                </p>
+                <p className="mt-1 text-[13px] leading-snug text-slate-800">
+                  {issue.message}
+                </p>
+              </li>
             ))}
-          </TBody>
-        </Table>
+          </ul>
+
+          {/* Masaüstü: tablo */}
+          <div className="hidden overflow-x-auto md:block">
+            <Table>
+              <THead>
+                <tr>
+                  <TH>Satır</TH>
+                  <TH>Sorun</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {report.issues.map((issue, index) => (
+                  <TR key={`${issue.row}-${index}`}>
+                    <TD>{issue.row}</TD>
+                    <TD>{issue.message}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </div>
+        </>
       ) : null}
     </section>
   );

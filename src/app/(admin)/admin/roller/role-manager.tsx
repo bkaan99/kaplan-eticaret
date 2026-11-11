@@ -1,14 +1,20 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/shared/cn";
 import { deleteRoleAction, saveRoleAction } from "./actions";
 import { RoleModal } from "./role-modal";
-import { LABELS, type RoleView } from "./role-types";
+import {
+  permissionGroupSummary,
+  permissionLabel,
+  type RoleView,
+} from "./role-types";
+
 export type { RoleView } from "./role-types";
+
+type FilterTab = "all" | "system" | "custom";
 
 export function RoleManager({
   roles,
@@ -25,15 +31,13 @@ export function RoleManager({
   const [description, setDescription] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterTab, setFilterTab] = useState<"all" | "system" | "custom">(
-    "all",
-  );
+  const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [message, setMessage] = useState<{
     text: string;
     error: boolean;
   } | null>(null);
 
-  // İstatistikler
   const stats = useMemo(() => {
     const total = roles.length;
     const system = roles.filter((r) => r.isSystem).length;
@@ -42,17 +46,17 @@ export function RoleManager({
     return { total, system, custom, totalUsers };
   }, [roles]);
 
-  function reset() {
+  function resetForm() {
     setEditingId(null);
     setEditingIsSystem(false);
     setName("");
     setDescription("");
     setSelected([]);
-    setMessage(null);
   }
 
   function handleCreateNew() {
-    reset();
+    resetForm();
+    setMessage(null);
     setIsModalOpen(true);
   }
 
@@ -67,7 +71,7 @@ export function RoleManager({
   }
 
   function handleCloseModal() {
-    reset();
+    resetForm();
     setIsModalOpen(false);
   }
 
@@ -82,14 +86,14 @@ export function RoleManager({
       });
 
       if (result.ok) {
+        setIsModalOpen(false);
+        resetForm();
         setMessage({
           text: editingId
-            ? "Rol başarıyla güncellendi."
-            : "Yeni rol başarıyla oluşturuldu.",
+            ? "Rol güncellendi."
+            : "Yeni rol oluşturuldu.",
           error: false,
         });
-        reset();
-        setIsModalOpen(false);
       } else {
         setMessage({
           text: result.error ?? "Kaydedilemedi",
@@ -101,47 +105,50 @@ export function RoleManager({
 
   function remove(id: string, roleName: string) {
     if (
-      !window.confirm(`"${roleName}" rolünü silmek istediğinize emin misiniz?`)
-    )
+      !window.confirm(`“${roleName}” rolünü silmek istediğinize emin misiniz?`)
+    ) {
       return;
+    }
 
     startTransition(async () => {
       const result = await deleteRoleAction(id);
       setMessage(
         result.ok
-          ? { text: `"${roleName}" rolü silindi.`, error: false }
+          ? { text: `“${roleName}” silindi.`, error: false }
           : { text: result.error ?? "Silinemedi", error: true },
       );
       if (result.ok && editingId === id) {
-        reset();
+        resetForm();
         setIsModalOpen(false);
       }
     });
   }
 
-  // Filtrelenmiş roller
   const filteredRoles = useMemo(() => {
     return roles.filter((role) => {
-      // Sekme filtresi
       if (filterTab === "system" && !role.isSystem) return false;
       if (filterTab === "custom" && role.isSystem) return false;
 
-      // Arama filtresi
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       const matchName = role.name.toLowerCase().includes(q);
       const matchDesc = role.description?.toLowerCase().includes(q);
       const matchPerm = role.permissions.some((p) => {
-        const label = LABELS.get(p as never) ?? p;
+        const label = permissionLabel(p);
         return label.toLowerCase().includes(q) || p.toLowerCase().includes(q);
       });
       return matchName || matchDesc || matchPerm;
     });
   }, [roles, filterTab, searchQuery]);
 
+  const tabs: { id: FilterTab; label: string; count: number }[] = [
+    { id: "all", label: "Tümü", count: roles.length },
+    { id: "system", label: "Sistem", count: stats.system },
+    { id: "custom", label: "Özel", count: stats.custom },
+  ];
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Rol Ekleme/Düzenleme Modalı */}
+    <div className="flex flex-col gap-5">
       <RoleModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -156,199 +163,151 @@ export function RoleManager({
         grantable={grantable}
         onSave={save}
         pending={pending}
-        message={message}
+        message={isModalOpen ? message : null}
       />
 
-      {/* Üst İstatistik Kartları */}
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Toplam Tanımlı Rol</span>
-            <span className="text-base">🛡️</span>
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {[
+          { label: "Toplam rol", value: stats.total },
+          { label: "Sistem", value: stats.system, hint: "Adı sabit" },
+          { label: "Özel", value: stats.custom, hint: "Silinebilir" },
+          {
+            label: "Atanmış personel",
+            value: stats.totalUsers,
+            hint: "Rol eşleşmesi",
+          },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-2xs"
+          >
+            <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">
+              {item.label}
+            </p>
+            <p className="mt-1 text-xl font-semibold tracking-tight text-slate-900">
+              {item.value}
+            </p>
+            {item.hint ? (
+              <p className="mt-0.5 text-[11px] text-slate-400">{item.hint}</p>
+            ) : null}
           </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
-            {stats.total}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Sistem Rolleri</span>
-            <span className="text-base">👑</span>
-          </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-emerald-700">
-            {stats.system}
-          </p>
-          <span className="text-[10px] text-slate-400">Korumalı / Sabit</span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Özel Roller</span>
-            <span className="text-base">⚙️</span>
-          </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-sky-700">
-            {stats.custom}
-          </p>
-          <span className="text-[10px] text-slate-400">Özel Yetkilendirme</span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Rol Atanmış Personel</span>
-            <span className="text-base">👥</span>
-          </div>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
-            {stats.totalUsers}
-          </p>
-          <span className="text-[10px] text-slate-400">Aktif Yönetici</span>
-        </div>
+        ))}
       </div>
 
-      {/* Sayfa Bildirim Mesajı (Modal kapalıyken) */}
-      {message && !isModalOpen && (
+      {message && !isModalOpen ? (
         <div
           role={message.error ? "alert" : "status"}
-          className={`rounded-2xl border p-4 text-xs font-semibold flex items-center justify-between ${
+          className={cn(
+            "flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-[13px] font-medium",
             message.error
               ? "border-red-200 bg-red-50 text-red-800"
-              : "border-emerald-200 bg-emerald-50 text-emerald-800"
-          }`}
+              : "border-emerald-200 bg-emerald-50 text-emerald-800",
+          )}
         >
-          <div className="flex items-center gap-2">
-            <span>{message.error ? "⚠️" : "✓"}</span>
-            <span>{message.text}</span>
-          </div>
+          <span>{message.text}</span>
           <button
             type="button"
             onClick={() => setMessage(null)}
-            className="text-xs hover:opacity-75 cursor-pointer"
+            className="text-current/70 hover:text-current"
+            aria-label="Kapat"
           >
             ✕
           </button>
         </div>
-      )}
+      ) : null}
 
-      {/* Kontrol & Filtre Çubuğu */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Sekmeler */}
-          <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1">
-            <button
-              type="button"
-              onClick={() => setFilterTab("all")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                filterTab === "all"
-                  ? "bg-white text-slate-900 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Tüm Roller ({roles.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterTab("system")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                filterTab === "system"
-                  ? "bg-white text-slate-900 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Sistem ({stats.system})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterTab("custom")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                filterTab === "custom"
-                  ? "bg-white text-slate-900 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Özel Roller ({stats.custom})
-            </button>
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5 sm:flex-row sm:items-center">
+          <div className="flex gap-1 rounded-xl border border-slate-200/80 bg-slate-50/80 p-1">
+            {tabs.map((tab) => {
+              const active = filterTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setFilterTab(tab.id)}
+                  className={cn(
+                    "min-h-10 rounded-lg px-3 py-2 text-[12px] font-semibold transition sm:min-h-0 sm:py-1.5",
+                    active
+                      ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80"
+                      : "text-slate-600 hover:text-slate-900",
+                  )}
+                >
+                  {tab.label}
+                  <span className="ml-1 text-slate-400">{tab.count}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Arama */}
-          <div className="relative w-full sm:w-60">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-              🔍
-            </span>
+          <div className="relative w-full sm:max-w-xs">
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rol veya yetki ara..."
-              className="h-9 pl-8 text-xs bg-white"
+              placeholder="Rol veya yetki ara…"
+              className="bg-white pr-8"
             />
-            {searchQuery && (
+            {searchQuery ? (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-[11px] text-slate-400 hover:text-slate-600"
+                aria-label="Aramayı temizle"
               >
                 ✕
               </button>
-            )}
+            ) : null}
           </div>
         </div>
 
-        {/* Yeni Rol Butonu (Artık Modal Açıyor) */}
-        <Button
-          type="button"
-          onClick={handleCreateNew}
-          className="h-9 bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 cursor-pointer"
-        >
-          + Yeni Rol Oluştur
+        <Button type="button" onClick={handleCreateNew}>
+          Yeni rol
         </Button>
       </div>
 
-      {/* Rol Kartları Listesi (Tam Genişlik) */}
-      <div className="grid gap-4 sm:grid-cols-2 items-stretch">
-        {filteredRoles.map((role) => (
-          <Card
-            key={role.id}
-            className="flex flex-col justify-between overflow-hidden border-slate-200/80 shadow-2xs hover:border-slate-300 transition"
-          >
-            <div>
-              {/* Kart Başlığı */}
-              <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 p-4">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm shadow-2xs ${
-                      role.isSystem
-                        ? "bg-amber-100 text-amber-900"
-                        : "bg-emerald-100 text-emerald-900"
-                    }`}
-                  >
-                    {role.isSystem ? "👑" : "⚙️"}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-sm font-bold text-slate-900 truncate">
-                        {role.name}
-                      </CardTitle>
-                      {role.isSystem ? (
-                        <Badge tone="neutral" className="text-[10px]">
-                          Sistem Rolü
-                        </Badge>
-                      ) : (
-                        <Badge tone="success" className="text-[10px]">
-                          Özel Rol
-                        </Badge>
+      <div className="grid items-stretch gap-3 sm:grid-cols-2">
+        {filteredRoles.map((role) => {
+          const groups = permissionGroupSummary(role.permissions);
+          const expanded = expandedId === role.id;
+          const previewPerms = role.permissions.slice(0, 4);
+          const moreCount = Math.max(0, role.permissions.length - previewPerms.length);
+
+          return (
+            <article
+              key={role.id}
+              className="flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs transition hover:border-slate-300"
+            >
+              <header className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="truncate text-[14px] font-semibold text-slate-900">
+                      {role.name}
+                    </h3>
+                    <span
+                      className={cn(
+                        "rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
+                        role.isSystem
+                          ? "bg-amber-50 text-amber-800"
+                          : "bg-slate-100 text-slate-600",
                       )}
-                    </div>
-                    <span className="text-[11px] text-slate-500">
-                      👥 {role.userCount} personele tanımlı
+                    >
+                      {role.isSystem ? "Sistem" : "Özel"}
                     </span>
                   </div>
+                  <p className="mt-1 text-[12px] text-slate-500">
+                    {role.userCount === 0
+                      ? "Personele atanmamış"
+                      : `${role.userCount} personele atanmış`}
+                    {" · "}
+                    {role.permissions.length} yetki
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex shrink-0 items-center gap-1.5">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleEdit(role)}
-                    className="h-7.5 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                   >
                     Düzenle
                   </Button>
@@ -357,88 +316,114 @@ export function RoleManager({
                     variant="ghost"
                     disabled={pending || role.userCount > 0}
                     onClick={() => remove(role.id, role.name)}
-                    className="h-7.5 px-2 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40 cursor-pointer"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
                     title={
                       role.userCount > 0
-                        ? "Personele atanmış roller silinemez; önce personelden rolü kaldırın"
+                        ? "Önce personelden rolü kaldırın"
                         : "Rolü sil"
                     }
                   >
                     Sil
                   </Button>
                 </div>
-              </CardHeader>
+              </header>
 
-              {/* Kart Açıklaması & Yetki Matrisi */}
-              <CardContent className="flex flex-col gap-3.5 p-4.5">
-                {role.description ? (
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {role.description}
-                  </p>
+              <div className="flex flex-1 flex-col gap-3 p-4">
+                <p
+                  className={cn(
+                    "text-[12px] leading-relaxed",
+                    role.description ? "text-slate-600" : "text-slate-400",
+                  )}
+                >
+                  {role.description || "Açıklama yok"}
+                </p>
+
+                {groups.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {groups.map((group) => (
+                      <span
+                        key={group.label}
+                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700"
+                      >
+                        {group.label}
+                        <span className="text-slate-400">
+                          {group.selected}/{group.total}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-xs text-slate-400 italic">
-                    Bu rol için özel bir açıklama girilmemiş.
+                  <p className="text-[12px] text-amber-700">
+                    Bu role henüz yetki atanmamış.
                   </p>
                 )}
 
-                {/* İzin Rozetleri */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-                    <span>Atanmış Yetkiler</span>
-                    <span className="text-emerald-700">
-                      {role.permissions.length} İzin
-                    </span>
-                  </div>
+                <div className="border-t border-slate-100 pt-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedId(expanded ? null : role.id)
+                    }
+                    className="flex w-full items-center justify-between text-left text-[11px] font-semibold text-slate-500 hover:text-slate-800"
+                  >
+                    <span>Yetki listesi</span>
+                    <span>{expanded ? "Gizle" : "Göster"}</span>
+                  </button>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {role.permissions.map((perm) => (
-                      <span
-                        key={perm}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200/90 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700"
-                      >
-                        <span>✓</span>
-                        <span>{LABELS.get(perm as never) ?? perm}</span>
-                      </span>
-                    ))}
-
-                    {role.permissions.length === 0 && (
-                      <span className="text-xs text-slate-400 italic">
-                        Hiçbir izin atanmamış.
-                      </span>
-                    )}
-                  </div>
+                  {expanded ? (
+                    <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
+                      {role.permissions.map((perm) => (
+                        <li
+                          key={perm}
+                          className="rounded-md bg-slate-50 px-2 py-1 text-[11px] text-slate-700"
+                        >
+                          {permissionLabel(perm)}
+                        </li>
+                      ))}
+                      {role.permissions.length === 0 ? (
+                        <li className="text-[11px] text-slate-400">
+                          Boş izin seti
+                        </li>
+                      ) : null}
+                    </ul>
+                  ) : previewPerms.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {previewPerms.map((perm) => (
+                        <span
+                          key={perm}
+                          className="rounded-md bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600"
+                        >
+                          {permissionLabel(perm)}
+                        </span>
+                      ))}
+                      {moreCount > 0 ? (
+                        <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                          +{moreCount}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
-              </CardContent>
-            </div>
+              </div>
+            </article>
+          );
+        })}
 
-            {/* Kart Alt Bilgisi */}
-            <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-2.5 text-[11px] text-slate-500 flex items-center justify-between">
-              <span>Durum: Aktif Yetkilendirme</span>
-              <span className="font-mono text-slate-400">
-                ID: #{role.id.slice(0, 8)}
-              </span>
-            </div>
-          </Card>
-        ))}
-
-        {filteredRoles.length === 0 && (
-          <div className="sm:col-span-2 flex flex-col items-center justify-center py-16 px-4 rounded-3xl border border-dashed border-slate-200 bg-white text-center">
-            <span className="text-4xl mb-2">🛡️</span>
-            <p className="text-sm font-bold text-slate-800">Rol bulunamadı</p>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">
-              {searchQuery
-                ? `"${searchQuery}" aramasına uygun rol veya yetki eşleşmedi.`
-                : "Listelenecek rol kaydı bulunmuyor."}
+        {filteredRoles.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-4 py-14 text-center sm:col-span-2">
+            <p className="text-[14px] font-semibold text-slate-800">
+              Rol bulunamadı
             </p>
-            <Button
-              type="button"
-              onClick={handleCreateNew}
-              className="mt-4 bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
-            >
-              + Yeni Rol Oluştur
+            <p className="mt-1 max-w-sm text-[12px] text-slate-500">
+              {searchQuery
+                ? `“${searchQuery}” ile eşleşen rol veya yetki yok.`
+                : "Bu filtrede listelenecek rol yok."}
+            </p>
+            <Button type="button" onClick={handleCreateNew} className="mt-4">
+              Yeni rol oluştur
             </Button>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

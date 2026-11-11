@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { siteConfig } from "@/config/site.config";
 import { storefrontContact } from "@/config/storefront-contact";
 import { catalogService } from "@/modules/catalog/container";
+import { getCachedShippingSettings } from "@/modules/settings/cached";
 import { formatMoney } from "@/shared/money";
 import { absoluteUrl } from "@/shared/site-url";
 
 export async function GET() {
-  const categories = await catalogService.getCategories();
+  const [categories, shipping] = await Promise.all([
+    catalogService.getCategories(),
+    getCachedShippingSettings(),
+  ]);
 
   const categoryLines = categories
     .map(
@@ -33,7 +37,7 @@ ${categoryLines}
 - [Kendi Turşunu Yap](${absoluteUrl("/kendi-tursunu-yap")}): Müşterinin bidon boyutunu (3kg, 5kg vb.), sebze çeşitlerini, salamura ve acılık oranını kendisinin belirlediği kişiye özel turşu hazırlama servisi.
 
 ## Alışveriş, Teslimat ve Müşteri Hakları
-- **Ücretsiz Kargo:** ${formatMoney(siteConfig.shipping.freeShippingThreshold)} ve üzeri siparişlerde tüm Türkiye'ye ücretsiz teslimat.
+- **Ücretsiz Kargo:** ${formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde tüm Türkiye'ye ücretsiz teslimat.
 - **Özel Ambalaj:** Kırılmaya karşı mukavemetli koruyucu strafor ve hava kanallı ambalaj ile hasarsız teslimat garantisi.
 - **İade Hakkı:** Mesafeli Satış Sözleşmesi uyarınca ${siteConfig.returns.withdrawalPeriodDays} gün yasal cayma hakkı.
 - **Ödeme Yöntemleri:** Kredi kartı, banka kartı, Troy ve Havale/EFT.

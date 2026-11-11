@@ -85,7 +85,10 @@ export function OrderProgress({
   const reached = REACHED[status];
 
   return (
-    <ol className="grid grid-cols-5 gap-2" aria-label="Sipariş akışı">
+    <ol
+      className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] md:grid md:grid-cols-5 md:overflow-visible md:pb-0"
+      aria-label="Sipariş akışı"
+    >
       {STEPS.map((step, index) => {
         const done = index <= reached;
         const current = index === reached + 1;
@@ -93,7 +96,7 @@ export function OrderProgress({
         return (
           <li
             key={step.key}
-            className="relative flex flex-col items-center text-center"
+            className="relative flex min-w-[5.75rem] shrink-0 flex-col items-center text-center md:min-w-0"
           >
             {/* Bağlantı çizgisi */}
             {index > 0 ? (
@@ -119,18 +122,18 @@ export function OrderProgress({
             </span>
             <span
               className={cn(
-                "mt-2 text-[11px] leading-tight font-semibold sm:text-[12px]",
+                "mt-2 text-[11px] leading-tight font-semibold whitespace-nowrap md:whitespace-normal sm:text-[12px]",
                 done || current ? "text-slate-900" : "text-slate-400",
               )}
             >
               {step.label}
             </span>
-            <span className="mt-0.5 hidden text-[11px] text-slate-400 tabular-nums sm:block">
+            <span className="mt-0.5 text-[11px] text-slate-400 tabular-nums">
               {done && date
                 ? `${formatAdminDate(date)} ${formatAdminTime(date)}`
                 : current
                   ? "Sıradaki adım"
-                  : " "}
+                  : "\u00a0"}
             </span>
             <span className="sr-only">
               {done ? "tamamlandı" : current ? "sıradaki adım" : "bekliyor"}

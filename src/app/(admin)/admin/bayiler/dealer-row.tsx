@@ -75,9 +75,9 @@ export function DealerRow({
   const terms = { groupId, creditLimit, minOrderAmount: minOrder };
 
   return (
-    <li className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-base font-bold text-slate-900">
+    <li className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs sm:p-5">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <span className="text-[15px] font-bold text-slate-900 sm:text-base">
           {dealer.companyName ?? "–"}
         </span>
         <Badge tone={TONES[dealer.status]}>
@@ -85,13 +85,16 @@ export function DealerRow({
         </Badge>
         {dealer.groupName ? <Badge>{dealer.groupName}</Badge> : null}
       </div>
-      <p className="text-sm text-muted-foreground">
-        {dealer.name} · {dealer.email} · VKN {dealer.taxNumber ?? "–"} (
-        {dealer.taxOffice ?? "–"})
+      <p className="text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
+        {dealer.name} · {dealer.email}
+        <span className="mt-0.5 block sm:mt-0 sm:inline">
+          {" "}
+          · VKN {dealer.taxNumber ?? "–"} ({dealer.taxOffice ?? "–"})
+        </span>
       </p>
       {dealer.note ? <p className="text-sm">Not: {dealer.note}</p> : null}
 
-      <div className="grid gap-2 sm:grid-cols-[180px_160px_160px_auto]">
+      <div className="grid gap-2 sm:grid-cols-[180px_160px_160px_auto] sm:items-end">
         <Select
           value={groupId}
           onChange={(e) => setGroupId(e.target.value)}
@@ -119,6 +122,7 @@ export function DealerRow({
         />
         {dealer.status === "APPROVED" ? (
           <Button
+            className="w-full sm:w-auto"
             disabled={pending}
             onClick={() =>
               run(() => updateDealerTermsAction(dealer.userId, terms))
@@ -128,6 +132,7 @@ export function DealerRow({
           </Button>
         ) : (
           <Button
+            className="w-full sm:w-auto"
             disabled={pending || !groupId}
             onClick={() => run(() => approveDealerAction(dealer.userId, terms))}
           >
@@ -137,16 +142,17 @@ export function DealerRow({
       </div>
 
       {dealer.status !== "APPROVED" ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Input
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Red nedeni (isteğe bağlı)"
-            className="max-w-sm"
+            className="w-full sm:max-w-sm"
             aria-label="Red nedeni"
           />
           <Button
             variant="outline"
+            className="w-full sm:w-auto"
             disabled={pending}
             onClick={() => run(() => rejectDealerAction(dealer.userId, note))}
           >
@@ -158,6 +164,7 @@ export function DealerRow({
           <Button
             variant="ghost"
             size="sm"
+            className="w-full justify-center text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:w-auto sm:justify-start"
             disabled={pending}
             onClick={() => {
               if (window.confirm("Bayilik iptal edilsin mi?")) {

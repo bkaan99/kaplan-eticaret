@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { EASE_OUT } from "@/components/motion/motion";
+
+const emptySubscribe = () => () => {};
 import {
   BagIcon,
   ChevronRightIcon,
@@ -21,6 +24,7 @@ import {
   XIcon,
 } from "./icons";
 import { Logo } from "./logo";
+import { MobileNavAdminLink } from "./storefront-shell";
 import { storefrontContact } from "@/config/storefront-contact";
 import { formatMoney } from "@/shared/money";
 
@@ -64,11 +68,14 @@ export function MobileNav({
 }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const [navPath, setNavPath] = useState(pathname);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
-  // Sayfa yönlendirmesinde menüyü kapat
-  useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
+  // Rota değişince menüyü kapat (render sırasında state ayarı)
+  if (pathname !== navPath) {
+    setNavPath(pathname);
+    if (isOpen) setIsOpen(false);
+  }
 
   // Escape tuşu ile kapatma ve arka plan kaydırma kilidi (scroll-lock)
   useEffect(() => {
@@ -88,59 +95,45 @@ export function MobileNav({
     };
   }, [isOpen]);
 
-  return (
-    <>
-      {/* Menü Açma Butonu (Yalnızca dar ekranlarda görünür) */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        aria-label="Menüyü aç"
-        aria-expanded={isOpen}
-        aria-controls="mobile-nav-drawer"
-        className="ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-primary text-primary transition-colors hover:bg-primary/5 md:hidden"
-      >
-        <MenuIcon width={22} height={22} />
-      </button>
+  const drawer =
+    mounted
+      ? createPortal(
+          <AnimatePresence>
+            {isOpen ? (
+              <>
+                <motion.div
+                  key="mobile-nav-backdrop"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setIsOpen(false)}
+                  className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-xs md:hidden"
+                  aria-hidden="true"
+                />
 
-      {/* Açılır Çekmece (Drawer) & Karartma (Backdrop) */}
-      <AnimatePresence>
-        {isOpen ? (
-          <>
-            {/* Arka Plan Karartması */}
-            <motion.div
-              key="mobile-nav-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs md:hidden"
-              aria-hidden="true"
-            />
-
-            {/* Çekmece Gövdesi */}
-            <motion.aside
-              key="mobile-nav-panel"
-              id="mobile-nav-drawer"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Gezinti Menüsü"
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ duration: 0.3, ease: EASE_OUT }}
-              className="fixed inset-y-0 left-0 z-50 flex w-[85vw] max-w-sm flex-col bg-white shadow-2xl md:hidden"
-            >
+                <motion.aside
+                  key="mobile-nav-panel"
+                  id="mobile-nav-drawer"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Gezinti Menüsü"
+                  initial={{ x: "-100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "-100%" }}
+                  transition={{ duration: 0.3, ease: EASE_OUT }}
+                  className="fixed inset-y-0 left-0 z-[100] flex w-[85vw] max-w-sm flex-col bg-white pt-[env(safe-area-inset-top)] shadow-2xl md:hidden"
+                >
               {/* Çekmece Başlığı: Logo & Kapat Butonu */}
               <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-5">
                 <div onClick={() => setIsOpen(false)}>
-                  <Logo />
+                  <Logo showBadge />
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
                   aria-label="Menüyü kapat"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900"
                 >
                   <XIcon width={18} height={18} />
                 </button>
@@ -236,6 +229,8 @@ export function MobileNav({
                     Hesap & Sipariş
                   </span>
                   <div className="flex flex-col space-y-1 text-sm font-medium">
+                    <MobileNavAdminLink />
+
                     <Link
                       href="/hesabim"
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
@@ -344,13 +339,30 @@ export function MobileNav({
               </div>
 
               {/* Çekmece Altı */}
-              <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 text-center text-[11px] text-slate-400">
+              <div className="border-t border-slate-100 bg-slate-50/70 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-[11px] text-slate-400">
                 <span>🌿 Doğal Fermantasyon Ev Turşusu</span>
               </div>
-            </motion.aside>
-          </>
-        ) : null}
-      </AnimatePresence>
+                </motion.aside>
+              </>
+            ) : null}
+          </AnimatePresence>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        aria-label="Menüyü aç"
+        aria-expanded={isOpen}
+        aria-controls="mobile-nav-drawer"
+        className="ml-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-primary text-primary transition-colors hover:bg-primary/5 md:hidden"
+      >
+        <MenuIcon width={22} height={22} />
+      </button>
+      {drawer}
     </>
   );
 }

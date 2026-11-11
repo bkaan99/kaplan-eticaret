@@ -32,7 +32,7 @@ export function AdminToolbar({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-end gap-2 rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs",
+        "flex flex-col gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs sm:flex-row sm:flex-wrap sm:items-end sm:gap-2 [&>*]:min-w-0 [&>*]:max-w-full",
         className,
       )}
     >
@@ -66,7 +66,7 @@ export function AdminTabs({
   return (
     <nav
       aria-label="Sekmeler"
-      className="flex flex-wrap gap-0.5 rounded-xl border border-slate-200/80 bg-white p-1 shadow-2xs"
+      className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200/80 bg-white p-1 shadow-2xs [scrollbar-width:none]"
     >
       {items.map((item) => {
         const isActive = item.value === active;
@@ -76,7 +76,7 @@ export function AdminTabs({
             href={item.href}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
+              "shrink-0 rounded-lg px-3.5 py-2.5 text-[13px] font-medium whitespace-nowrap transition-colors sm:py-1.5",
               isActive
                 ? "bg-slate-900 text-white shadow-2xs"
                 : "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
@@ -86,6 +86,35 @@ export function AdminTabs({
           </Link>
         );
       })}
+    </nav>
+  );
+}
+
+/** Mobil pano için büyük dokunma kısayolları. */
+export function AdminQuickLinks({
+  items,
+}: {
+  items: { href: string; label: string; hint?: string }[];
+}) {
+  return (
+    <nav
+      aria-label="Hızlı erişim"
+      className="grid grid-cols-2 gap-2 sm:hidden"
+    >
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className="flex min-h-[4.25rem] flex-col justify-center rounded-xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-2xs active:bg-slate-50"
+        >
+          <span className="text-[13px] font-semibold text-slate-900">
+            {item.label}
+          </span>
+          {item.hint ? (
+            <span className="mt-0.5 text-[11px] text-slate-500">{item.hint}</span>
+          ) : null}
+        </Link>
+      ))}
     </nav>
   );
 }
@@ -103,34 +132,34 @@ export function AdminPagination({
 
   return (
     <nav
-      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-[13px] shadow-2xs"
+      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-[13px] shadow-2xs"
       aria-label="Sayfalama"
     >
-      <span className="font-medium text-slate-500">
-        Sayfa {page} / {totalPages}
+      <span className="font-medium text-slate-500 tabular-nums">
+        {page} / {totalPages}
       </span>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         {page > 1 ? (
           <Link
             href={hrefFor(page - 1)}
-            className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50"
+            className="inline-flex h-10 min-w-[5.5rem] items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50 sm:h-8 sm:min-w-0"
           >
             Önceki
           </Link>
         ) : (
-          <span className="inline-flex h-8 items-center rounded-lg border border-transparent px-3 text-[13px] font-medium text-slate-300">
+          <span className="inline-flex h-10 min-w-[5.5rem] items-center justify-center rounded-lg px-3 text-[13px] font-medium text-slate-300 sm:h-8 sm:min-w-0">
             Önceki
           </span>
         )}
         {page < totalPages ? (
           <Link
             href={hrefFor(page + 1)}
-            className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50"
+            className="inline-flex h-10 min-w-[5.5rem] items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50 sm:h-8 sm:min-w-0"
           >
             Sonraki
           </Link>
         ) : (
-          <span className="inline-flex h-8 items-center rounded-lg border border-transparent px-3 text-[13px] font-medium text-slate-300">
+          <span className="inline-flex h-10 min-w-[5.5rem] items-center justify-center rounded-lg px-3 text-[13px] font-medium text-slate-300 sm:h-8 sm:min-w-0">
             Sonraki
           </span>
         )}

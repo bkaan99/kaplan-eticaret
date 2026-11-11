@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
@@ -13,24 +13,31 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 async function AdminShell({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
   const nav = visibleNav(user.permissions, { b2bEnabled: features.b2b });
-  const initial = (user.name?.trim() || user.email?.trim() || "Y").charAt(0).toUpperCase();
+  const initial = (user.name?.trim() || user.email?.trim() || "Y")
+    .charAt(0)
+    .toUpperCase();
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8fafc] text-[13px] leading-normal text-slate-700 antialiased md:pl-60">
-      {/* Sol Menü / Sidebar (sabit) */}
+    <div className="flex min-h-dvh flex-col overflow-x-hidden bg-[#f8fafc] text-[13px] leading-normal text-slate-700 antialiased md:pl-60">
       <AdminSidebar
         nav={nav}
+        user={{ name: user.name || "", email: user.email }}
         siteName={siteConfig.name}
         version={siteConfig.version}
       />
 
-      {/* Sağ Ana İçerik Alanı */}
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
-        {/* Üst Yönetici Başlık Çubuğu */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 shadow-2xs backdrop-blur-md sm:px-5">
+        {/* Masaüstü üst bar — mobilde sidebar bar kullanılır */}
+        <header className="sticky top-0 z-30 hidden h-14 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 shadow-2xs backdrop-blur-md md:flex sm:px-5">
           <div className="min-w-0">
             <p className="truncate text-[13px] font-semibold text-slate-900">
               {siteConfig.name}
@@ -44,27 +51,25 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
               target="_blank"
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] font-medium text-slate-600 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 sm:px-3"
             >
-              <span className="hidden sm:inline">Mağazayı Görüntüle</span>
-              <span className="sm:hidden">Mağaza</span>
+              Mağazayı Görüntüle
               <span className="text-slate-400">↗</span>
             </Link>
-            <div className="hidden items-center gap-1.5 border-l border-slate-200 pl-2.5 sm:flex">
+            <div className="flex items-center gap-1.5 border-l border-slate-200 pl-2.5">
               <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
               <span className="text-[11px] font-medium text-slate-500">
                 Çevrimiçi
               </span>
             </div>
 
-            {/* Yönetici Profil Kartı */}
             <Link
               href="/hesabim"
-              className="group flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/90 py-1 pl-1 pr-2 transition hover:border-slate-300 hover:bg-slate-100 sm:pr-2.5"
+              className="group flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/90 py-1 pr-2.5 pl-1 transition hover:border-slate-300 hover:bg-slate-100"
               title="Profilimi Görüntüle"
             >
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[11px] font-semibold text-slate-950 shadow-2xs">
                 {initial}
               </div>
-              <div className="hidden max-w-[140px] flex-col text-left sm:flex">
+              <div className="flex max-w-[140px] flex-col text-left">
                 <span className="truncate text-[12px] font-medium leading-tight text-slate-800 transition-colors group-hover:text-emerald-700">
                   {user.name || user.email}
                 </span>
@@ -78,8 +83,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Ana Sayfa İçeriği */}
-        <main className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-5 lg:p-6">
+        <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 lg:p-6">
           {children}
         </main>
       </div>

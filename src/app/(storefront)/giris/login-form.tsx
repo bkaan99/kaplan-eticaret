@@ -61,7 +61,7 @@ export function LoginForm({
         <button
           type="button"
           onClick={() => setShowPassword((value) => !value)}
-          className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold tracking-wide text-slate-500 transition hover:bg-primary/5 hover:text-primary"
+          className="absolute top-1/2 right-2 inline-flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-md px-3 text-xs font-semibold tracking-wide text-slate-500 transition hover:bg-primary/5 hover:text-primary"
         >
           {showPassword ? "Gizle" : "Göster"}
         </button>

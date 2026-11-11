@@ -301,7 +301,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-[1600px] px-4 lg:px-8 2xl:px-12 gap-10 py-12 sm:grid-cols-2 sm:py-14 lg:grid-cols-12 lg:gap-10">
         {/* Marka Tanıtımı */}
         <div className="flex flex-col gap-4 lg:col-span-5">
-          <Logo />
+          <Logo showBadge />
           <p className="max-w-sm text-sm leading-relaxed text-slate-600">
             {siteConfig.description} Meşe fıçılarda, Çankırı kaya tuzu ve
             sarımsakla sabırla fermente edilen katkısız lezzetler.

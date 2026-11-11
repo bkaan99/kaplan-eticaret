@@ -409,122 +409,187 @@ export function PickleOptionsManager({
           </CardHeader>
 
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3">Tarif</th>
-                    <th className="px-4 py-3">Anahtar</th>
-                    <th className="px-4 py-3">Renk</th>
-                    <th className="px-4 py-3">Kabarcık</th>
-                    <th className="px-4 py-3">Sıra</th>
-                    <th className="px-4 py-3">Durum</th>
-                    <th className="px-4 py-3 text-right">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {options.brines.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-8 text-center text-xs text-slate-400"
-                      >
-                        Kayıtlı salamura tarifi bulunamadı. "+ Yeni Salamura
-                        Tarifi" butonu ile ekleyin.
-                      </td>
-                    </tr>
-                  ) : (
-                    options.brines.map((item) => (
-                      <tr
-                        key={item.key}
-                        className={`transition-colors hover:bg-slate-50/60 ${
-                          item.isActive
-                            ? ""
-                            : "bg-slate-50/60 text-slate-400 opacity-70"
-                        }`}
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-slate-900">
-                              {item.label}
-                            </span>
-                            <span className="text-xs text-muted-foreground line-clamp-1">
-                              {item.description}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-500">
-                          {item.key}
-                        </td>
-                        <td className="px-4 py-3">
+            {options.brines.length === 0 ? (
+              <p className="px-4 py-8 text-center text-xs text-slate-400">
+                Kayıtlı salamura tarifi bulunamadı. &quot;+ Yeni Salamura
+                Tarifi&quot; butonu ile ekleyin.
+              </p>
+            ) : (
+              <>
+                {/* Mobil: kart listesi */}
+                <ul className="divide-y divide-slate-100 md:hidden">
+                  {options.brines.map((item) => (
+                    <li
+                      key={item.key}
+                      className={`flex flex-col gap-2.5 px-4 py-3.5 ${
+                        item.isActive ? "" : "bg-slate-50/60 opacity-70"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span
-                              className="h-5 w-5 rounded-full border border-slate-300 shadow-2xs"
+                              className="h-4 w-4 shrink-0 rounded-full border border-slate-300 shadow-2xs"
                               style={{ backgroundColor: item.color }}
                             />
-                            <span className="font-mono text-xs">
-                              {item.color}
-                            </span>
+                            <p className="truncate text-[13px] font-semibold text-slate-900">
+                              {item.label}
+                            </p>
                           </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          {item.hasBubbles ? (
-                            <span className="inline-flex rounded-md bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700 border border-sky-200">
-                              Kabarcıklı
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              -
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 tabular-nums">
-                          {item.sortOrder}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              item.isActive
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-slate-100 text-slate-500 border border-slate-200"
-                            }`}
-                          >
-                            {item.isActive ? "Aktif" : "Pasif"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-3 text-xs font-semibold">
-                            <button
-                              type="button"
-                              onClick={() => editBrine(item)}
-                              className="text-primary hover:underline cursor-pointer"
-                            >
-                              Düzenle
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => toggleBrineActive(item)}
-                              disabled={pending}
-                              className="text-slate-600 hover:underline cursor-pointer disabled:opacity-50"
-                            >
-                              {item.isActive ? "Pasif yap" : "Aktif yap"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteBrine(item.key)}
-                              disabled={pending}
-                              className="text-red-600 hover:underline cursor-pointer disabled:opacity-50"
-                            >
-                              Sil
-                            </button>
-                          </div>
-                        </td>
+                          <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">
+                            {item.description}
+                          </p>
+                          <p className="mt-1 font-mono text-[11px] text-slate-400">
+                            {item.key}
+                            {item.hasBubbles ? " · Kabarcıklı" : ""}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                            item.isActive
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-slate-200 bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {item.isActive ? "Aktif" : "Pasif"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => editBrine(item)}
+                          className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-primary cursor-pointer"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleBrineActive(item)}
+                          disabled={pending}
+                          className="inline-flex min-h-10 items-center rounded-lg px-3 text-slate-600 cursor-pointer disabled:opacity-50"
+                        >
+                          {item.isActive ? "Pasif yap" : "Aktif yap"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteBrine(item.key)}
+                          disabled={pending}
+                          className="inline-flex min-h-10 items-center rounded-lg px-3 text-red-600 cursor-pointer disabled:opacity-50"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Masaüstü: tablo */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full text-left text-sm text-slate-600">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+                      <tr>
+                        <th className="px-4 py-3">Tarif</th>
+                        <th className="px-4 py-3">Anahtar</th>
+                        <th className="px-4 py-3">Renk</th>
+                        <th className="px-4 py-3">Kabarcık</th>
+                        <th className="px-4 py-3">Sıra</th>
+                        <th className="px-4 py-3">Durum</th>
+                        <th className="px-4 py-3 text-right">İşlemler</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {options.brines.map((item) => (
+                        <tr
+                          key={item.key}
+                          className={`transition-colors hover:bg-slate-50/60 ${
+                            item.isActive
+                              ? ""
+                              : "bg-slate-50/60 text-slate-400 opacity-70"
+                          }`}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-slate-900">
+                                {item.label}
+                              </span>
+                              <span className="line-clamp-1 text-xs text-muted-foreground">
+                                {item.description}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                            {item.key}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-5 w-5 rounded-full border border-slate-300 shadow-2xs"
+                                style={{ backgroundColor: item.color }}
+                              />
+                              <span className="font-mono text-xs">
+                                {item.color}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.hasBubbles ? (
+                              <span className="inline-flex rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700">
+                                Kabarcıklı
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                -
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 tabular-nums">
+                            {item.sortOrder}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                                item.isActive
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : "border-slate-200 bg-slate-100 text-slate-500"
+                              }`}
+                            >
+                              {item.isActive ? "Aktif" : "Pasif"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-3 text-xs font-semibold">
+                              <button
+                                type="button"
+                                onClick={() => editBrine(item)}
+                                className="cursor-pointer text-primary hover:underline"
+                              >
+                                Düzenle
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleBrineActive(item)}
+                                disabled={pending}
+                                className="cursor-pointer text-slate-600 hover:underline disabled:opacity-50"
+                              >
+                                {item.isActive ? "Pasif yap" : "Aktif yap"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteBrine(item.key)}
+                                disabled={pending}
+                                className="cursor-pointer text-red-600 hover:underline disabled:opacity-50"
+                              >
+                                Sil
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -551,124 +616,192 @@ export function PickleOptionsManager({
           </CardHeader>
 
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3">Seviye</th>
-                    <th className="px-4 py-3">Anahtar</th>
-                    <th className="px-4 py-3">Biber Sayısı</th>
-                    <th className="px-4 py-3">Kızarıklık</th>
-                    <th className="px-4 py-3">Sıra</th>
-                    <th className="px-4 py-3">Durum</th>
-                    <th className="px-4 py-3 text-right">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {options.spices.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-8 text-center text-xs text-slate-400"
-                      >
-                        Kayıtlı acılık seviyesi bulunamadı. "+ Yeni Acılık
-                        Seviyesi" butonu ile ekleyin.
-                      </td>
-                    </tr>
-                  ) : (
-                    options.spices.map((item) => (
-                      <tr
-                        key={item.key}
-                        className={`transition-colors hover:bg-slate-50/60 ${
-                          item.isActive
-                            ? ""
-                            : "bg-slate-50/60 text-slate-400 opacity-70"
-                        }`}
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-slate-900">
-                              {item.label}
+            {options.spices.length === 0 ? (
+              <p className="px-4 py-8 text-center text-xs text-slate-400">
+                Kayıtlı acılık seviyesi bulunamadı. &quot;+ Yeni Acılık
+                Seviyesi&quot; butonu ile ekleyin.
+              </p>
+            ) : (
+              <>
+                {/* Mobil: kart listesi */}
+                <ul className="divide-y divide-slate-100 md:hidden">
+                  {options.spices.map((item) => (
+                    <li
+                      key={item.key}
+                      className={`flex flex-col gap-2.5 px-4 py-3.5 ${
+                        item.isActive ? "" : "bg-slate-50/60 opacity-70"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-semibold text-slate-900">
+                            {item.label}
+                          </p>
+                          {item.description ? (
+                            <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">
+                              {item.description}
+                            </p>
+                          ) : null}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                            <span className="font-semibold text-red-500">
+                              {"🌶️".repeat(item.peppers) || "Yok (0)"}
                             </span>
-                            {item.description ? (
-                              <span className="text-xs text-muted-foreground line-clamp-1">
-                                {item.description}
-                              </span>
-                            ) : null}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-500">
-                          {item.key}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1 font-semibold text-red-500">
-                            {"🌶️".repeat(item.peppers) || (
-                              <span className="font-normal text-slate-400">
-                                Yok (0)
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-3.5 w-3.5 rounded-full border border-slate-300 shadow-2xs"
-                              style={{
-                                backgroundColor: `rgba(220, 38, 38, ${Math.max(0.1, item.tint)})`,
-                              }}
-                            />
-                            <span className="font-mono text-xs">
+                            <span className="font-mono">
                               %{Math.round(item.tint * 100)}
                             </span>
+                            <span className="font-mono text-slate-400">
+                              {item.key}
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 tabular-nums">
-                          {item.sortOrder}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              item.isActive
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-slate-100 text-slate-500 border border-slate-200"
-                            }`}
-                          >
-                            {item.isActive ? "Aktif" : "Pasif"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-3 text-xs font-semibold">
-                            <button
-                              type="button"
-                              onClick={() => editSpice(item)}
-                              className="text-primary hover:underline cursor-pointer"
-                            >
-                              Düzenle
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => toggleSpiceActive(item)}
-                              disabled={pending}
-                              className="text-slate-600 hover:underline cursor-pointer disabled:opacity-50"
-                            >
-                              {item.isActive ? "Pasif yap" : "Aktif yap"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteSpice(item.key)}
-                              disabled={pending}
-                              className="text-red-600 hover:underline cursor-pointer disabled:opacity-50"
-                            >
-                              Sil
-                            </button>
-                          </div>
-                        </td>
+                        </div>
+                        <span
+                          className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                            item.isActive
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-slate-200 bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {item.isActive ? "Aktif" : "Pasif"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => editSpice(item)}
+                          className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-primary cursor-pointer"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleSpiceActive(item)}
+                          disabled={pending}
+                          className="inline-flex min-h-10 items-center rounded-lg px-3 text-slate-600 cursor-pointer disabled:opacity-50"
+                        >
+                          {item.isActive ? "Pasif yap" : "Aktif yap"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteSpice(item.key)}
+                          disabled={pending}
+                          className="inline-flex min-h-10 items-center rounded-lg px-3 text-red-600 cursor-pointer disabled:opacity-50"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Masaüstü: tablo */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full text-left text-sm text-slate-600">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+                      <tr>
+                        <th className="px-4 py-3">Seviye</th>
+                        <th className="px-4 py-3">Anahtar</th>
+                        <th className="px-4 py-3">Biber Sayısı</th>
+                        <th className="px-4 py-3">Kızarıklık</th>
+                        <th className="px-4 py-3">Sıra</th>
+                        <th className="px-4 py-3">Durum</th>
+                        <th className="px-4 py-3 text-right">İşlemler</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {options.spices.map((item) => (
+                        <tr
+                          key={item.key}
+                          className={`transition-colors hover:bg-slate-50/60 ${
+                            item.isActive
+                              ? ""
+                              : "bg-slate-50/60 text-slate-400 opacity-70"
+                          }`}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-slate-900">
+                                {item.label}
+                              </span>
+                              {item.description ? (
+                                <span className="line-clamp-1 text-xs text-muted-foreground">
+                                  {item.description}
+                                </span>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                            {item.key}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1 font-semibold text-red-500">
+                              {"🌶️".repeat(item.peppers) || (
+                                <span className="font-normal text-slate-400">
+                                  Yok (0)
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-3.5 w-3.5 rounded-full border border-slate-300 shadow-2xs"
+                                style={{
+                                  backgroundColor: `rgba(220, 38, 38, ${Math.max(0.1, item.tint)})`,
+                                }}
+                              />
+                              <span className="font-mono text-xs">
+                                %{Math.round(item.tint * 100)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 tabular-nums">
+                            {item.sortOrder}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                                item.isActive
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : "border-slate-200 bg-slate-100 text-slate-500"
+                              }`}
+                            >
+                              {item.isActive ? "Aktif" : "Pasif"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-3 text-xs font-semibold">
+                              <button
+                                type="button"
+                                onClick={() => editSpice(item)}
+                                className="cursor-pointer text-primary hover:underline"
+                              >
+                                Düzenle
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleSpiceActive(item)}
+                                disabled={pending}
+                                className="cursor-pointer text-slate-600 hover:underline disabled:opacity-50"
+                              >
+                                {item.isActive ? "Pasif yap" : "Aktif yap"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteSpice(item.key)}
+                                disabled={pending}
+                                className="cursor-pointer text-red-600 hover:underline disabled:opacity-50"
+                              >
+                                Sil
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

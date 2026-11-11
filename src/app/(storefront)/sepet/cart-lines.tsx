@@ -44,79 +44,81 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
   }
 
   return (
-    <li className="flex gap-4 border-b border-border py-4">
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-theme bg-muted">
-        <Image
-          src={line.imageUrl ?? "/placeholder.svg"}
-          alt={line.productName}
-          fill
-          sizes="96px"
-          className="object-cover"
-        />
-      </div>
-      <div className="flex flex-1 flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={
-              line.isCustom ? "/kendi-tursunu-yap" : `/urun/${line.productSlug}`
-            }
-            className="font-medium hover:text-primary transition-colors"
-          >
-            {line.productName}
-          </Link>
-          {line.isCustom ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-              🥒 Özel Reçete
+    <li className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:gap-4">
+      <div className="flex gap-3 sm:gap-4">
+        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-theme bg-muted">
+          <Image
+            src={line.imageUrl ?? "/placeholder.svg"}
+            alt={line.productName}
+            fill
+            sizes="96px"
+            className="object-cover"
+          />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={
+                line.isCustom ? "/kendi-tursunu-yap" : `/urun/${line.productSlug}`
+              }
+              className="font-medium transition-colors hover:text-primary"
+            >
+              {line.productName}
+            </Link>
+            {line.isCustom ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                🥒 Özel Reçete
+              </span>
+            ) : null}
+          </div>
+          {line.variantLabel ? (
+            <span className="text-sm text-muted-foreground">
+              {line.variantLabel}
             </span>
           ) : null}
-        </div>
-        {line.variantLabel ? (
-          <span className="text-sm text-muted-foreground">
-            {line.variantLabel}
-          </span>
-        ) : null}
-        <Price value={line.unitPrice} currency={currency} />
+          <Price value={line.unitPrice} currency={currency} />
 
-        <div className="mt-2 flex items-center gap-3">
-          <label className="sr-only" htmlFor={`qty-${lineId(line)}`}>
-            Adet
-          </label>
-          <input
-            id={`qty-${lineId(line)}`}
-            type="number"
-            min={1}
-            max={max}
-            defaultValue={line.quantity}
-            disabled={pending || line.issue === "OUT_OF_STOCK"}
-            onBlur={(event) => {
-              const next = Math.floor(Number(event.target.value));
-              if (next >= 1 && next !== line.quantity)
-                update(Math.min(next, max));
-            }}
-            className="w-20 rounded-theme border border-border px-2 py-1 text-sm"
-          />
-          <button
-            type="button"
-            onClick={remove}
-            disabled={pending}
-            className="text-sm text-red-600 underline"
-          >
-            Kaldır
-          </button>
-        </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
+            <label className="sr-only" htmlFor={`qty-${lineId(line)}`}>
+              Adet
+            </label>
+            <input
+              id={`qty-${lineId(line)}`}
+              type="number"
+              min={1}
+              max={max}
+              defaultValue={line.quantity}
+              disabled={pending || line.issue === "OUT_OF_STOCK"}
+              onBlur={(event) => {
+                const next = Math.floor(Number(event.target.value));
+                if (next >= 1 && next !== line.quantity)
+                  update(Math.min(next, max));
+              }}
+              className="min-h-11 w-20 rounded-theme border border-border px-2 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={remove}
+              disabled={pending}
+              className="inline-flex min-h-11 items-center rounded-theme px-3 text-sm text-red-600 underline"
+            >
+              Kaldır
+            </button>
+          </div>
 
-        {line.issue ? (
-          <p role="alert" className="text-sm text-red-600">
-            {ISSUE_TEXT[line.issue]}
-          </p>
-        ) : null}
-        {error ? (
-          <p role="alert" className="text-sm text-red-600">
-            {error}
-          </p>
-        ) : null}
+          {line.issue ? (
+            <p role="alert" className="text-sm text-red-600">
+              {ISSUE_TEXT[line.issue]}
+            </p>
+          ) : null}
+          {error ? (
+            <p role="alert" className="text-sm text-red-600">
+              {error}
+            </p>
+          ) : null}
+        </div>
       </div>
-      <div className="font-semibold">
+      <div className="flex justify-end font-semibold sm:shrink-0 sm:self-start">
         <Price value={line.lineTotal} currency={currency} />
       </div>
     </li>

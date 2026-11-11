@@ -24,7 +24,7 @@ export function AccountNav() {
             <li key={link.href} className="shrink-0">
               <Link
                 href={link.href}
-                className={`block rounded-full px-4 py-2.5 text-sm font-semibold transition lg:rounded-none lg:border-l-2 lg:px-3 lg:py-2.5 ${
+                className={`flex min-h-11 items-center rounded-full px-4 py-2.5 text-sm font-semibold transition lg:min-h-0 lg:rounded-none lg:border-l-2 lg:px-3 lg:py-2.5 ${
                   active
                     ? "bg-primary text-white lg:border-brand-gold lg:bg-transparent lg:text-primary"
                     : "text-slate-600 hover:text-brand-dark lg:border-transparent lg:hover:border-slate-300"

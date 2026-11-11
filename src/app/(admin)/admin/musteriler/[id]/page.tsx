@@ -5,13 +5,12 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/admin/access-denied";
-import { AdminLoading } from "@/components/admin/admin-list";
+import { AdminLoading, AdminPanel } from "@/components/admin/admin-list";
 import { CustomerAvatar } from "@/components/admin/customer-avatar";
 import {
   OrderStatusBadge,
   formatAdminDate,
 } from "@/components/admin/order-status";
-import { Card } from "@/components/ui/card";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { getCustomerQueryService } from "@/modules/admin/container";
 import { adminPage } from "@/modules/admin/guard";
@@ -42,17 +41,16 @@ function Section({
   title: string;
   action?: ReactNode;
   children: ReactNode;
-  /** İçerik kenar boşluksuz (tablo gibi) */
   flush?: boolean;
 }) {
   return (
-    <Card>
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+    <AdminPanel>
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5 sm:px-5">
         <h2 className="text-[13px] font-semibold text-slate-900">{title}</h2>
         {action}
       </div>
-      <div className={flush ? "" : "px-5 py-4"}>{children}</div>
-    </Card>
+      <div className={flush ? "" : "px-4 py-4 sm:px-5"}>{children}</div>
+    </AdminPanel>
   );
 }
 
@@ -77,15 +75,17 @@ function Stat({
   hint?: ReactNode;
 }) {
   return (
-    <Card className="p-4 sm:p-5">
-      <p className="text-[12px] font-medium text-slate-500">{label}</p>
-      <p className="mt-2 truncate text-xl leading-none font-semibold tracking-tight text-slate-900 tabular-nums">
+    <div className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-2xs sm:px-4 sm:py-3.5">
+      <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">
+        {label}
+      </p>
+      <p className="mt-1 truncate text-xl font-semibold tracking-tight text-slate-900 tabular-nums">
         {value}
       </p>
       {hint ? (
-        <p className="mt-2 truncate text-[11px] text-slate-400">{hint}</p>
+        <p className="mt-0.5 truncate text-[11px] text-slate-400">{hint}</p>
       ) : null}
-    </Card>
+    </div>
   );
 }
 
@@ -109,7 +109,6 @@ async function CustomerContent({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Başlık */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/70 pb-4">
         <div className="min-w-0">
           <Link
@@ -129,7 +128,15 @@ async function CustomerContent({
                   <span className="rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700">
                     Pasif hesap
                   </span>
-                ) : null}
+                ) : customer.emailVerified ? (
+                  <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+                    Doğrulandı
+                  </span>
+                ) : (
+                  <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                    Doğrulanmadı
+                  </span>
+                )}
                 {b2b ? (
                   <span
                     className={cn(
@@ -142,27 +149,39 @@ async function CustomerContent({
                 ) : null}
               </div>
               <p className="mt-0.5 text-[12px] text-slate-500">
+                {customer.email}
+                {" · "}
                 {formatAdminDate(customer.createdAt)} tarihinden beri üye
               </p>
             </div>
           </div>
         </div>
-        <a
-          href={`mailto:${customer.email}`}
-          className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
-        >
-          E-posta gönder
-        </a>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {customer.phone ? (
+            <a
+              href={`tel:${customer.phone.replace(/\s/g, "")}`}
+              className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+            >
+              Ara
+            </a>
+          ) : null}
+          <a
+            href={`mailto:${customer.email}`}
+            className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            E-posta gönder
+          </a>
+        </div>
       </div>
 
-      {/* Göstergeler */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
         <Stat
           label="Tamamlanan sipariş"
           value={integer.format(customer.orderCount)}
           hint={
             otherOrders > 0
-              ? `+${otherOrders} bekleyen/iptal sipariş`
+              ? `+${otherOrders} diğer kayıtlı sipariş`
               : "İptal ve iadeler hariç"
           }
         />
@@ -186,7 +205,6 @@ async function CustomerContent({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
-        {/* Siparişler */}
         <div className="min-w-0 lg:col-span-2">
           <Section
             title="Siparişler"
@@ -206,51 +224,85 @@ async function CustomerContent({
                 Bu müşteri henüz sipariş vermedi.
               </p>
             ) : (
-              <Table>
-                <THead>
-                  <tr>
-                    <TH className="pl-5">Sipariş</TH>
-                    <TH className="hidden sm:table-cell">Tarih</TH>
-                    <TH>Durum</TH>
-                    <TH className="pr-5 text-right">Tutar</TH>
-                  </tr>
-                </THead>
-                <TBody>
+              <>
+                {/* Mobil: kart listesi */}
+                <ul className="divide-y divide-slate-100 md:hidden">
                   {customer.orders.map((order) => (
-                    <TR key={order.orderNumber} className="group relative">
-                      <TD className="py-2.5 pl-5">
-                        <Link
-                          href={`/admin/siparisler/${order.orderNumber}`}
-                          className="font-mono text-[12.5px] font-semibold text-slate-900 after:absolute after:inset-0 after:content-[''] group-hover:text-primary"
-                        >
-                          {order.orderNumber}
-                        </Link>
-                        <div className="text-[11px] text-slate-400 sm:hidden">
-                          {formatAdminDate(order.createdAt)}
+                    <li key={order.orderNumber}>
+                      <Link
+                        href={`/admin/siparisler/${order.orderNumber}`}
+                        className="flex min-h-[4.5rem] flex-col justify-center gap-1.5 px-4 py-3.5 active:bg-slate-50"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-mono text-[13px] font-semibold text-slate-900">
+                            {order.orderNumber}
+                          </span>
+                          {isOrderStatus(order.status) ? (
+                            <OrderStatusBadge status={order.status} />
+                          ) : (
+                            <span className="text-[12px] text-slate-600">
+                              {order.status}
+                            </span>
+                          )}
                         </div>
-                      </TD>
-                      <TD className="hidden py-2.5 whitespace-nowrap text-slate-600 sm:table-cell">
-                        {formatAdminDate(order.createdAt)}
-                      </TD>
-                      <TD className="py-2.5">
-                        {isOrderStatus(order.status) ? (
-                          <OrderStatusBadge status={order.status} />
-                        ) : (
-                          order.status
-                        )}
-                      </TD>
-                      <TD className="py-2.5 pr-5 text-right font-semibold whitespace-nowrap text-slate-900 tabular-nums">
-                        {formatMoney(order.grandTotal)}
-                      </TD>
-                    </TR>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[11px] text-slate-400">
+                            {formatAdminDate(order.createdAt)}
+                          </span>
+                          <span className="text-[13px] font-semibold text-slate-900 tabular-nums">
+                            {formatMoney(order.grandTotal)}
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
                   ))}
-                </TBody>
-              </Table>
+                </ul>
+
+                {/* Masaüstü: tablo */}
+                <div className="hidden md:block">
+                  <Table>
+                    <THead>
+                      <tr>
+                        <TH className="pl-5">Sipariş</TH>
+                        <TH>Tarih</TH>
+                        <TH>Durum</TH>
+                        <TH className="pr-5 text-right">Tutar</TH>
+                      </tr>
+                    </THead>
+                    <TBody>
+                      {customer.orders.map((order) => (
+                        <TR key={order.orderNumber} className="group relative">
+                          <TD className="py-2.5 pl-5">
+                            <Link
+                              href={`/admin/siparisler/${order.orderNumber}`}
+                              className="font-mono text-[12.5px] font-semibold text-slate-900 after:absolute after:inset-0 after:content-[''] group-hover:text-primary"
+                            >
+                              {order.orderNumber}
+                            </Link>
+                          </TD>
+                          <TD className="py-2.5 whitespace-nowrap text-slate-600">
+                            {formatAdminDate(order.createdAt)}
+                          </TD>
+                          <TD className="py-2.5">
+                            {isOrderStatus(order.status) ? (
+                              <OrderStatusBadge status={order.status} />
+                            ) : (
+                              order.status
+                            )}
+                          </TD>
+                          <TD className="py-2.5 pr-5 text-right font-semibold whitespace-nowrap text-slate-900 tabular-nums">
+                            {formatMoney(order.grandTotal)}
+                          </TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </div>
+              </>
             )}
           </Section>
         </div>
 
-        {/* Sağ sütun */}
         <div className="flex min-w-0 flex-col gap-5">
           <Section title="İletişim">
             <dl className="-my-1.5">

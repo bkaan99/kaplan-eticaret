@@ -75,7 +75,7 @@ async function CheckoutContent({
           ile ödemede sahte bir ödeme sayfasına yönlendirilirsiniz.
         </p>
       ) : null}
-      <div className="grid gap-10 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-10 pb-24 lg:grid-cols-[1fr_360px] lg:pb-0">
         <TrackOnMount
           name="begin_checkout"
           payload={{
