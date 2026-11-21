@@ -1,11 +1,12 @@
 import { z } from "zod";
 
+/** Form/DB boş alanları `null` gönderebilir; `optional()` yalnızca `undefined` kabul eder. */
 const optionalText = (max: number) =>
   z
     .string()
     .trim()
     .max(max)
-    .optional()
+    .nullish()
     .transform((value) => (value ? value : null));
 
 export const categoryInputSchema = z.object({
@@ -14,10 +15,10 @@ export const categoryInputSchema = z.object({
     .trim()
     .min(2, "Kategori adı en az 2 karakter olmalı")
     .max(80),
-  slug: z.string().trim().max(80).optional(),
+  slug: z.string().trim().max(80).nullish(),
   parentId: z
     .string()
-    .optional()
+    .nullish()
     .transform((value) => (value ? value : null)),
   description: optionalText(1000),
   imageUrl: optionalText(500),

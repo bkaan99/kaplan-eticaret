@@ -181,6 +181,26 @@ describe("TaxonomyService", () => {
     ).rejects.toThrow("kendi alt");
   });
 
+  it("null opsiyonel alanlarla alt kategori oluşturur", async () => {
+    const id = await service.saveCategory(
+      null,
+      {
+        name: "Alt",
+        slug: "alt",
+        parentId: "a",
+        description: null,
+        imageUrl: null,
+        sortOrder: "0",
+        isActive: true,
+        seoTitle: null,
+        seoDescription: null,
+      },
+      actor,
+    );
+    expect(id).toBe("new");
+    expect(audit[0]).toMatchObject({ action: "category.create" });
+  });
+
   it("slug değişince yönlendirme yazar", async () => {
     await service.saveCategory("a", { name: "Giyim", slug: "moda" }, actor);
     expect(repo.updated).toEqual([{ id: "a", slug: "moda" }]);
