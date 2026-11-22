@@ -206,13 +206,13 @@ export function SizeStep({
               aria-pressed={active}
               disabled={!item.inStock}
               onClick={() => selectSize(item.variantId)}
-              className="relative flex flex-col items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white p-3 text-center transition-colors hover:border-primary/40 disabled:opacity-40 sm:p-4"
+              className="relative flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:border-primary/40 disabled:opacity-40"
             >
               {active ? (
                 <motion.span
                   layoutId="size-highlight"
                   aria-hidden="true"
-                  className="absolute -inset-0.5 rounded-2xl border-2 border-primary bg-primary/5"
+                  className="absolute -inset-0.5 rounded-xl border-2 border-primary bg-primary/5"
                   transition={{
                     type: "spring",
                     stiffness: 400,
@@ -229,7 +229,7 @@ export function SizeStep({
                 />
               </span>
               <span className="relative flex min-w-0 flex-col gap-0.5">
-                <span className="text-sm font-bold text-primary sm:text-base">
+                <span className="text-sm font-bold text-primary">
                   {item.label}
                 </span>
                 <span className="text-sm font-medium text-foreground/80">

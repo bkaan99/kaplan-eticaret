@@ -392,8 +392,7 @@ export class D1OrderRepository implements OrderRepository {
       throw new ConflictError("Vadeli ödeme yalnızca üye bayiler içindir");
     }
 
-    // Kredi: outstanding okunur sonra insert edilir (satır kilidi yok).
-    // Eşzamanlı limit aşımı için uygulama katmanında retry gerekir.
+    // Kredi ön kontrolü (hızlı ret); asıl güvence yazım sonrası yeniden doğrulamadır.
     // Stok fazla satışı aşağıdaki koşullu UPDATE ile engellenir.
     const outstanding = await this.outstandingDeferred(order.userId);
     CreditLimitPolicy.assertAllowed(
@@ -436,12 +435,27 @@ export class D1OrderRepository implements OrderRepository {
           ? [db.delete(carts).where(eq(carts.id, order.cartId))]
           : []),
       ]);
-
-      return { orderId, orderNumber, lookupToken, merchantOid: orderNumber };
     } catch (error) {
       await this.revertStockClaims(claimed, "deduct");
       throw error;
     }
+
+    // D1'de satır kilidi/interaktif transaction yok: yukarıdaki ön kontrol
+    // eşzamanlı isteklerde yarışabilir. Sipariş yazıldıktan sonra limit yeniden
+    // doğrulanır; aşıldıysa sipariş geri alınır (stok iadesi cancelOrder'da).
+    const total = await this.outstandingDeferred(order.userId);
+    try {
+      CreditLimitPolicy.assertAllowed(
+        total.minus(order.grandTotal).toString(),
+        order.grandTotal,
+        terms.creditLimit,
+      );
+    } catch (error) {
+      await this.cancelOrder(orderId, false);
+      throw error;
+    }
+
+    return { orderId, orderNumber, lookupToken, merchantOid: orderNumber };
   }
 
   async markDeferredPaid(orderId: string): Promise<boolean> {

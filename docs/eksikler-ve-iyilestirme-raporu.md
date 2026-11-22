@@ -17,7 +17,7 @@ Bütün kod tabanı (70 test paketi, 473 birim testi ve TypeScript derleyicisi) 
 ## 2. Kritik Hatalar ve Fonksiyonel Uyuşmazlıklar (P1)
 
 ### 2.1. Havale/EFT ve Vadeli Siparişlerde Bildirim E-Postalarının Gönderilmemesi (Temporal Coupling)
-- **Öncelik:** 🔴 P1 - Acil
+- **Öncelik:** ✅ ÇÖZÜLDÜ (2026-11-22) — eski öncelik: 🔴 P1 - Acil
 - **İlgili Dosyalar:**
   - [`src/modules/checkout/container.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/checkout/container.ts#L15-L36)
   - [`src/modules/notifications/container.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/notifications/container.ts#L43-L68)
@@ -36,7 +36,7 @@ Bütün kod tabanı (70 test paketi, 473 birim testi ve TypeScript derleyicisi) 
 ---
 
 ### 2.2. İade Onayında Hatalı Sağlayıcı Çağrısı (Havale ve Vadeli Siparişlerde İade Çökmesi)
-- **Öncelik:** 🔴 P1 - Acil
+- **Öncelik:** ✅ ÇÖZÜLDÜ (2026-11-22) — eski öncelik: 🔴 P1 - Acil
 - **İlgili Dosyalar:**
   - [`src/modules/returns/return.service.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/returns/return.service.ts#L110-L148)
   - [`src/modules/returns/container.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/returns/container.ts#L10-L19)
@@ -52,7 +52,7 @@ Bütün kod tabanı (70 test paketi, 473 birim testi ve TypeScript derleyicisi) 
 ---
 
 ### 2.3. Cloudflare D1 Eşzamanlılık ve Vadeli Sipariş Kredi Limiti Yarış Durumu (Race Condition)
-- **Öncelik:** 🔴 P1 - Güvenlik / Finansal Risk
+- **Öncelik:** ✅ ÇÖZÜLDÜ (2026-11-22) — eski öncelik: 🔴 P1 - Güvenlik / Finansal Risk
 - **İlgili Dosyalar:**
   - [`src/modules/orders/order.repository.ts`](file:///Users/sdsa/Desktop/kaplan-eticaret/src/modules/orders/order.repository.ts#L434-L443)
 - **Hata Analizi:**
@@ -153,6 +153,11 @@ Aşağıdaki maddelerin güncel kod tabanında çözüldüğü ve birim testlerl
    - Kendi Turşunu Yap arayüzünde (`builder-steps.tsx`) tükenen ve mevsim dışı malzemelere özel rozetler, buton kilitleri ve mevsim aralığı gösterimi eklendi.
    - Yönetim panelinde (`ingredient-manager.tsx`) malzeme ekleme/düzenleme formuna stok miktarı, kritik stok eşiği ve ay bazlı mevsimsellik seçimi; malzeme tablosuna ise stok durumu ve mevsim rozetleri entegre edildi.
    - `db/seed.ts` güncellendi ve tüm senaryolar birim testlerle (`custom-pickle.service.test.ts`) doğrulandı.
+8. ✅ **P1 düzeltmeleri (2026-11-22):**
+   - `getCheckoutService()` artık `getNotificationService()` çağırıyor; `order.placed` dinleyicileri soğuk isolate'ta da bağlı.
+   - `ReturnService` ödeme yöntemine göre `PaymentRefundStrategyRegistry` kullanıyor; havale/vadeli iadelerde PayTR çağrılmıyor (`paymentMethod` iade kaydına eklendi).
+   - `createDeferredOrder` sipariş yazıldıktan sonra kredi limitini yeniden doğruluyor, aşılmışsa siparişi geri alıyor. Eşzamanlı isteklerde ikisi birden reddedilebilir ama limit aşılmaz. Bilinen sınır: geri alınan siparişin kupon sayacı düşmüyor.
+   - Yeni testler: havale/vadeli iade (unit), eşzamanlı kredi limiti (integration).
 
 ---
 
@@ -160,9 +165,9 @@ Aşağıdaki maddelerin güncel kod tabanında çözüldüğü ve birim testlerl
 
 | Seviye | Konu / Hata | İlgili Dosya(lar) | Tahmini Efor |
 | :--- | :--- | :--- | :--- |
-| 🔴 **P1 - Acil** | Havale/vadeli sipariş e-postalarının listener bağlantısı | `src/modules/checkout/container.ts` | 15 dk |
-| 🔴 **P1 - Acil** | Havale/vadeli sipariş iade onayında PayTR çağrısının engellenmesi | `src/modules/returns/return.service.ts`, `container.ts` | 1-2 saat |
-| 🔴 **P1 - Acil** | Vadeli sipariş kredi limiti yarış durumu (race condition) koruması | `src/modules/orders/order.repository.ts` | 2 saat |
+| ✅ **P1 - Çözüldü** | ~~Havale/vadeli sipariş e-postalarının listener bağlantısı~~ | `src/modules/checkout/container.ts` | 15 dk |
+| ✅ **P1 - Çözüldü** | ~~Havale/vadeli sipariş iade onayında PayTR çağrısının engellenmesi~~ | `src/modules/returns/return.service.ts`, `container.ts` | 1-2 saat |
+| ✅ **P1 - Çözüldü** | ~~Vadeli sipariş kredi limiti yarış durumu (race condition) koruması~~ | `src/modules/orders/order.repository.ts` | 2 saat |
 | 🟠 **P2** | `DevPaymentProvider.signPayload` sızıntısının izole edilmesi | `src/integrations/payment/`, `odeme/actions.ts` | 1 saat |
 | 🟠 **P2** | Terk edilmiş sahipsiz sepetlerin süpürülmesi (cron) | `src/app/api/cron/purge-abandoned-carts/` | 1 saat |
 | 🟠 **P2** | Global `siteConfig` doğrudan import bağımlılıklarının temizlenmesi | `src/modules/checkout/shipping.ts` | 1 saat |

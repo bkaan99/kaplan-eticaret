@@ -13,6 +13,7 @@ import {
   type Db,
 } from "@/db";
 import { NotFoundError } from "@/shared/errors";
+import type { PaymentMethod } from "../orders/order.types";
 import type { ReturnStatus } from "./return.types";
 
 export interface ReturnOrderRecord {
@@ -51,6 +52,8 @@ export interface ReturnRequestRecord {
     discountTotal: Decimal;
     grandTotal: Decimal;
     merchantOid: string | null;
+    /** Son ödemenin yöntemi; iade stratejisini belirler. */
+    paymentMethod: PaymentMethod | null;
   };
   items: {
     orderItemId: string;
@@ -212,7 +215,7 @@ export class D1ReturnRepository implements ReturnRepository {
       subtotal: Decimal;
       discountTotal: Decimal;
       grandTotal: Decimal;
-      payments: { merchantOid: string }[];
+      payments: { merchantOid: string; method: PaymentMethod }[];
     };
     items: {
       orderItemId: string;
@@ -241,6 +244,7 @@ export class D1ReturnRepository implements ReturnRepository {
         discountTotal: row.order.discountTotal,
         grandTotal: row.order.grandTotal,
         merchantOid: row.order.payments[0]?.merchantOid ?? null,
+        paymentMethod: row.order.payments[0]?.method ?? null,
       },
       items: row.items.map((item) => ({
         orderItemId: item.orderItemId,

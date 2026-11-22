@@ -9,7 +9,6 @@ import type { BuilderSize } from "@/modules/custom-pickle/custom-pickle.service"
 import { useCustomPickleBuilder } from "./use-custom-pickle-builder";
 import { BuilderBar } from "./builder-bar";
 import { BuilderInsights } from "./builder-insights";
-import { BuilderPresets } from "./builder-presets";
 import { BuilderScene } from "./builder-scene";
 import {
   BrineStep,
@@ -42,7 +41,6 @@ export function Builder({
   return (
     <div className="flex flex-col gap-6">
       <FlyToBidonOverlay />
-      <BuilderPresets builder={builder} />
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
         {/* Dar ekranda bidon adımların üstünde; genişte sağda sabit */}

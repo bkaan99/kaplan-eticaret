@@ -435,6 +435,33 @@ describe("D1OrderRepository: vadeli sipariş", () => {
     expect(after.stockQuantity).toBe(0);
   });
 
+  it("eşzamanlı siparişlerde kredi limiti hiçbir koşulda aşılmaz", async () => {
+    const racer = await makeUser(
+      db,
+      {
+        email: `kredi-yaris-${tag}@example.com`,
+        firstName: "Kredi",
+        lastName: "Yarışı",
+      },
+      { b2bStatus: "APPROVED", creditLimit: d("500.00") },
+    );
+    const make = (): NewOrder => ({
+      ...deferredOrder(300),
+      userId: racer.id,
+    });
+    const limited = { ...terms, creditLimit: "500.00" };
+
+    // Her biri tek başına limite sığar (300 ≤ 500); ikisi birlikte sığmaz.
+    const results = await Promise.allSettled([
+      repo.createDeferredOrder(make(), limited),
+      repo.createDeferredOrder(make(), limited),
+    ]);
+
+    expect(
+      results.filter((r) => r.status === "fulfilled").length,
+    ).toBeLessThanOrEqual(1);
+  });
+
   it("tahsil edilince PAID olur; ikinci işaretleme etkisizdir", async () => {
     const created = await repo.createDeferredOrder(
       { ...deferredOrder(100) },

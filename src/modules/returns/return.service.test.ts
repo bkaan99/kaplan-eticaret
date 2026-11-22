@@ -127,6 +127,7 @@ const requestRecord = (): ReturnRequestRecord => ({
     discountTotal: d(40),
     grandTotal: d(360),
     merchantOid: "SABC",
+    paymentMethod: "CARD",
   },
   items: [
     {
@@ -277,6 +278,19 @@ describe("ReturnService", () => {
       entityId: "r1",
     });
   });
+
+  it.each(["BANK_TRANSFER", "DEFERRED"] as const)(
+    "%s siparişinde ödeme sağlayıcısını çağırmadan manuel iade ile tamamlar",
+    async (paymentMethod) => {
+      const base = requestRecord();
+      repo.request = { ...base, order: { ...base.order, paymentMethod } };
+
+      await service.approve("r1", { restock: true }, actor);
+
+      expect(refund).not.toHaveBeenCalled();
+      expect(repo.completed).toEqual([{ amount: "180.00", restock: true }]);
+    },
+  );
 
   it("sağlayıcı iadesi başarısızsa talebi tamamlamaz", async () => {
     repo.request = requestRecord();

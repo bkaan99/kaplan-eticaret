@@ -7,6 +7,7 @@ import { cartService } from "../cart/container";
 import { priceResolver } from "../catalog/container";
 import { customPickleService } from "../custom-pickle/container";
 import { D1DealerRepository } from "../b2b/dealer.repository";
+import { getNotificationService } from "../notifications/container";
 import { orderRepository } from "../orders/container";
 import { getCachedShippingConfig } from "../settings/cached";
 import { D1CheckoutRepository } from "./checkout.repository";
@@ -14,6 +15,10 @@ import { CheckoutService } from "./checkout.service";
 import { ConfiguredShippingRateCalculator } from "./shipping";
 
 export async function getCheckoutService(): Promise<CheckoutService> {
+  // `order.placed` dinleyicileri (onay e-postası, yönetici bildirimi) bildirim
+  // servisi başlatılırken bağlanır; soğuk isolate'ta boş bus'a yayın yapılmasın.
+  getNotificationService();
+
   // Ödeme modu panelden seçilir; kart ödemesi kullanılamıyorsa checkout bunu bilir.
   // Kargo: navbar/sepet ile aynı önbellek (60s) — eşik tutarsızlığı olmasın.
   const [cardProvider, shipping] = await Promise.all([

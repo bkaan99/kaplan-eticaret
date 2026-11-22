@@ -3,6 +3,10 @@ import { ConflictError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { Actor, AuditLogger } from "@/shared/audit";
 import type { PaymentRefunder } from "@/integrations/payment/payment-provider";
 import type { OrderAccess } from "../orders/order.service";
+import {
+  createDefaultRefundRegistry,
+  type PaymentRefundStrategyRegistry,
+} from "../orders/payment-refund-strategy";
 import type {
   ReturnOrderRecord,
   ReturnRepository,
@@ -35,7 +39,8 @@ export interface ReturnServiceDeps {
   orderAccess: {
     getForAccess(orderNumber: string, access: OrderAccess): Promise<unknown>;
   };
-  refunder: PaymentRefunder;
+  /** Sağlayıcı (kart iadesi) veya yönteme göre strateji kayıt defteri. */
+  refunder: PaymentRefunder | PaymentRefundStrategyRegistry;
   audit: AuditLogger;
   notifier?: ReturnNotifier;
   withdrawalPeriodDays: number;
@@ -45,8 +50,14 @@ export interface ReturnServiceDeps {
 export class ReturnService {
   private readonly now: () => Date;
 
+  private readonly refundStrategies: PaymentRefundStrategyRegistry;
+
   constructor(private readonly deps: ReturnServiceDeps) {
     this.now = deps.now ?? (() => new Date());
+    this.refundStrategies =
+      "get" in deps.refunder
+        ? deps.refunder
+        : createDefaultRefundRegistry(deps.refunder);
   }
 
   /** Müşteri tarafı: siparişin iade edilebilirlik durumu. */
@@ -120,10 +131,14 @@ export class ReturnService {
 
     const amount = this.refundAmount(request);
 
-    // Önce sağlayıcıdan iade alınır; başarısızsa talep açık kalır.
-    const refund = await this.deps.refunder.refund({
+    // Önce ödeme yöntemine uygun iade yapılır; başarısızsa talep açık kalır.
+    // Havale/vadeli siparişlerde sağlayıcı çağrılmaz (manuel iade).
+    const method = request.order.paymentMethod ?? "CARD";
+    const refund = await this.refundStrategies.get(method).refund({
+      orderId: request.order.id,
       merchantOid: request.order.merchantOid,
       amount,
+      method,
     });
 
     await this.deps.returns.complete(requestId, {
