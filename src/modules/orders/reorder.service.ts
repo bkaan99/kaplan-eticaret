@@ -85,7 +85,7 @@ export class ReorderService {
             kind: "custom-pickle",
             ingredientIds: snap.ingredients.map((i) => i.id),
             ...(hasShares ? { shares } : {}),
-            brine: snap.brine ?? "VINEGAR",
+            brine: snap.brine ?? "WHITE",
             spice: snap.spice ?? "MEDIUM",
             note: snap.note ?? null,
           };

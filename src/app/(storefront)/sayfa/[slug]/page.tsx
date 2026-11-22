@@ -6,7 +6,9 @@ import { RichText } from "@/components/content/rich-text";
 import { JsonLd } from "@/components/storefront/json-ld";
 import { siteConfig } from "@/config/site.config";
 import { getContentService } from "@/modules/content/container";
+import { fillContentPlaceholders } from "@/modules/content/content-placeholders";
 import { LEGAL_PAGE_TEMPLATES } from "@/modules/content/legal-templates";
+import { getCachedShippingSettings } from "@/modules/settings/cached";
 import { storefrontContact } from "@/config/storefront-contact";
 import { isAppError } from "@/shared/errors";
 
@@ -78,6 +80,19 @@ export function generateStaticParams() {
 }
 
 async function loadPage(slug: string) {
+  const page = await loadRawPage(slug);
+  if (!page) return null;
+  // Ücretsiz kargo eşiği gibi dinamik değerler gösterim anında doldurulur.
+  const shipping = await getCachedShippingSettings();
+  return {
+    ...page,
+    content: fillContentPlaceholders(page.content, {
+      freeShippingThreshold: shipping.freeShippingThreshold,
+    }),
+  };
+}
+
+async function loadRawPage(slug: string) {
   try {
     const dbPage = await getContentService().publishedPage(slug);
     if (dbPage) return dbPage;
@@ -154,9 +169,7 @@ async function PageContent({
   const isLegal = LEGAL_LINKS.some((l) => l.slug === page.slug);
   const badgeText = isLegal ? "Resmi Yasal Belge" : "Kurumsal Bilgilendirme";
   const faqItems =
-    page.slug === "sikca-sorulan-sorular"
-      ? faqFromMarkdown(page.content)
-      : [];
+    page.slug === "sikca-sorulan-sorular" ? faqFromMarkdown(page.content) : [];
 
   return (
     <div className="flex flex-col gap-6 py-4">
@@ -283,8 +296,8 @@ async function PageContent({
           <div className="rounded-xl border border-emerald-900/10 bg-emerald-50/60 p-4 text-xs text-slate-600">
             <p className="mb-1.5 font-bold text-slate-900">Müşteri Desteği</p>
             <p className="mb-3 leading-relaxed text-slate-600">
-              Siparişiniz, yasal haklarınız veya ürünlerimizle ilgili sorularınız
-              için bize ulaşabilirsiniz.
+              Siparişiniz, yasal haklarınız veya ürünlerimizle ilgili
+              sorularınız için bize ulaşabilirsiniz.
             </p>
             <div className="flex flex-col gap-1.5 font-semibold text-slate-800">
               <a
@@ -312,9 +325,7 @@ async function PageContent({
               <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-800">
                 {badgeText}
               </span>
-              <span className="text-xs text-slate-400">
-                Güncellenme: 2026
-              </span>
+              <span className="text-xs text-slate-400">Güncellenme: 2026</span>
             </div>
             <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               {page.title}
@@ -329,8 +340,8 @@ async function PageContent({
               Kaplan Gıda ve Turşuculuk Tic. Ltd. Şti.
             </p>
             <p>
-              Adres: {storefrontContact.address} · Tel: {storefrontContact.phone}{" "}
-              · E-posta: info@kaplantursu.com
+              Adres: {storefrontContact.address} · Tel:{" "}
+              {storefrontContact.phone} · E-posta: info@kaplantursu.com
             </p>
           </div>
         </article>

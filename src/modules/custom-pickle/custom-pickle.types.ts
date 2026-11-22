@@ -77,34 +77,22 @@ export interface CustomPickleConfig {
 
 export const DEFAULT_BRINE_CONFIG: PickleBrineOption[] = [
   {
-    key: "VINEGAR",
-    label: "Sirkeli",
-    description:
-      "Geleneksel sirke ve kaya tuzu dengesi. Klasik kıtır lezzet, net asidite.",
-    color: "#d6e29a",
+    key: "WHITE",
+    label: "Beyaz su",
+    description: "Klasik, berrak salamura",
+    color: "#e6edc2",
     hasBubbles: false,
     isActive: true,
     sortOrder: 0,
   },
   {
-    key: "NATURAL",
-    label: "Doğal fermente",
-    description:
-      "Yalnızca kaya tuzu ve sarımsak; fermantasyon probiyotik bakterilerle gerçekleşir.",
-    color: "#e7d9a0",
-    hasBubbles: true,
-    isActive: true,
-    sortOrder: 1,
-  },
-  {
-    key: "APPLE_CIDER",
-    label: "Elma Sirkeli",
-    description:
-      "Yumuşak içimli, meyvemsi dengeli asidite ve kaya tuzu aroması.",
-    color: "#fef08a",
+    key: "RED",
+    label: "Kırmızı su",
+    description: "Pancarla renklenen salamura",
+    color: "#c8456f",
     hasBubbles: false,
     isActive: true,
-    sortOrder: 2,
+    sortOrder: 1,
   },
 ];
 
@@ -148,6 +136,9 @@ export const DEFAULT_SPICE_CONFIG: PickleSpiceOption[] = [
 ];
 
 export const BRINE_OPTIONS: Record<string, string> = {
+  WHITE: "Beyaz su",
+  RED: "Kırmızı su",
+  // Eski sepet ve siparişlerde saklanan anahtarlar okunabilsin diye korunur.
   VINEGAR: "Sirkeli",
   NATURAL: "Doğal fermente",
   APPLE_CIDER: "Elma Sirkeli",
@@ -262,6 +253,8 @@ export interface IngredientView {
   minStockKg: string | null;
   seasonStartMonth: number | null;
   seasonEndMonth: number | null;
+  /** Seçilince önerilen en düşük acılık seviyesi (null = etkisiz). */
+  spiceKey: string | null;
   inStock: boolean;
   inSeason: boolean;
   isAvailable: boolean;

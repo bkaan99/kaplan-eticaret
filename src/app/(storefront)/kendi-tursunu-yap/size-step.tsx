@@ -191,7 +191,7 @@ export function SizeStep({
   const { variantId, selectSize, maxIngredients } = builder;
 
   return (
-    <Step index={1} title="Bidon boyutu">
+    <Step index={1} title="Bidon boyutu" done={Boolean(builder.size)}>
       <p className="-mt-2 text-sm text-muted-foreground">
         Seçili boyutta en fazla {maxIngredients} malzeme ekleyebilirsiniz.
       </p>
@@ -206,13 +206,13 @@ export function SizeStep({
               aria-pressed={active}
               disabled={!item.inStock}
               onClick={() => selectSize(item.variantId)}
-              className="relative flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:border-primary/40 disabled:opacity-40"
+              className="relative flex items-center gap-3 rounded-2xl border-2 border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-primary/40 disabled:opacity-40"
             >
               {active ? (
                 <motion.span
                   layoutId="size-highlight"
                   aria-hidden="true"
-                  className="absolute -inset-0.5 rounded-xl border-2 border-primary bg-primary/5"
+                  className="absolute -inset-0.5 rounded-2xl border-2 border-primary bg-primary/5"
                   transition={{
                     type: "spring",
                     stiffness: 400,
@@ -240,6 +240,16 @@ export function SizeStep({
                 <span className="text-xs text-muted-foreground">
                   En fazla {itemMax} malzeme
                 </span>
+              </span>
+              <span
+                aria-hidden="true"
+                className={`relative ml-auto inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                  active ? "border-primary bg-primary" : "border-slate-300"
+                }`}
+              >
+                {active ? (
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                ) : null}
               </span>
             </button>
           );

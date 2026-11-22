@@ -155,6 +155,14 @@ export const ingredientInputSchema = z.object({
       const num = Number(value);
       return Number.isInteger(num) && num >= 1 && num <= 12 ? num : null;
     }),
+  /** Seçilince önerilen acılık seviyesi (PickleSpiceOption.key); boş = etkisiz. */
+  spiceKey: z
+    .string()
+    .trim()
+    .max(40)
+    .nullable()
+    .optional()
+    .transform((value) => (value ? value : null)),
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
   isActive: z.boolean().default(true),
 });

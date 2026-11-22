@@ -43,6 +43,7 @@ function ingredient(
     minStockKg: null,
     seasonStartMonth: null,
     seasonEndMonth: null,
+    spiceKey: null,
     isActive: true,
     sortOrder: 0,
     ...overrides,

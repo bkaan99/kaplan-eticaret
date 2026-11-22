@@ -42,96 +42,107 @@ export function BuilderBar({ builder }: { builder: CustomPickleBuilderState }) {
   return (
     <div
       data-builder-bar
-      className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-amber-300 bg-primary pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-8px_24px_rgba(11,35,24,0.25)]"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      {message ? (
-        <p
-          role={message.error ? "alert" : "status"}
-          className={`px-4 py-1.5 text-center text-xs font-semibold ${message.error ? "bg-red-600" : "bg-brand-dark"}`}
-        >
-          {message.text}
-          {justAdded ? (
-            <>
-              {" · "}
-              <Link href="/sepet" className="underline">
-                Sepete git
-              </Link>
-            </>
-          ) : null}
-        </p>
-      ) : null}
-      <div className="mx-auto flex max-w-[1600px] px-4 lg:px-8 2xl:px-12 flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
-        <Image
-          src="/images/urunler/kendi-tursunu-yap.svg"
-          alt=""
-          width={48}
-          height={48}
-          className="hidden rounded-lg bg-white p-0.5 sm:block"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-xl leading-tight font-bold tabular-nums sm:text-2xl">
-            {chosen.length === 0
-              ? `%${filled} dolu`
-              : formatMoney(unit * quantity, currency)}
-          </p>
-          <p className="truncate text-xs text-white/80">
-            {size?.label ?? "Bidon"} ·{" "}
-            {hasVegetable ? `%${filled} dolu` : "sebze seçerek başlayın"}
-          </p>
+      <div className="pointer-events-auto mx-auto max-w-[1600px] overflow-hidden rounded-3xl bg-primary text-white shadow-[0_18px_40px_-12px_rgba(11,35,24,0.55)] ring-1 ring-white/10">
+        <div className="h-1 w-full bg-white/10" aria-hidden="true">
+          <div
+            className={`h-full transition-[width] duration-500 ${isFull ? "bg-emerald-300" : "bg-amber-400"}`}
+            style={{ width: `${Math.min(100, filled)}%` }}
+          />
         </div>
-
-        <div className="flex items-center rounded-full border border-white/30">
-          <button
-            type="button"
-            aria-label="Adedi azalt"
-            onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-            disabled={quantity <= 1}
-            className="h-10 w-9 text-lg disabled:opacity-30"
+        {message ? (
+          <p
+            role={message.error ? "alert" : "status"}
+            className={`px-4 py-1.5 text-center text-xs font-semibold ${message.error ? "bg-red-600" : "bg-brand-dark"}`}
           >
-            −
-          </button>
-          <span
-            className="w-12 text-center text-sm font-bold"
-            aria-live="polite"
-          >
-            {quantity} adet
-          </span>
-          <button
-            type="button"
-            aria-label="Adedi artır"
-            onClick={() => setQuantity((value) => Math.min(20, value + 1))}
-            disabled={quantity >= 20}
-            className="h-10 w-9 text-lg disabled:opacity-30"
-          >
-            +
-          </button>
-        </div>
-
-        {chosen.length > 0 ? (
-          <button
-            type="button"
-            onClick={clear}
-            className="hidden text-xs font-semibold text-white/85 underline hover:text-white md:inline"
-          >
-            Bidonu boşalt
-          </button>
+            {message.text}
+            {justAdded ? (
+              <>
+                {" · "}
+                <Link href="/sepet" className="underline">
+                  Sepete git
+                </Link>
+              </>
+            ) : null}
+          </p>
         ) : null}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:px-6">
+          <Image
+            src="/images/urunler/kendi-tursunu-yap.svg"
+            alt=""
+            width={48}
+            height={48}
+            className="hidden rounded-lg bg-white p-0.5 sm:block"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-xl leading-tight font-bold tabular-nums sm:text-2xl">
+              {chosen.length === 0
+                ? `%${filled} dolu`
+                : formatMoney(unit * quantity, currency)}
+            </p>
+            <p className="truncate text-xs text-white/80">
+              {size?.label ?? "Bidon"} ·{" "}
+              {hasVegetable ? `%${filled} dolu` : "sebze seçerek başlayın"}
+            </p>
+            <p className="hidden truncate text-[11px] text-white/60 sm:block">
+              Siparişler 24-48 saat içinde kargoya verilir
+            </p>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            if (canAdd) addToCart();
-            else if (!hasVegetable) scrollToStep("adim-malzeme");
-            else if (!isFull) scrollToStep("adim-oran");
-          }}
-          disabled={pending}
-          className="h-11 basis-full rounded-full bg-amber-400 px-7 text-sm font-extrabold whitespace-nowrap text-brand-dark transition hover:bg-amber-300 disabled:opacity-60 sm:basis-auto"
-        >
-          {cta}
-          {canAdd && !pending && !justAdded
-            ? ` · ${formatMoney(unit * quantity, currency)}`
-            : ""}
-        </button>
+          <div className="flex items-center rounded-full border border-white/30">
+            <button
+              type="button"
+              aria-label="Adedi azalt"
+              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+              disabled={quantity <= 1}
+              className="h-10 w-9 text-lg disabled:opacity-30"
+            >
+              −
+            </button>
+            <span
+              className="w-12 text-center text-sm font-bold"
+              aria-live="polite"
+            >
+              {quantity} adet
+            </span>
+            <button
+              type="button"
+              aria-label="Adedi artır"
+              onClick={() => setQuantity((value) => Math.min(20, value + 1))}
+              disabled={quantity >= 20}
+              className="h-10 w-9 text-lg disabled:opacity-30"
+            >
+              +
+            </button>
+          </div>
+
+          {chosen.length > 0 ? (
+            <button
+              type="button"
+              onClick={clear}
+              className="hidden text-xs font-semibold text-white/85 underline hover:text-white md:inline"
+            >
+              Bidonu boşalt
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => {
+              if (canAdd) addToCart();
+              else if (!hasVegetable) scrollToStep("adim-malzeme");
+              else if (!isFull) scrollToStep("adim-oran");
+            }}
+            disabled={pending}
+            className="h-11 basis-full rounded-full bg-amber-400 px-7 text-sm font-extrabold whitespace-nowrap text-brand-dark transition hover:bg-amber-300 disabled:opacity-60 sm:basis-auto"
+          >
+            {cta}
+            {canAdd && !pending && !justAdded
+              ? ` · ${formatMoney(unit * quantity, currency)}`
+              : ""}
+          </button>
+        </div>
       </div>
     </div>
   );

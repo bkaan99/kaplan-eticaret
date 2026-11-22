@@ -30,6 +30,25 @@ const LEVELS = {
   color: ["Sade", "Sade", "Renkli", "Rengârenk"],
 } as const;
 
+/**
+ * Kartlarda gösterilen kısa lezzet etiketleri ("Ekşi · Çıtır", "Acı").
+ * Lezzet profilindeki aynı malzeme karakterlerinden türetilir; yalnızca
+ * belirgin özellikler yazılır. Aromalar için etiket üretilmez.
+ */
+export function tasteTags(ingredient: IngredientView): string[] {
+  if (ingredient.group !== "VEGETABLE") return [];
+  const flavor = FLAVORS[ingredient.slug] ?? DEFAULT_FLAVOR;
+  const tags: string[] = [];
+  if (flavor.heat >= 2) tags.push("Acı");
+  if (flavor.sour >= 3) tags.push("Ekşi");
+  else if (flavor.sour === 0) tags.push("Tatlımsı");
+  else if (flavor.sour === 2 && flavor.heat < 2) tags.push("Dengeli");
+  if (flavor.crunch >= 3) tags.push("Kıtır");
+  else if (flavor.crunch === 2) tags.push("Çıtır");
+  else if (flavor.crunch <= 1) tags.push("Yumuşak");
+  return tags.slice(0, 2);
+}
+
 export interface FlavorMeter {
   label: string;
   /** 0–1 */
@@ -41,6 +60,8 @@ export function flavorProfile(
   vegetables: IngredientView[],
   shares: Record<string, number>,
   peppers: number,
+  /** Pancarla renklenen su gibi renk katan salamura için (0–3 ölçeğine eklenir). */
+  colorBoost = 0,
 ): FlavorMeter[] | null {
   const total = vegetables.reduce((sum, v) => sum + (shares[v.id] ?? 0), 0);
   if (total === 0) return null;
@@ -67,7 +88,7 @@ export function flavorProfile(
     meter("Ekşilik", "sour", avg("sour")),
     meter("Acılık", "heat", heat),
     meter("Çıtırlık", "crunch", avg("crunch")),
-    meter("Renk", "color", avg("color")),
+    meter("Renk", "color", Math.min(3, avg("color") + colorBoost)),
   ];
 }
 

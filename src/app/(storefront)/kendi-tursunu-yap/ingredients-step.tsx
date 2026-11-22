@@ -10,6 +10,8 @@ import {
 import { formatMoney } from "@/shared/money";
 import { type CustomPickleBuilderState } from "./use-custom-pickle-builder";
 import { launchFlyToBidon } from "./fly-to-bidon";
+import { tasteTags } from "./flavor-profile";
+import { PICKLE_PRESETS } from "./pickle-presets";
 import { Step } from "./builder-step-frame";
 
 export type GroupFilter = "ALL" | IngredientGroup;
@@ -47,16 +49,56 @@ export function IngredientsStep({
       id="adim-malzeme"
       index={2}
       title="Malzemeleri seçin"
+      done={builder.hasVegetable}
       hint={
         <span className={full ? "font-semibold text-brand-pepper" : ""}>
           {selected.length}/{maxIngredients}
         </span>
       }
     >
-      <p className="-mt-2 text-sm text-slate-600">
-        {size?.label ?? "Bu bidon"} için en fazla {maxIngredients} malzeme. En
-        az bir sebze seçin.
-      </p>
+      <div className="-mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="text-sm text-slate-600">
+          {size?.label ?? "Bu bidon"} için en fazla {maxIngredients} malzeme. En
+          az bir sebze seçin.
+        </p>
+        {/* Kontenjan: seçilen malzeme kadar kavanoz dolar */}
+        <div
+          role="img"
+          aria-label={`${selected.length} / ${maxIngredients} malzeme seçildi`}
+          className="flex items-center gap-1"
+        >
+          {Array.from({ length: maxIngredients }, (_, index) => (
+            <span
+              key={index}
+              aria-hidden="true"
+              className={`h-5 w-3.5 rounded-[4px] border transition-colors duration-200 ${
+                index < selected.length
+                  ? "border-primary bg-primary"
+                  : "border-slate-300 bg-white"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Kararsız kullanıcı için tek dokunuşluk başlangıç */}
+      {selected.length === 0 && PICKLE_PRESETS[0] ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-4 py-3">
+          <div>
+            <p className="text-sm font-bold text-primary">Kararsız mısın?</p>
+            <p className="text-xs text-slate-600">
+              Ustanın klasik karışımıyla başla, sonra istediğin gibi değiştir.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => builder.applyPreset(PICKLE_PRESETS[0]!)}
+            className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-bold text-white transition-colors hover:bg-primary/90"
+          >
+            Ustanın karışımı
+          </button>
+        </div>
+      ) : null}
       <label htmlFor="pickle-search" className="sr-only">
         Malzeme ara
       </label>
@@ -66,7 +108,7 @@ export function IngredientsStep({
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Malzeme ara: salatalık, biber…"
-        className="h-11 w-full rounded-full border border-slate-200 bg-[#f4f5f0] px-5 text-sm font-medium outline-none focus:border-primary focus:bg-white"
+        className="h-11 w-full rounded-full border border-slate-200 bg-[#f4f5f0] px-5 text-sm font-medium outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
       />
       <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
         {filters.map((item) => (
@@ -95,6 +137,11 @@ export function IngredientsStep({
         {items.map((item) => {
           const active = selected.includes(item.id);
           const disabled = (!active && full) || !item.isAvailable;
+          const status = !item.inStock
+            ? { text: "Tükendi", tone: "bg-rose-50 text-rose-700" }
+            : !item.inSeason
+              ? { text: "Mevsim dışı", tone: "bg-amber-50 text-amber-800" }
+              : null;
           return (
             <button
               key={item.id}
@@ -121,70 +168,86 @@ export function IngredientsStep({
                 }
                 toggle(item.id);
               }}
-              className={`group flex flex-col rounded-2xl border p-2 text-left transition-colors ${
+              className={`group relative flex flex-col items-center gap-1 rounded-2xl border-2 px-2 pt-4 pb-3 text-center transition-all duration-200 ${
                 !item.isAvailable
-                  ? "border-slate-200 bg-slate-50/70 opacity-60 cursor-not-allowed"
+                  ? "cursor-not-allowed border-slate-200 bg-slate-50/70 opacity-60"
                   : active
-                    ? "border-primary bg-primary/5"
-                    : "border-slate-200 hover:border-primary/50"
+                    ? "border-primary bg-primary/5 shadow-[0_8px_20px_-12px_rgba(21,71,52,0.55)]"
+                    : disabled
+                      ? "cursor-not-allowed border-slate-200 opacity-50"
+                      : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_10px_24px_-14px_rgba(11,35,24,0.35)]"
               }`}
             >
-              <span className="relative flex aspect-[4/3] w-full items-center justify-center rounded-xl bg-[#f4f5f0]">
-                {!item.inStock ? (
-                  <span className="absolute top-1.5 left-1.5 z-10 rounded-md bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                    Tükendi
-                  </span>
-                ) : !item.inSeason ? (
-                  <span className="absolute top-1.5 left-1.5 z-10 rounded-md bg-amber-600 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                    Mevsim Dışı
-                  </span>
-                ) : null}
-                <span data-fly-thumb className="relative h-16 w-16">
-                  <Image
-                    src={item.imageUrl ?? "/placeholder.svg"}
-                    alt=""
-                    fill
-                    sizes="64px"
-                    className="object-contain transition-transform group-hover:scale-110"
-                  />
+              {/* Seçim göstergesi */}
+              {item.isAvailable ? (
+                <span
+                  aria-hidden="true"
+                  className={`absolute top-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                    active
+                      ? "bg-primary text-white"
+                      : "border border-slate-300 text-slate-400 group-hover:border-primary group-hover:text-primary"
+                  }`}
+                >
+                  {active ? (
+                    <svg
+                      viewBox="0 0 20 20"
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 10.5l4 4 8-9" />
+                    </svg>
+                  ) : (
+                    "+"
+                  )}
                 </span>
-              </span>
-              <span className="mt-2 px-1 text-sm leading-tight font-bold text-primary">
-                {item.name}
-              </span>
-              <div className="mt-0.5 flex flex-col gap-0.5 px-1">
-                <span className="text-xs text-slate-500">
-                  {formatMoney(item.pricePerKg, currency)} / kg
-                </span>
-                {item.seasonStartMonth && item.seasonEndMonth ? (
-                  <span className="text-[11px] text-emerald-700/80">
-                    Mevsim:{" "}
-                    {formatSeasonRange(
-                      item.seasonStartMonth,
-                      item.seasonEndMonth,
-                    )}
-                  </span>
-                ) : null}
-              </div>
+              ) : null}
+
               <span
-                className={`mt-2 rounded-full py-1.5 text-center text-xs font-bold ${
-                  !item.inStock
-                    ? "bg-slate-200 text-slate-600"
-                    : !item.inSeason
-                      ? "bg-amber-100 text-amber-800"
-                      : active
-                        ? "bg-primary text-white"
-                        : "border border-primary text-primary"
+                data-fly-thumb
+                className={`relative flex h-24 w-24 items-center justify-center rounded-full transition-colors ${
+                  active ? "bg-white" : "bg-[#f4f5f0]"
                 }`}
               >
-                {!item.inStock
-                  ? "Tükendi"
-                  : !item.inSeason
-                    ? "Mevsim Dışı"
-                    : active
-                      ? "Eklendi ✓"
-                      : "+ Bidona ekle"}
+                <Image
+                  src={item.imageUrl ?? "/placeholder.svg"}
+                  alt=""
+                  width={72}
+                  height={72}
+                  className="h-[4.5rem] w-[4.5rem] object-contain transition-transform duration-200 group-hover:scale-110"
+                />
               </span>
+
+              <span className="mt-1 text-sm leading-tight font-bold text-primary">
+                {item.name}
+              </span>
+              {tasteTags(item).length > 0 ? (
+                <span className="text-[11px] font-semibold text-brand-leaf">
+                  {tasteTags(item).join(" · ")}
+                </span>
+              ) : null}
+              <span className="text-xs font-medium text-slate-500">
+                {formatMoney(item.pricePerKg, currency)} / kg
+              </span>
+
+              {status ? (
+                <span
+                  className={`mt-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${status.tone}`}
+                >
+                  {status.text}
+                </span>
+              ) : item.seasonStartMonth && item.seasonEndMonth ? (
+                <span className="mt-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                  {formatSeasonRange(
+                    item.seasonStartMonth,
+                    item.seasonEndMonth,
+                  )}
+                </span>
+              ) : null}
             </button>
           );
         })}

@@ -21,6 +21,7 @@ export interface IngredientRecord {
   minStockKg: Decimal | null;
   seasonStartMonth: number | null;
   seasonEndMonth: number | null;
+  spiceKey: string | null;
   isActive: boolean;
   sortOrder: number;
 }
@@ -73,6 +74,7 @@ const ingredientColumns = {
   minStockKg: pickleIngredient.minStockKg,
   seasonStartMonth: pickleIngredient.seasonStartMonth,
   seasonEndMonth: pickleIngredient.seasonEndMonth,
+  spiceKey: pickleIngredient.spiceKey,
   isActive: pickleIngredient.isActive,
   sortOrder: pickleIngredient.sortOrder,
 } as const;
@@ -135,6 +137,7 @@ export class D1CustomPickleRepository implements CustomPickleRepository {
             : null,
         seasonStartMonth: input.seasonStartMonth ?? null,
         seasonEndMonth: input.seasonEndMonth ?? null,
+        spiceKey: input.spiceKey ?? null,
         sortOrder: input.sortOrder,
         isActive: input.isActive,
       })
@@ -161,6 +164,7 @@ export class D1CustomPickleRepository implements CustomPickleRepository {
             : null,
         seasonStartMonth: input.seasonStartMonth ?? null,
         seasonEndMonth: input.seasonEndMonth ?? null,
+        spiceKey: input.spiceKey ?? null,
         sortOrder: input.sortOrder,
         isActive: input.isActive,
       })

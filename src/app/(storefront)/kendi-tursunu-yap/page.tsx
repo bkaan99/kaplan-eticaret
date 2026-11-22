@@ -9,6 +9,7 @@ import { getRequestPricing } from "@/modules/b2b/pricing-identity";
 import { customPickleService } from "@/modules/custom-pickle/container";
 import { absoluteUrl } from "@/shared/site-url";
 import { Builder } from "./builder";
+import { BuilderTrustStrip } from "./builder-trust-strip";
 
 const PAGE_TITLE = "Kendi Turşunu Yap";
 const PAGE_DESCRIPTION =
@@ -130,28 +131,27 @@ export default function CustomPicklePage() {
         }}
       />
       <Breadcrumbs
-        items={[
-          { name: "Ana sayfa", href: "/" },
-          { name: PAGE_TITLE },
-        ]}
+        items={[{ name: "Ana sayfa", href: "/" }, { name: PAGE_TITLE }]}
       />
-      <header className="flex max-w-2xl flex-col gap-2">
-        <span className="text-xs font-bold tracking-[0.14em] text-brand-leaf uppercase">
+      <header className="flex flex-col gap-1">
+        <span className="text-[11px] font-bold tracking-[0.16em] text-brand-leaf uppercase">
           Senin tarifin
         </span>
-        <h1 className="font-display text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-primary sm:text-3xl">
           Kendi turşunu yap
         </h1>
-        <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
-          Bidon boyutunu seç, sevdiğin malzemeleri ekle, oranlarını ayarla;
-          salamura ve acılık senin kararın. Kaplan ustaları senin tarifinle
-          hazırlayıp kapına göndersin.
+        <p className="max-w-2xl text-sm text-slate-600">
+          Boyutu seç, malzemeleri ekle, oranları ayarla. Kaplan ustaları senin
+          tarifinle hazırlayıp kapına göndersin.
         </p>
       </header>
       <Suspense
         fallback={<p className="text-muted-foreground">Yükleniyor...</p>}
       >
         <BuilderContent />
+      </Suspense>
+      <Suspense fallback={null}>
+        <BuilderTrustStrip />
       </Suspense>
     </div>
   );

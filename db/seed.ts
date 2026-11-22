@@ -376,6 +376,8 @@ const PICKLE_INGREDIENTS: {
   minStockKg?: number;
   seasonStartMonth?: number;
   seasonEndMonth?: number;
+  /** Seçilince önerilen acılık seviyesi (PickleSpiceOption.key). */
+  spiceKey?: string;
 }[] = [
   {
     name: "Salatalık",
@@ -532,6 +534,7 @@ const PICKLE_INGREDIENTS: {
     pricePerKg: 3,
     stockKg: 35,
     minStockKg: 5,
+    spiceKey: "HOT",
   },
 ];
 
@@ -550,6 +553,7 @@ async function seedCustomPickle(db: Db): Promise<void> {
           item.minStockKg !== undefined ? dec(item.minStockKg.toFixed(2)) : null,
         seasonStartMonth: item.seasonStartMonth ?? null,
         seasonEndMonth: item.seasonEndMonth ?? null,
+        spiceKey: item.spiceKey ?? null,
         sortOrder: index,
       })
       .onConflictDoNothing({ target: pickleIngredient.slug });

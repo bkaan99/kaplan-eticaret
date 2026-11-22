@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
+  addShare,
   decreaseShare,
   equalShares,
   FULL_SHARE,
   increaseShare,
+  removeShare,
   totalShare,
   type PickleShares,
 } from "@/modules/custom-pickle/custom-pickle.shares";
@@ -16,7 +18,7 @@ import {
   type IngredientGroup,
   type IngredientView,
   type PickleBrineOption,
-  type PickleSpiceOption
+  type PickleSpiceOption,
 } from "@/modules/custom-pickle/custom-pickle.types";
 import type { BuilderSize } from "@/modules/custom-pickle/custom-pickle.service";
 import { trackEvent } from "@/shared/analytics/client";
@@ -24,6 +26,11 @@ import { refreshStorefrontShell } from "@/components/storefront/shell-events";
 import { addCustomPickleAction } from "./actions";
 import { flavorProfile, mixNote } from "./flavor-profile";
 import type { PicklePreset } from "./pickle-presets";
+import {
+  requiredSpice,
+  resolveSpice,
+  type AutoSpice,
+} from "@/modules/custom-pickle/custom-pickle.spice";
 
 export interface BuilderMessage {
   text: string;
@@ -66,10 +73,12 @@ export function useCustomPickleBuilder(
   );
   const [selected, setSelected] = useState<string[]>([]);
   const [shares, setShares] = useState<PickleShares>({});
-  const [brine, setBrine] = useState<string>(() => brines[0]?.key ?? "VINEGAR");
-  const [spice, setSpice] = useState<string>(
+  const [brine, setBrine] = useState<string>(() => brines[0]?.key ?? "WHITE");
+  const [spice, setSpiceState] = useState<string>(
     () => spices[1]?.key ?? spices[0]?.key ?? "MEDIUM",
   );
+  // Acılı malzeme seçilince sistemin yaptığı yükseltme (geri alınabilsin diye).
+  const [autoSpice, setAutoSpice] = useState<AutoSpice | null>(null);
   const [note, setNote] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [pending, startTransition] = useTransition();
@@ -129,6 +138,7 @@ export function useCustomPickleBuilder(
     vegetables,
     shares,
     activeSpiceOption?.peppers ?? 0,
+    brine === "RED" ? 1 : 0,
   );
   const mixText = mixNote(vegetables, shares);
 
@@ -139,6 +149,39 @@ export function useCustomPickleBuilder(
       nextShares ??
         equalShares(ids.filter((id) => byId.get(id)?.group === "VEGETABLE")),
     );
+    syncSpice(ids);
+  }
+
+  /** Acılı malzeme seçildiyse acılığı en az o seviyeye çeker; çıkarılınca geri alır. */
+  function syncSpice(ids: string[]) {
+    const picked = ids
+      .map((id) => byId.get(id))
+      .filter((item): item is IngredientView => item !== undefined);
+    const result = resolveSpice({
+      current: spice,
+      auto: autoSpice,
+      required: requiredSpice(picked, spices),
+      spices,
+    });
+    setSpiceState(result.spice);
+    setAutoSpice(result.auto);
+    if (result.raised) {
+      const raised = result.raised;
+      const names = picked
+        .filter((item) => item.spiceKey === raised.key)
+        .map((item) => item.name)
+        .join(", ");
+      setMessage({
+        text: `${names || "Seçtiğiniz malzeme"} acılı olduğu için acılık "${raised.label}" olarak ayarlandı. Dilerseniz değiştirebilirsiniz.`,
+        error: false,
+      });
+    }
+  }
+
+  /** Müşterinin elle seçimi: otomatik ayarlama kaydı bırakılır. */
+  function setSpice(key: string) {
+    setSpiceState(key);
+    setAutoSpice(null);
   }
 
   function selectSize(nextVariantId: string) {
@@ -158,10 +201,19 @@ export function useCustomPickleBuilder(
 
   function toggle(id: string) {
     setMessage(null);
+    const isVegetable = byId.get(id)?.group === "VEGETABLE";
     if (selected.includes(id)) {
-      applySelection(selected.filter((item) => item !== id));
+      // Müşterinin elle ayarladığı oranlar korunur; açılan pay kalanlara dağılır.
+      applySelection(
+        selected.filter((item) => item !== id),
+        isVegetable ? removeShare(shares, id) : shares,
+      );
     } else if (!full) {
-      applySelection([...selected, id]);
+      // Yeni sebze 2-3 adımla (3 kg'da 300-450 g) girer; mevcut oranlar korunur.
+      applySelection(
+        [...selected, id],
+        isVegetable ? addShare(shares, id) : shares,
+      );
     }
   }
 
@@ -192,10 +244,18 @@ export function useCustomPickleBuilder(
   }
 
   function applyPreset(preset: PicklePreset) {
+    // Mevsim dışı veya tükenmiş malzeme eklenmez (sepete eklerken reddedilirdi).
     const found = preset.ingredients.flatMap((entry) => {
       const item = ingredients.find((other) => other.slug === entry.slug);
-      return item ? [{ item, share: entry.share }] : [];
+      return item?.isAvailable ? [{ item, share: entry.share }] : [];
     });
+    if (!found.some((entry) => entry.item.group === "VEGETABLE")) {
+      setMessage({
+        text: `${preset.name} için gereken sebzeler şu an satışta değil. Malzemeleri kendiniz seçebilirsiniz.`,
+        error: false,
+      });
+      return;
+    }
     const fitting = fitSize(found.length);
     const limit = maxIngredientsForSize(fitting?.weightGram ?? null);
     const picked = found.slice(0, limit);

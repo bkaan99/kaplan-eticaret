@@ -10,7 +10,7 @@ export function SpiceStep({ builder }: { builder: CustomPickleBuilderState }) {
 
   return (
     <Step index={5} title="Acılık">
-      <div className="flex flex-col gap-2 rounded-2xl border border-border bg-white p-1.5 sm:flex-row sm:rounded-full sm:gap-0">
+      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-[#f4f5f0] p-1.5 sm:flex-row sm:rounded-full sm:gap-0">
         {spices.map((item) => {
           const active = spice === item.key;
           return (

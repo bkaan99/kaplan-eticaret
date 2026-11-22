@@ -8,6 +8,7 @@ import {
   INGREDIENT_GROUP_LABELS,
   MONTH_NAMES_TR,
   type IngredientGroup,
+  type PickleSpiceOption,
 } from "@/modules/custom-pickle/custom-pickle.types";
 import { formatMoney } from "@/shared/money";
 import { type FormState } from "./ingredient-form";
@@ -17,6 +18,8 @@ export interface IngredientModalProps {
   onClose: () => void;
   editingId: string | null;
   form: FormState;
+  /** Panelde tanımlı acılık seçenekleri (malzemeye atanabilir). */
+  spices: PickleSpiceOption[];
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
   priceNumber: number;
   uploading: boolean;
@@ -31,6 +34,7 @@ export function IngredientModal({
   onClose,
   editingId,
   form,
+  spices,
   update,
   priceNumber,
   uploading,
@@ -256,6 +260,30 @@ export function IngredientModal({
               </label>
             </div>
           </div>
+
+          {/* Acılık: bu malzeme seçilince bidonun acılık seviyesi otomatik ayarlanır */}
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
+            🌶️ Acılık seviyesi (İsteğe bağlı)
+            <select
+              className={inputClass}
+              value={form.spiceKey}
+              onChange={(event) => update("spiceKey", event.target.value)}
+            >
+              <option value="">(Acı değil - etkisiz)</option>
+              {spices
+                .filter((option) => option.isActive)
+                .map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+            </select>
+            <span className="text-[11px] font-normal text-slate-500">
+              Müşteri bu malzemeyi seçince acılık en az bu seviyeye ayarlanır.
+              Bidonda birden fazla acı malzeme varsa en yüksek seviye geçerli
+              olur.
+            </span>
+          </label>
 
           <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
             Açıklama (İsteğe bağlı)

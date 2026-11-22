@@ -38,6 +38,7 @@ export function toView(
       : null,
     seasonStartMonth: record.seasonStartMonth,
     seasonEndMonth: record.seasonEndMonth,
+    spiceKey: record.spiceKey,
     inStock,
     inSeason,
     isAvailable,

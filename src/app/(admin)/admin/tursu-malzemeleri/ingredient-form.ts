@@ -13,6 +13,8 @@ export interface FormState {
   minStockKg: string;
   seasonStartMonth: string;
   seasonEndMonth: string;
+  /** Seçilince önerilen acılık seviyesi (boş = etkisiz). */
+  spiceKey: string;
   sortOrder: string;
   description: string;
   imageUrl: string;
@@ -27,6 +29,7 @@ export const EMPTY: FormState = {
   minStockKg: "",
   seasonStartMonth: "",
   seasonEndMonth: "",
+  spiceKey: "",
   sortOrder: "0",
   description: "",
   imageUrl: "",
@@ -44,6 +47,7 @@ export function toForm(item: IngredientView): FormState {
       ? String(item.seasonStartMonth)
       : "",
     seasonEndMonth: item.seasonEndMonth ? String(item.seasonEndMonth) : "",
+    spiceKey: item.spiceKey ?? "",
     sortOrder: String(item.sortOrder),
     description: item.description ?? "",
     imageUrl: item.imageUrl ?? "",
@@ -62,6 +66,7 @@ export function toPayload(form: FormState) {
       form.seasonStartMonth !== "" ? Number(form.seasonStartMonth) : null,
     seasonEndMonth:
       form.seasonEndMonth !== "" ? Number(form.seasonEndMonth) : null,
+    spiceKey: form.spiceKey === "" ? null : form.spiceKey,
     sortOrder: form.sortOrder || "0",
     description: form.description,
     imageUrl: form.imageUrl,

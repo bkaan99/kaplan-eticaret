@@ -94,9 +94,12 @@ export const BODY =
   "M96 66 H224 Q230 66 234 70 L272 108 Q276 112 276 118 V360 Q276 366 272 371 L254 393 Q250 398 244 398 H76 Q70 398 66 393 L48 371 Q44 366 44 360 V118 Q44 112 48 108 L86 70 Q90 66 96 66 Z";
 
 /** Etiket üstündeki marka satırı */
-export const BRAND_LINE = "TARİHİ KEMERBURGAZ TURŞUCUSU · 1948";
+export const BRAND_LINE = "KAPLAN GURME TURŞU";
 
 export const BRINE_COLOR: Record<BrineOption, string> = {
+  WHITE: "#e6edc2",
+  RED: "#c8456f",
+  // Eski kayıtlar için
   VINEGAR: "#d6e29a",
   NATURAL: "#e7d9a0",
 };

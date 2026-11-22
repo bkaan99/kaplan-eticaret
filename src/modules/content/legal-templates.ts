@@ -62,7 +62,7 @@ Turşularınızı doğrudan güneş ışığı almayan, serin ve nemsiz bir orta
 Tüm siparişlerimiz nakliye darbelerine karşı özel hava kanallı koruyucu ambalajlarla tek tek sarılır ve güçlendirilmiş kolilerle gönderilir. Buna rağmen nadiren de olsa kargo kaynaklı kırık veya sızıntı yaşanırsa, hasarlı ürünün fotoğrafını WhatsApp veya e-posta ile iletmeniz yeterlidir. **Aynı gün koşulsuz olarak ücretsiz yeni ürün kargolanır** veya ücretiniz iade edilir.
 
 ## Kargo ücreti ne kadar ve ne zaman teslim edilir?
-500 TL ve üzeri tüm siparişlerinizde kargo **tamamen ücretsizdir**. Siparişleriniz 24-48 saat içinde kargoya verilir ve kargo takip numarası SMS ile iletilir. Teslimat genellikle kargoya verildikten sonra 1-2 iş günü içinde gerçekleşir.
+{{ucretsiz_kargo_esigi}} ve üzeri tüm siparişlerinizde kargo **tamamen ücretsizdir**. Siparişleriniz 24-48 saat içinde kargoya verilir ve kargo takip numarası SMS ile iletilir. Teslimat genellikle kargoya verildikten sonra 1-2 iş günü içinde gerçekleşir.
 
 ## Kendi Turşunu Yap nasıl çalışır?
 Sitemizdeki **Kendi Turşunu Yap** sayfasına girerek dilediğiniz bidon boyutunu (3 kg, 5 kg veya 10 kg) seçebilir; salatalık, lahana, acı biber, sarımsak gibi malzemelerin oranlarını belirleyerek tamamen size özel hazırlanan turşunuzu sipariş verebilirsiniz.`,
@@ -165,7 +165,7 @@ Sitemizde tüm veri iletişimi uluslararası **256-bit SSL güvenlik sertifikas�
 
 - Satıcı, sipariş onayından itibaren siparişi en geç **1-3 iş günü** içerisinde anlaşmalı kargo firmasına teslim eder.
 - Tüm cam kavanozlar, nakliye esnasında kırılma ve sızdırmaya karşı koruma sağlayan özel darbe emici hava yastıklı ambalajlarla paketlenir.
-- **500 TL ve üzeri** siparişlerde kargo ücretsizdir.
+- **{{ucretsiz_kargo_esigi}} ve üzeri** siparişlerde kargo ücretsizdir.
 
 # Madde 5 - Cayma Hakkı ve İstisnalar
 
@@ -196,7 +196,7 @@ Sipariş edilen geleneksel turşuların adı, bidon/kavanoz boyutu, adedi, KDV d
 
 - Ödemeleriniz 256-bit SSL korumalı lisanslı PayTR altyapısı üzerinden 3D Secure güvencesiyle gerçekleştirilir.
 - Siparişleriniz anlaşmalı kargo güvencesiyle hava yastıklı özel kırılmaz ambalajlarda 24-48 saat içerisinde kargoya teslim edilir. Kargo takip bağlantısı e-posta ve SMS ile iletilir.
-- 500 TL ve üzeri siparişlerde kargo ücreti alınmaz.
+- {{ucretsiz_kargo_esigi}} ve üzeri siparişlerde kargo ücreti alınmaz.
 
 # 4. Cayma Hakkı ve İade
 
@@ -230,8 +230,8 @@ Cam kavanozlarımızın ve turşu bidonlarımızın güvenliği tamamen bizim so
     category: "yasal",
     content: `# 1. Kargo Ücretleri ve Ücretsiz Kargo Eşiği
 
-- **500 TL ve üzeri** tüm siparişlerinizde Türkiye'nin her yerine **Kargo Ücretsizdir**.
-- 500 TL altındaki siparişlerde sabit ve ekonomik standart kargo ücreti uygulanır; ödeme adımında sepetinize net olarak yansıtılır.
+- **{{ucretsiz_kargo_esigi}} ve üzeri** tüm siparişlerinizde Türkiye'nin her yerine **Kargo Ücretsizdir**.
+- {{ucretsiz_kargo_esigi}} altındaki siparişlerde sabit ve ekonomik standart kargo ücreti uygulanır; ödeme adımında sepetinize net olarak yansıtılır.
 
 # 2. Kırılmaz Özel Ambalaj Güvencesi
 

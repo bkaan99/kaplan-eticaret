@@ -30,9 +30,11 @@ export function BuilderInsights({
   } = builder;
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4">
+    <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_rgba(11,35,24,0.04),0_12px_28px_-16px_rgba(11,35,24,0.16)]">
       <div>
-        <h2 className="text-sm font-bold text-primary">Lezzet profili</h2>
+        <h2 className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+          Lezzet profili
+        </h2>
         <dl className="mt-2 flex flex-col gap-2">
           {(
             profile ??
@@ -49,10 +51,10 @@ export function BuilderInsights({
               <dt className="font-medium text-slate-600">{meter.label}</dt>
               <div
                 aria-hidden="true"
-                className="h-1.5 overflow-hidden rounded-full bg-slate-100"
+                className="h-2 overflow-hidden rounded-full bg-slate-100"
               >
                 <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-300"
+                  className="h-full rounded-full bg-gradient-to-r from-brand-leaf to-primary transition-[width] duration-300"
                   style={{ width: `${Math.round(meter.value * 100)}%` }}
                 />
               </div>
@@ -62,13 +64,13 @@ export function BuilderInsights({
             </div>
           ))}
         </dl>
-        <p className="mt-3 rounded-xl bg-[#f4f5f0] px-3 py-2 text-xs leading-relaxed text-slate-700">
+        <p className="mt-3 rounded-2xl bg-[#f4f5f0] px-3 py-2.5 text-xs leading-relaxed text-slate-700">
           {mixNote}
         </p>
       </div>
 
       <div className="border-t border-slate-100 pt-3">
-        <h2 className="text-sm font-bold text-primary">
+        <h2 className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
           Bidonunuz · {size?.label ?? "Bidon"}
         </h2>
         <dl className="mt-2 flex flex-col gap-1.5 text-xs">
@@ -97,7 +99,7 @@ export function BuilderInsights({
               {builder.activeSpice?.label ?? SPICE_OPTIONS[spice] ?? spice}
             </dd>
           </div>
-          <div className="mt-1 flex justify-between gap-3 border-t border-slate-100 pt-2 text-sm font-bold text-primary">
+          <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-slate-100 pt-2.5 font-display text-lg font-bold text-primary">
             <dt>Toplam</dt>
             <dd>{formatMoney(unit, currency)}</dd>
           </div>

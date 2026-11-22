@@ -1,9 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { SHARE_STEP } from "@/modules/custom-pickle/custom-pickle.shares";
+import {
+  entryRangeGrams,
+  FULL_SHARE,
+  SHARE_STEP,
+  shareToGrams,
+  stepGrams,
+} from "@/modules/custom-pickle/custom-pickle.shares";
 import { type CustomPickleBuilderState } from "./use-custom-pickle-builder";
 import { Step } from "./builder-step-frame";
+
+/** 450 → "450 g", 2550 → "2.550 g" (adımlar gram olduğu için her zaman gram). */
+export function formatGrams(grams: number) {
+  return `${grams.toLocaleString("tr-TR")} g`;
+}
 
 export function RatioStep({ builder }: { builder: CustomPickleBuilderState }) {
   const {
@@ -16,17 +27,28 @@ export function RatioStep({ builder }: { builder: CustomPickleBuilderState }) {
     toggle,
     size,
   } = builder;
-  const kg = size?.weightGram ? size.weightGram / 1000 : 1;
+  const weight = size?.weightGram ?? null;
+  const step = stepGrams(weight);
+  const entry = entryRangeGrams(weight);
+  const totalGrams = shareToGrams(FULL_SHARE, weight);
+  const filledGrams = shareToGrams(filled, weight);
+  const remainingGrams = totalGrams - filledGrams;
 
   return (
-    <Step id="adim-oran" index={3} title="Oranları ayarlayın">
+    <Step
+      id="adim-oran"
+      index={3}
+      title="Gramajı ayarlayın"
+      done={vegetables.length > 0 && isFull}
+    >
       <p className="-mt-2 text-sm text-slate-600">
-        Her adım %{SHARE_STEP}. Bidon doluyken birini artırınca en büyük paydan
-        düşülür.
+        Her dokunuş {formatGrams(step)} ekler veya çıkarır. Yeni çeşit{" "}
+        {entry.min.toLocaleString("tr-TR")}–{formatGrams(entry.max)} ile girer.
+        Bidon doluyken artırdığınız çeşit en büyük paydan alır.
       </p>
       {vegetables.length === 0 ? (
         <p className="rounded-xl bg-[#f4f5f0] px-4 py-5 text-center text-sm text-slate-500">
-          Sebze seçtiğinizde oranlar burada görünür.
+          Sebze seçtiğinizde gramajlar burada görünür.
         </p>
       ) : (
         <>
@@ -36,7 +58,7 @@ export function RatioStep({ builder }: { builder: CustomPickleBuilderState }) {
               return (
                 <li
                   key={item.id}
-                  className="flex flex-col gap-3 rounded-xl border border-slate-200 p-2 sm:flex-row sm:items-center sm:gap-3"
+                  className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-[#fbfbf8] p-2.5 sm:flex-row sm:items-center sm:gap-3"
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     <Image
@@ -51,7 +73,7 @@ export function RatioStep({ builder }: { builder: CustomPickleBuilderState }) {
                         {item.name}
                       </span>
                       <span className="text-xs text-slate-500">
-                        {formatGrams((kg * share) / 100)}
+                        Bidonun %{share}&apos;i
                       </span>
                     </span>
                   </div>
@@ -59,19 +81,22 @@ export function RatioStep({ builder }: { builder: CustomPickleBuilderState }) {
                     <span className="flex items-center gap-1">
                       <button
                         type="button"
-                        aria-label={`${item.name} oranını azalt`}
+                        aria-label={`${item.name} gramajını ${formatGrams(step)} azalt`}
                         disabled={share <= SHARE_STEP}
                         onClick={() => changeShare(item.id, -1)}
                         className="inline-flex h-11 w-11 min-h-11 items-center justify-center rounded-full border border-slate-200 text-primary disabled:opacity-30"
                       >
                         −
                       </button>
-                      <span className="w-10 text-center text-sm font-bold text-primary tabular-nums">
-                        %{share}
+                      <span
+                        aria-live="polite"
+                        className="w-20 text-center text-sm font-bold text-primary tabular-nums"
+                      >
+                        {formatGrams(shareToGrams(share, weight))}
                       </span>
                       <button
                         type="button"
-                        aria-label={`${item.name} oranını artır`}
+                        aria-label={`${item.name} gramajını ${formatGrams(step)} artır`}
                         onClick={() => changeShare(item.id, 1)}
                         className="inline-flex h-11 w-11 min-h-11 items-center justify-center rounded-full border border-slate-200 text-primary"
                       >
@@ -91,11 +116,13 @@ export function RatioStep({ builder }: { builder: CustomPickleBuilderState }) {
               );
             })}
           </ul>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <span
               className={`text-sm font-bold ${isFull ? "text-primary" : "text-brand-pepper"}`}
             >
-              {isFull ? "Bidon dolu" : `Bidon %${filled} dolu`}
+              {isFull
+                ? `Bidon dolu · ${formatGrams(totalGrams)}`
+                : `${formatGrams(filledGrams)} / ${formatGrams(totalGrams)} · kalan ${formatGrams(remainingGrams)}`}
             </span>
             <button
               type="button"
@@ -109,10 +136,4 @@ export function RatioStep({ builder }: { builder: CustomPickleBuilderState }) {
       )}
     </Step>
   );
-}
-
-export function formatGrams(kg: number) {
-  return kg >= 1
-    ? `${kg.toLocaleString("tr-TR")} kg`
-    : `${Math.round(kg * 1000)} g`;
 }

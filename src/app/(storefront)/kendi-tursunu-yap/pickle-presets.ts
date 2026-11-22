@@ -22,7 +22,7 @@ export const PICKLE_PRESETS: PicklePreset[] = [
       { slug: "havuc", share: 20 },
       { slug: "sivri-biber", share: 20 },
     ],
-    brine: "VINEGAR",
+    brine: "WHITE",
     spice: "MEDIUM",
   },
   {
@@ -36,7 +36,7 @@ export const PICKLE_PRESETS: PicklePreset[] = [
       { slug: "karnabahar", share: 20 },
       { slug: "dereotu" },
     ],
-    brine: "VINEGAR",
+    brine: "WHITE",
     spice: "MILD",
   },
   {
@@ -51,7 +51,7 @@ export const PICKLE_PRESETS: PicklePreset[] = [
       { slug: "kuru-aci-biber" },
       { slug: "sarimsak" },
     ],
-    brine: "VINEGAR",
+    brine: "WHITE",
     spice: "HOT",
   },
   {
@@ -65,7 +65,7 @@ export const PICKLE_PRESETS: PicklePreset[] = [
       { slug: "pancar", share: 30 },
       { slug: "sarimsak" },
     ],
-    brine: "NATURAL",
+    brine: "RED",
     spice: "MILD",
   },
 ];

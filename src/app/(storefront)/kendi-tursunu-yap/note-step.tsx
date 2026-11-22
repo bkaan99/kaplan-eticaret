@@ -18,7 +18,8 @@ export function NoteStep({ builder }: { builder: CustomPickleBuilderState }) {
         maxLength={MAX_NOTE_LENGTH}
         onChange={(event) => setNote(event.target.value)}
         rows={3}
-        className="w-full rounded-2xl border border-border bg-white p-4 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+        placeholder="Örn. az tuzlu olsun, sarımsak bol olsun…"
+        className="w-full rounded-2xl border border-slate-200 bg-[#f8f9f5] p-4 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
       />
       <span className="-mt-2 self-end text-xs text-muted-foreground">
         {note.length}/{MAX_NOTE_LENGTH}

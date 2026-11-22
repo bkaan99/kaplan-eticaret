@@ -149,6 +149,7 @@ export function IngredientManager({
         onClose={handleCloseModal}
         editingId={editingId}
         form={form}
+        spices={options.spices}
         update={update}
         priceNumber={priceNumber}
         uploading={uploading}
@@ -358,6 +359,14 @@ export function IngredientManager({
                                   Tükendi
                                 </span>
                               ) : null}
+                              {item.spiceKey ? (
+                                <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 font-bold text-rose-700">
+                                  🌶️{" "}
+                                  {options.spices.find(
+                                    (option) => option.key === item.spiceKey,
+                                  )?.label ?? item.spiceKey}
+                                </span>
+                              ) : null}
                               {item.seasonStartMonth && item.seasonEndMonth ? (
                                 <span>
                                   {formatSeasonRange(
@@ -440,8 +449,19 @@ export function IngredientManager({
                                     />
                                   ) : null}
                                 </span>
-                                <span className="font-semibold text-slate-900">
-                                  {item.name}
+                                <span className="flex flex-col gap-0.5">
+                                  <span className="font-semibold text-slate-900">
+                                    {item.name}
+                                  </span>
+                                  {item.spiceKey ? (
+                                    <span className="inline-flex w-fit rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                      🌶️{" "}
+                                      {options.spices.find(
+                                        (option) =>
+                                          option.key === item.spiceKey,
+                                      )?.label ?? item.spiceKey}
+                                    </span>
+                                  ) : null}
                                 </span>
                               </span>
                             </td>
