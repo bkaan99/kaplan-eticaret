@@ -10,6 +10,38 @@ import {
   type IngredientView,
 } from "./custom-pickle.types";
 
+const KNOWN_WEBP_INGREDIENTS = new Set([
+  "salatalik",
+  "kornison",
+  "beyaz-lahana",
+  "kirmizi-lahana",
+  "havuc",
+  "sivri-biber",
+  "kirmizi-biber",
+  "karnabahar",
+  "pancar",
+  "yesil-domates",
+  "ayva",
+  "sarimsak",
+  "kuru-aci-biber",
+  "jalapeno",
+  "fasulye",
+  "bamya",
+  "kelek",
+  "acur",
+  "kiraz-biberi",
+]);
+
+function resolveIngredientImageUrl(slug: string, rawUrl: string | null): string | null {
+  if (
+    KNOWN_WEBP_INGREDIENTS.has(slug) &&
+    (!rawUrl || rawUrl.endsWith(".svg") || rawUrl.includes("/images/malzemeler/"))
+  ) {
+    return `/images/malzemeler/${slug}.webp`;
+  }
+  return rawUrl;
+}
+
 export function toView(
   record: IngredientRecord,
   now = new Date(),
@@ -30,7 +62,7 @@ export function toView(
     slug: record.slug,
     group: record.group,
     description: record.description,
-    imageUrl: record.imageUrl,
+    imageUrl: resolveIngredientImageUrl(record.slug, record.imageUrl),
     pricePerKg: toDecimal(record.pricePerKg).toFixed(2),
     stockKg: record.stockKg ? toDecimal(record.stockKg).toFixed(2) : null,
     minStockKg: record.minStockKg

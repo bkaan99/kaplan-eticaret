@@ -13,6 +13,7 @@ import { type CustomPickleBuilderState } from "./use-custom-pickle-builder";
 import { launchFlyToBidon } from "./fly-to-bidon";
 import { tasteTags } from "./flavor-profile";
 import { PICKLE_PRESETS } from "./pickle-presets";
+import { getPickleSprite } from "./pickle-sprites";
 import { Step } from "./builder-step-frame";
 
 /** 12 aylık hasat takvimi: mevsimindeki aylar yeşil, bu ay halkalı. */
@@ -163,8 +164,9 @@ export function IngredientsStep({
                       "[data-fly-thumb]",
                     ) ?? event.currentTarget;
                   const rect = thumb.getBoundingClientRect();
+                  const sprite = getPickleSprite(item.slug || item.id, 0);
                   launchFlyToBidon({
-                    imageUrl: item.imageUrl ?? "/placeholder.svg",
+                    imageUrl: sprite.url,
                     from: {
                       left: rect.left,
                       top: rect.top,
@@ -216,16 +218,18 @@ export function IngredientsStep({
 
               <span
                 data-fly-thumb
-                className={`relative flex h-24 w-24 items-center justify-center rounded-full transition-colors ${
-                  active ? "bg-white" : "bg-[#f4f5f0]"
+                className={`relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl p-1 transition-all duration-200 ${
+                  active
+                    ? "bg-white shadow-[0_4px_16px_-4px_rgba(21,71,52,0.2)] ring-2 ring-primary"
+                    : "bg-[#f4f5f0] group-hover:bg-white group-hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)]"
                 }`}
               >
                 <Image
                   src={item.imageUrl ?? "/placeholder.svg"}
-                  alt=""
-                  width={72}
-                  height={72}
-                  className="h-[4.5rem] w-[4.5rem] object-contain transition-transform duration-200 group-hover:scale-110"
+                  alt={item.name}
+                  width={96}
+                  height={96}
+                  className="h-full w-full rounded-xl object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </span>
 

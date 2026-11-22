@@ -16,11 +16,13 @@ import {
   type SplashBurst,
   type SplashDrop,
 } from "./bidon-constants";
+import { getPickleSprite } from "./pickle-sprites";
 
 export interface BidonItem {
   id: string;
   name: string;
   imageUrl: string | null;
+  slug?: string;
   /** Sebze payı (%); verilirse parça sayısı paya göre belirlenir */
   share?: number;
 }
@@ -198,9 +200,11 @@ export function Bidon({
       const slotIndex = startSlot + pieceIndex;
       if (slotIndex >= SLOTS.length) return null;
       const slot = SLOTS[slotIndex]!;
+      const sprite = getPickleSprite(item.slug || item.id, pieceIndex);
       return {
         key: `${item.id}-${pieceIndex}`,
         item,
+        sprite,
         slot: {
           ...slot,
           x: slot.x + ((pieceIndex * 5) % 7) - 3,
@@ -314,8 +318,10 @@ export function Bidon({
         {/* Malzemeler — ağızdan kendi katmanına düşüp üst üste yığılır */}
         <AnimatePresence>
           {jarPieces.map((piece, index) => {
-            const { slot, item, size, dropFrom } = piece;
-            const half = size / 2;
+            const { slot, sprite, size, dropFrom } = piece;
+            const scale = size / 40;
+            const w = sprite.width * scale;
+            const h = sprite.height * scale;
             const stagger = (index % piecesPerKind) * 0.05;
             return (
               <motion.g
@@ -342,7 +348,7 @@ export function Bidon({
                 style={{ transformOrigin: `${slot.x}px ${slot.y}px` }}
               >
                 <motion.g
-                  animate={{ y: [0, -3, 0] }}
+                  animate={{ y: [0, -2.5, 0] }}
                   transition={{
                     duration: 3 + (index % 4) * 0.35,
                     repeat: Infinity,
@@ -351,17 +357,71 @@ export function Bidon({
                   }}
                 >
                   <image
-                    href={item.imageUrl ?? "/placeholder.svg"}
-                    x={slot.x - half}
-                    y={slot.y - half}
-                    width={size}
-                    height={size}
+                    href={sprite.url}
+                    x={slot.x - w / 2}
+                    y={slot.y - h / 2}
+                    width={w}
+                    height={h}
+                    preserveAspectRatio="xMidYMid meet"
                   />
                 </motion.g>
               </motion.g>
             );
           })}
         </AnimatePresence>
+
+        {/* Ön salamura tülü: parçalar gerçek turşulardaki gibi sıvının derinliğinde görünür */}
+        <motion.g
+          initial={false}
+          animate={{ y: liquidTop }}
+          transition={{ type: "spring", stiffness: 60, damping: 14 }}
+        >
+          <path
+            d="M-160 0 Q -120 -12 -80 0 T 0 0 T 80 0 T 160 0 T 240 0 T 320 0 T 400 0 T 480 0 V 420 H -160 Z"
+            fill={liquidFill}
+            fillOpacity={0.25}
+          />
+          {/* Su yüzeyi parlama çizgisi (meniscus) */}
+          <rect
+            x="0"
+            y="-2"
+            width="320"
+            height="8"
+            fill="#ffffff"
+            fillOpacity={waveBoost > 0 ? 0.6 : 0.35}
+          />
+        </motion.g>
+
+        {/* Acılı bidonda yüzen pul biber parçaları (Tarihi Kemerburgaz Turşucusu usulü) */}
+        {spice !== "MILD" ? (
+          <motion.g
+            initial={false}
+            animate={{ opacity: spice === "HOT" ? 0.8 : 0.5 }}
+            transition={{ duration: 0.5 }}
+          >
+            {[
+              { x: 88, y: 320, s: 3.5, r: 18 },
+              { x: 124, y: 270, s: 2.8, r: -22 },
+              { x: 168, y: 340, s: 3.2, r: 35 },
+              { x: 208, y: 290, s: 2.6, r: -15 },
+              { x: 104, y: 230, s: 3.0, r: 25 },
+              { x: 232, y: 250, s: 3.4, r: -30 },
+              { x: 148, y: 360, s: 2.5, r: 8 },
+              { x: 192, y: 215, s: 3.1, r: -18 },
+            ].map((flake, i) => (
+              <rect
+                key={`flake-${i}`}
+                x={flake.x}
+                y={flake.y}
+                width={flake.s}
+                height={flake.s * 0.7}
+                rx={0.8}
+                fill={i % 2 === 0 ? "#b3261e" : "#d9442b"}
+                transform={`rotate(${flake.r} ${flake.x} ${flake.y})`}
+              />
+            ))}
+          </motion.g>
+        ) : null}
 
         {/* Su sıçraması */}
         <AnimatePresence>

@@ -134,7 +134,7 @@ export function FlyToBidonOverlay() {
             key={shot.key}
             src={shot.imageUrl}
             alt=""
-            className="absolute top-0 left-0 rounded-xl object-contain drop-shadow-lg"
+            className="absolute top-0 left-0 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.25)]"
             style={{
               width: shot.size,
               height: shot.size,

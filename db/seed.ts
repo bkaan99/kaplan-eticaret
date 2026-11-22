@@ -546,7 +546,7 @@ async function seedCustomPickle(db: Db): Promise<void> {
         name: item.name,
         slug: item.slug,
         group: item.group,
-        imageUrl: `/images/malzemeler/${item.slug}.svg`,
+        imageUrl: `/images/malzemeler/${item.slug}.webp`,
         pricePerKg: dec(item.pricePerKg.toFixed(2)),
         stockKg: item.stockKg !== undefined ? dec(item.stockKg.toFixed(2)) : null,
         minStockKg:

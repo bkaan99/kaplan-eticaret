@@ -32,7 +32,11 @@ export function BuilderScene({
       <div className="flex items-center gap-4 lg:flex-col lg:gap-3">
         <div className="w-28 shrink-0 sm:w-36 lg:w-full lg:max-w-[15rem]">
           <Bidon
-            items={chosen.map((item) => ({ ...item, share: shares[item.id] }))}
+            items={chosen.map((item) => ({
+              ...item,
+              share: shares[item.id],
+              slug: item.slug,
+            }))}
             brine={brine}
             spice={spice}
             brineColor={builder.activeBrine?.color}
