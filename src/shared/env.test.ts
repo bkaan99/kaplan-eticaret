@@ -94,4 +94,33 @@ describe("parseEnv", () => {
   it("captcha kapalıyken Turnstile anahtarı istemez", () => {
     expect(() => parseEnv(validSource, captchaOff)).not.toThrow();
   });
+
+  describe("derleme aşaması (next build)", () => {
+    const build = { NEXT_PHASE: "phase-production-build" };
+
+    it("eksik zorunlu değişkenlere yer tutucu verir", () => {
+      const env = parseEnv(build, captchaOff);
+      expect(env.APP_URL).toBe("http://localhost:3000");
+      expect(env.SMTP_PORT).toBe(1025);
+    });
+
+    it("verilen gerçek değerleri yer tutucuyla ezmez", () => {
+      const env = parseEnv(
+        { ...build, APP_URL: "https://kaplan.example.com" },
+        captchaOff,
+      );
+      expect(env.APP_URL).toBe("https://kaplan.example.com");
+    });
+
+    it("captcha açıkken Turnstile anahtarı yokken de derlenir", () => {
+      expect(() => parseEnv(build, { captcha: true })).not.toThrow();
+    });
+
+    it("derleme dışında yer tutucu verilmez: eksik değişken hata fırlatır", () => {
+      expect(() => parseEnv({}, captchaOff)).toThrow(EnvValidationError);
+      expect(() =>
+        parseEnv({ NEXT_PHASE: "phase-production-server" }, captchaOff),
+      ).toThrow(EnvValidationError);
+    });
+  });
 });

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono, Montserrat } from "next/font/google";
+import { connection } from "next/server";
 import { siteConfig } from "@/config/site.config";
 import { themeToCss } from "@/config/theme";
 import { getSiteUrl } from "@/shared/site-url";
@@ -34,65 +35,73 @@ const fraunces = Fraunces({
   axes: ["SOFT", "opsz"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(getSiteUrl()),
-  title: { default: siteConfig.name, template: `%s | ${siteConfig.name}` },
-  description: siteConfig.description,
-  // Navbar rozetli logosu (kaplan-badge-logo) — app/icon.png + public/favicon.ico
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.png", type: "image/png", sizes: "192x192" },
-    ],
-    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
-    shortcut: "/favicon.ico",
-  },
-  keywords: [
-    "turşu",
-    "çubuk turşusu",
-    "ev turşusu",
-    "doğal fermente",
-    "şalgam suyu",
-    "probiyotik turşu",
-    "kaplan turşu",
-    "ankara turşu",
-  ],
-  alternates: {
-    canonical: "./",
-  },
-  openGraph: {
-    siteName: siteConfig.name,
-    locale: "tr_TR",
-    type: "website",
-    title: siteConfig.name,
+/**
+ * Metadata istek anında üretilir: `getSiteUrl()` ortam değişkenlerini okur ve
+ * derleme ortamında (ör. Cloudflare Builds) bunlar tanımlı olmayabilir.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  // İstek anına bağlar: 404 gibi sayfalar derlemede yer tutucu adresle önceden üretilmesin.
+  await connection();
+  return {
+    metadataBase: new URL(getSiteUrl()),
+    title: { default: siteConfig.name, template: `%s | ${siteConfig.name}` },
     description: siteConfig.description,
-    images: [
-      {
-        url: "/images/hero/hero-tursu-kavanozlar.jpg",
-        width: 1200,
-        height: 630,
-        alt: `${siteConfig.name} - Doğal Fermente Ev Turşuları`,
-      },
+    // Navbar rozetli logosu (kaplan-badge-logo) — app/icon.png + public/favicon.ico
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/icon.png", type: "image/png", sizes: "192x192" },
+      ],
+      apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+      shortcut: "/favicon.ico",
+    },
+    keywords: [
+      "turşu",
+      "çubuk turşusu",
+      "ev turşusu",
+      "doğal fermente",
+      "şalgam suyu",
+      "probiyotik turşu",
+      "kaplan turşu",
+      "ankara turşu",
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: siteConfig.name,
-    description: siteConfig.description,
-    images: ["/images/hero/hero-tursu-kavanozlar.jpg"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    alternates: {
+      canonical: "./",
+    },
+    openGraph: {
+      siteName: siteConfig.name,
+      locale: "tr_TR",
+      type: "website",
+      title: siteConfig.name,
+      description: siteConfig.description,
+      images: [
+        {
+          url: "/images/hero/hero-tursu-kavanozlar.jpg",
+          width: 1200,
+          height: 630,
+          alt: `${siteConfig.name} - Doğal Fermente Ev Turşuları`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: siteConfig.name,
+      description: siteConfig.description,
+      images: ["/images/hero/hero-tursu-kavanozlar.jpg"],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-};
+  };
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

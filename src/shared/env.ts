@@ -120,10 +120,41 @@ function featureIssues(env: Env, enabled: Pick<Features, "captcha">): string[] {
   return issues;
 }
 
-export function parseEnv(
+/**
+ * Derleme aşamasında (`next build`) çalışma zamanı değişkenleri verilmemiş olabilir:
+ * Cloudflare Builds'te `wrangler.jsonc` vars ve secret'lar yalnızca çalışma zamanında
+ * vardır. Modüller yüklenirken ortam okunduğu için (ör. sayfa meta verileri) derleme
+ * düşmesin diye EKSİK değişkenlere zararsız yer tutucu verilir. Gerçek değerler her
+ * zaman önceliklidir; bu yer tutucular yalnızca derleme sürecinde geçerlidir ve
+ * çalışma zamanında asla kullanılmaz (NEXT_PHASE yalnızca `next build` sırasında set edilir).
+ */
+const BUILD_PLACEHOLDERS: Record<string, string> = {
+  APP_URL: "http://localhost:3000",
+  AUTH_SECRET: "build-placeholder-not-a-real-secret-0000",
+  DATABASE_URL: "file:./unused",
+  SMTP_HOST: "localhost",
+  SMTP_PORT: "1025",
+  MAIL_FROM: "build <build@localhost>",
+  TURNSTILE_SITE_KEY: "build-placeholder",
+  TURNSTILE_SECRET_KEY: "build-placeholder",
+};
+
+function withBuildPlaceholders(
   source: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+  if (source.NEXT_PHASE !== "phase-production-build") return source;
+  const filled = { ...source };
+  for (const [key, value] of Object.entries(BUILD_PLACEHOLDERS)) {
+    if (!filled[key]) filled[key] = value;
+  }
+  return filled;
+}
+
+export function parseEnv(
+  rawSource: Record<string, string | undefined>,
   enabled: Pick<Features, "captcha"> = features,
 ): Env {
+  const source = withBuildPlaceholders(rawSource);
   const result = envSchema.safeParse(source);
 
   if (!result.success) {
