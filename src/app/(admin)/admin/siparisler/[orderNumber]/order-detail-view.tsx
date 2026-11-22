@@ -24,6 +24,7 @@ interface PickleRecipe {
   brine?: string;
   spice?: string;
   note?: string | null;
+  title?: string | null;
 }
 
 function Section({
@@ -145,9 +146,7 @@ export function OrderDetailView({
   ];
 
   return (
-    <div
-      className={`flex flex-col gap-5 ${actions ? "pb-28 md:pb-0" : ""}`}
-    >
+    <div className={`flex flex-col gap-5 ${actions ? "pb-28 md:pb-0" : ""}`}>
       {/* Başlık şeridi */}
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/70 pb-4 sm:gap-4">
         <div className="min-w-0">
@@ -230,6 +229,14 @@ export function OrderDetailView({
                     </div>
                     {isPickle ? (
                       <dl className="mt-2.5 grid gap-x-6 gap-y-1.5 rounded-lg bg-slate-50 px-3 py-2.5 text-[12px] sm:grid-cols-[auto_1fr]">
+                        {recipe.title ? (
+                          <>
+                            <dt className="text-slate-500">Etiket adı</dt>
+                            <dd className="font-semibold text-slate-900">
+                              “{recipe.title}”
+                            </dd>
+                          </>
+                        ) : null}
                         <dt className="text-slate-500">Malzemeler</dt>
                         <dd className="text-slate-800">
                           {recipe.ingredients

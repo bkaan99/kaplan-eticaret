@@ -170,6 +170,28 @@ describe("customizationKey", () => {
     );
   });
 
+  it("tarif adı anahtarı değiştirir; adı olmayan satırın anahtarı aynı kalır", () => {
+    const withTitle = { ...base, title: "Anneannemin karışığı" };
+    expect(customizationKey(withTitle)).not.toBe(customizationKey(base));
+    expect(customizationKey({ ...base, title: null })).toBe(
+      customizationKey(base),
+    );
+    expect(customizationKey({ ...base, title: "" })).toBe(
+      customizationKey(base),
+    );
+  });
+
+  it("tarif adını okur, boşluk ve fazla uzunluğu temizler", () => {
+    expect(
+      readStoredCustomization({ ...base, title: "  Cumartesi sofrası  " })
+        ?.title,
+    ).toBe("Cumartesi sofrası");
+    expect(
+      readStoredCustomization({ ...base, title: "x".repeat(80) })?.title,
+    ).toHaveLength(30);
+    expect(readStoredCustomization({ ...base, title: "   " })).toEqual(base);
+  });
+
   it("bozuk sepet verisini reddeder", () => {
     expect(readStoredCustomization(null)).toBeNull();
     expect(readStoredCustomization({ kind: "other" })).toBeNull();

@@ -135,14 +135,14 @@ export default function CustomPicklePage() {
       />
       <header className="flex flex-col gap-1">
         <span className="text-[11px] font-bold tracking-[0.16em] text-brand-leaf uppercase">
-          Senin tarifin
+          Kaplan atölyesi · Çubuk
         </span>
         <h1 className="font-display text-2xl font-bold tracking-tight text-primary sm:text-3xl">
           Kendi turşunu yap
         </h1>
         <p className="max-w-2xl text-sm text-slate-600">
-          Boyutu seç, malzemeleri ekle, oranları ayarla. Kaplan ustaları senin
-          tarifinle hazırlayıp kapına göndersin.
+          Bidonunu seç, bahçeden topla, gramını sen ayarla. Kaplan ustaları
+          tarifini hazırlayıp kapına göndersin.
         </p>
       </header>
       <Suspense

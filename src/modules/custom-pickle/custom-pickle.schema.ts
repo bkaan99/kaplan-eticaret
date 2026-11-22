@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { MAX_INGREDIENTS, MAX_NOTE_LENGTH } from "./custom-pickle.types";
+import {
+  MAX_INGREDIENTS,
+  MAX_NOTE_LENGTH,
+  MAX_TITLE_LENGTH,
+} from "./custom-pickle.types";
 
 /** Müşterinin oluşturduğu bidon; malzemelerin ve seçeneklerin geçerliliğini servis ayrıca denetler. */
 export const customPickleInputSchema = z.object({
@@ -16,6 +20,16 @@ export const customPickleInputSchema = z.object({
     .string()
     .trim()
     .max(MAX_NOTE_LENGTH, `Not en fazla ${MAX_NOTE_LENGTH} karakter olabilir`)
+    .nullable()
+    .optional()
+    .transform((value) => (value ? value : null)),
+  title: z
+    .string()
+    .trim()
+    .max(
+      MAX_TITLE_LENGTH,
+      `Tarif adı en fazla ${MAX_TITLE_LENGTH} karakter olabilir`,
+    )
     .nullable()
     .optional()
     .transform((value) => (value ? value : null)),

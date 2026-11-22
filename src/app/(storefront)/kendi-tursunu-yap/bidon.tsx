@@ -33,6 +33,7 @@ export function Bidon({
   spiceTint,
   hasBubbles,
   sizeLabel,
+  title,
   maxIngredients = MAX_INGREDIENTS,
   fill,
   scale,
@@ -44,6 +45,8 @@ export function Bidon({
   spiceTint?: number;
   hasBubbles?: boolean;
   sizeLabel: string;
+  /** Müşterinin tarife verdiği isim; etiketin alt satırında görünür. */
+  title?: string;
   /** Seçili boyuttaki çeşit üst sınırı; salamura doluluk oranı buna göre. */
   maxIngredients?: number;
   /** Doluluk (0–1); verilmezse çeşit sayısından hesaplanır */
@@ -75,6 +78,10 @@ export function Bidon({
       : (SPICE_TINT[spice as keyof typeof SPICE_TINT] ?? 0.1);
   const showBubbles =
     hasBubbles !== undefined ? hasBubbles : brine === "NATURAL";
+
+  const labelLine = title?.trim()
+    ? title.trim().toLocaleUpperCase("tr-TR")
+    : BRAND_LINE;
 
   const prevIdsRef = useRef<string[]>([]);
   const pendingTimersRef = useRef<number[]>([]);
@@ -544,10 +551,11 @@ export function Bidon({
           fontSize="6.2"
           fontWeight="700"
           fill="#2a6e33"
-          textLength="140"
-          lengthAdjust="spacingAndGlyphs"
+          {...(labelLine.length > 22
+            ? { textLength: 140, lengthAdjust: "spacingAndGlyphs" as const }
+            : {})}
         >
-          {BRAND_LINE}
+          {labelLine}
         </text>
       </g>
 

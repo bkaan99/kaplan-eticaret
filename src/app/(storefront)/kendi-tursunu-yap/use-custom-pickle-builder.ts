@@ -80,6 +80,7 @@ export function useCustomPickleBuilder(
   // Acılı malzeme seçilince sistemin yaptığı yükseltme (geri alınabilsin diye).
   const [autoSpice, setAutoSpice] = useState<AutoSpice | null>(null);
   const [note, setNote] = useState("");
+  const [title, setTitle] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<BuilderMessage | null>(null);
@@ -308,6 +309,7 @@ export function useCustomPickleBuilder(
         brine,
         spice,
         note,
+        title: title.trim() || null,
         quantity,
       });
       if (!result.ok) {
@@ -362,6 +364,8 @@ export function useCustomPickleBuilder(
     setSpice,
     note,
     setNote,
+    title,
+    setTitle,
     quantity,
     setQuantity,
     pending,

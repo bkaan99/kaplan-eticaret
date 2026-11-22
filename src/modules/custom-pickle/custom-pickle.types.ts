@@ -30,6 +30,8 @@ export function bidonWeightGram(
 export const MAX_INGREDIENTS = 8;
 /** Müşteri notunun en fazla uzunluğu */
 export const MAX_NOTE_LENGTH = 200;
+/** Tarif adının (bidon etiketine yazılan isim) en fazla uzunluğu */
+export const MAX_TITLE_LENGTH = 30;
 
 /**
  * Bidon kilosuna göre çeşit üst sınırı:
@@ -162,6 +164,8 @@ export interface StoredCustomization {
   brine: BrineOption;
   spice: SpiceOption;
   note: string | null;
+  /** Müşterinin tarife verdiği isim (bidon etiketinde görünür). Eski satırlarda yoktur. */
+  title?: string | null;
 }
 
 /** Siparişe yazılan kopya: malzeme değişse de sipariş içeriği korunur. */
@@ -176,6 +180,7 @@ export interface CustomizationSnapshot {
   brine: string;
   spice: string;
   note: string | null;
+  title?: string | null;
 }
 
 export const MONTH_NAMES_TR = [

@@ -18,6 +18,7 @@ interface CustomizationSnapshotLike {
   brine?: string;
   spice?: string;
   note?: string | null;
+  title?: string | null;
 }
 
 /** "Tekrar sipariş ver": önceki siparişin ürünlerini mevcut stok ve fiyatla sepete ekler. */
@@ -88,6 +89,7 @@ export class ReorderService {
             brine: snap.brine ?? "WHITE",
             spice: snap.spice ?? "MEDIUM",
             note: snap.note ?? null,
+            ...(snap.title ? { title: snap.title } : {}),
           };
           const key = customizationKey(stored);
           result = await this.cart.addCustomItem(

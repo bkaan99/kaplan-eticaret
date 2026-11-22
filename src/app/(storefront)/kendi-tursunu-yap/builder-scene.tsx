@@ -39,6 +39,7 @@ export function BuilderScene({
             spiceTint={builder.activeSpice?.tint}
             hasBubbles={builder.activeBrine?.hasBubbles}
             sizeLabel={size?.label ?? ""}
+            title={builder.title}
             maxIngredients={maxIngredients}
             fill={chosen.length === 0 ? 0 : filled / 100}
             scale={

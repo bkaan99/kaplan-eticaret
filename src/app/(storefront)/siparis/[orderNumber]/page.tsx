@@ -168,10 +168,15 @@ async function OrderContent({
             const custom = item.customization as
               | {
                   kind?: string;
-                  ingredients?: { name: string; unitExtra?: string; share?: number }[];
+                  ingredients?: {
+                    name: string;
+                    unitExtra?: string;
+                    share?: number;
+                  }[];
                   brine?: string;
                   spice?: string;
                   note?: string | null;
+                  title?: string | null;
                 }
               | undefined;
 
@@ -196,14 +201,18 @@ async function OrderContent({
                 {custom?.kind === "custom-pickle" ? (
                   <div className="mt-1 rounded-xl bg-muted/60 p-2.5 text-xs text-muted-foreground">
                     <p className="font-medium text-foreground">
-                      🥒 Özel Reçeteniz:
+                      🥒 Özel Reçeteniz
+                      {custom.title ? <> · “{custom.title}”</> : null}
                     </p>
                     <p className="mt-0.5">
                       <strong>Malzemeler:</strong>{" "}
                       {custom.ingredients
                         ?.map((i) =>
-                          i.share === undefined ? i.name : `${i.name} %${i.share}`,
-                        ).join(", ") || "-"}
+                          i.share === undefined
+                            ? i.name
+                            : `${i.name} %${i.share}`,
+                        )
+                        .join(", ") || "-"}
                     </p>
                     <p>
                       <strong>Salamura:</strong> {custom.brine || "-"} ·{" "}
@@ -256,14 +265,19 @@ async function OrderContent({
             <span>📦 Teslimat Adresi</span>
           </div>
           <p className="font-medium">
-            {order.shippingAddress.firstName} {order.shippingAddress.lastName} · {order.shippingAddress.phone}
+            {order.shippingAddress.firstName} {order.shippingAddress.lastName} ·{" "}
+            {order.shippingAddress.phone}
           </p>
           <p className="text-muted-foreground leading-relaxed">
             {order.shippingAddress.addressLine}
-            {order.shippingAddress.neighborhood ? `, ${order.shippingAddress.neighborhood}` : ""}
+            {order.shippingAddress.neighborhood
+              ? `, ${order.shippingAddress.neighborhood}`
+              : ""}
             <br />
             {order.shippingAddress.district} / {order.shippingAddress.city}
-            {order.shippingAddress.postalCode ? ` (${order.shippingAddress.postalCode})` : ""}
+            {order.shippingAddress.postalCode
+              ? ` (${order.shippingAddress.postalCode})`
+              : ""}
           </p>
         </section>
 
@@ -272,29 +286,44 @@ async function OrderContent({
           <div className="flex items-center justify-between gap-2 font-semibold text-foreground">
             <span>🧾 Fatura Adresi</span>
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-normal text-muted-foreground">
-              {order.billingAddress.invoiceType === "CORPORATE" ? "Kurumsal Fatura" : "Bireysel Fatura"}
+              {order.billingAddress.invoiceType === "CORPORATE"
+                ? "Kurumsal Fatura"
+                : "Bireysel Fatura"}
             </span>
           </div>
           <p className="font-medium">
-            {order.billingAddress.firstName} {order.billingAddress.lastName} · {order.billingAddress.phone}
+            {order.billingAddress.firstName} {order.billingAddress.lastName} ·{" "}
+            {order.billingAddress.phone}
           </p>
           <p className="text-muted-foreground leading-relaxed">
             {order.billingAddress.addressLine}
-            {order.billingAddress.neighborhood ? `, ${order.billingAddress.neighborhood}` : ""}
+            {order.billingAddress.neighborhood
+              ? `, ${order.billingAddress.neighborhood}`
+              : ""}
             <br />
             {order.billingAddress.district} / {order.billingAddress.city}
-            {order.billingAddress.postalCode ? ` (${order.billingAddress.postalCode})` : ""}
+            {order.billingAddress.postalCode
+              ? ` (${order.billingAddress.postalCode})`
+              : ""}
           </p>
           {order.billingAddress.companyName ? (
             <div className="mt-2 border-t border-border/60 pt-2 text-xs">
-              <p className="font-medium text-foreground">{order.billingAddress.companyName}</p>
+              <p className="font-medium text-foreground">
+                {order.billingAddress.companyName}
+              </p>
               <p className="text-muted-foreground">
-                VKN: {order.billingAddress.taxNumber} · Vergi Dairesi: {order.billingAddress.taxOffice}
+                VKN: {order.billingAddress.taxNumber} · Vergi Dairesi:{" "}
+                {order.billingAddress.taxOffice}
               </p>
             </div>
           ) : order.billingAddress.nationalId ? (
             <div className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
-              <span>TCKN: <span className="font-mono">{order.billingAddress.nationalId}</span></span>
+              <span>
+                TCKN:{" "}
+                <span className="font-mono">
+                  {order.billingAddress.nationalId}
+                </span>
+              </span>
             </div>
           ) : null}
         </section>

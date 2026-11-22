@@ -191,7 +191,7 @@ export function SizeStep({
   const { variantId, selectSize, maxIngredients } = builder;
 
   return (
-    <Step index={1} title="Bidon boyutu" done={Boolean(builder.size)}>
+    <Step index={1} title="Bidonunu seç" done={Boolean(builder.size)}>
       <p className="-mt-2 text-sm text-muted-foreground">
         Seçili boyutta en fazla {maxIngredients} malzeme ekleyebilirsiniz.
       </p>

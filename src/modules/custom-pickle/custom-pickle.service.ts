@@ -27,6 +27,7 @@ import {
   CUSTOM_PICKLE_PRODUCT_SLUG,
   isMonthInSeason,
   isStockAvailable,
+  MAX_TITLE_LENGTH,
   maxIngredientsForSize,
   SPICE_OPTIONS,
   type CustomPickleConfig,
@@ -67,6 +68,8 @@ export function customizationKey(customization: StoredCustomization): string {
     customization.brine,
     customization.spice,
     customization.note ?? "",
+    // Başlıksız satırların anahtarı değişmesin.
+    ...(customization.title ? [["title", customization.title]] : []),
     // Oransız eski satırların anahtarı değişmesin.
     ...(customization.shares
       ? [
@@ -99,6 +102,9 @@ export function readStoredCustomization(
     brine: raw.brine,
     spice: raw.spice,
     note: typeof raw.note === "string" ? raw.note : null,
+    ...(typeof raw.title === "string" && raw.title.trim()
+      ? { title: raw.title.trim().slice(0, MAX_TITLE_LENGTH) }
+      : {}),
   };
 }
 
@@ -328,6 +334,7 @@ export class CustomPickleService
       brine: input.brine,
       spice: input.spice,
       note: input.note,
+      ...(input.title ? { title: input.title } : {}),
     };
 
     return {
@@ -443,6 +450,7 @@ export class CustomPickleService
         SPICE_OPTIONS[customization.spice] ??
         customization.spice;
       const parts = [
+        ...(customization.title ? [`“${customization.title}”`] : []),
         priced
           .map((item) =>
             item.share === undefined
@@ -470,6 +478,7 @@ export class CustomPickleService
           brine,
           spice,
           note: customization.note,
+          ...(customization.title ? { title: customization.title } : {}),
         },
       };
     });

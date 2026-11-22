@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import {
   formatSeasonRange,
+  isMonthInSeason,
   INGREDIENT_GROUP_LABELS,
   type IngredientGroup,
 } from "@/modules/custom-pickle/custom-pickle.types";
@@ -13,6 +14,39 @@ import { launchFlyToBidon } from "./fly-to-bidon";
 import { tasteTags } from "./flavor-profile";
 import { PICKLE_PRESETS } from "./pickle-presets";
 import { Step } from "./builder-step-frame";
+
+/** 12 aylık hasat takvimi: mevsimindeki aylar yeşil, bu ay halkalı. */
+function HarvestCalendar({
+  start,
+  end,
+}: {
+  start: number | null;
+  end: number | null;
+}) {
+  const current = new Date().getMonth() + 1;
+  const label = `Hasat: ${formatSeasonRange(start, end)}`;
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className="mt-1 flex items-center gap-[3px]"
+    >
+      {Array.from({ length: 12 }, (_, index) => {
+        const month = index + 1;
+        const inSeason = isMonthInSeason(start, end, month);
+        return (
+          <span
+            key={month}
+            className={`h-2 w-2 rounded-[3px] ${
+              inSeason ? "bg-brand-leaf" : "bg-slate-200"
+            } ${month === current ? "ring-2 ring-amber-400 ring-offset-1" : ""}`}
+          />
+        );
+      })}
+    </span>
+  );
+}
 
 export type GroupFilter = "ALL" | IngredientGroup;
 
@@ -48,7 +82,7 @@ export function IngredientsStep({
     <Step
       id="adim-malzeme"
       index={2}
-      title="Malzemeleri seçin"
+      title="Bahçeden topla"
       done={builder.hasVegetable}
       hint={
         <span className={full ? "font-semibold text-brand-pepper" : ""}>
@@ -56,49 +90,22 @@ export function IngredientsStep({
         </span>
       }
     >
-      <div className="-mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <p className="text-sm text-slate-600">
-          {size?.label ?? "Bu bidon"} için en fazla {maxIngredients} malzeme. En
-          az bir sebze seçin.
-        </p>
-        {/* Kontenjan: seçilen malzeme kadar kavanoz dolar */}
-        <div
-          role="img"
-          aria-label={`${selected.length} / ${maxIngredients} malzeme seçildi`}
-          className="flex items-center gap-1"
-        >
-          {Array.from({ length: maxIngredients }, (_, index) => (
-            <span
-              key={index}
-              aria-hidden="true"
-              className={`h-5 w-3.5 rounded-[4px] border transition-colors duration-200 ${
-                index < selected.length
-                  ? "border-primary bg-primary"
-                  : "border-slate-300 bg-white"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Kararsız kullanıcı için tek dokunuşluk başlangıç */}
-      {selected.length === 0 && PICKLE_PRESETS[0] ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-4 py-3">
-          <div>
-            <p className="text-sm font-bold text-primary">Kararsız mısın?</p>
-            <p className="text-xs text-slate-600">
-              Ustanın klasik karışımıyla başla, sonra istediğin gibi değiştir.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => builder.applyPreset(PICKLE_PRESETS[0]!)}
-            className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-bold text-white transition-colors hover:bg-primary/90"
-          >
-            Ustanın karışımı
-          </button>
-        </div>
-      ) : null}
+      <p className="-mt-2 text-sm text-slate-600">
+        {size?.label ?? "Bu bidon"} için en fazla {maxIngredients} malzeme. En
+        az bir sebze seçin.
+        {selected.length === 0 && PICKLE_PRESETS[0] ? (
+          <>
+            {" "}
+            <button
+              type="button"
+              onClick={() => builder.applyPreset(PICKLE_PRESETS[0]!)}
+              className="font-semibold text-brand-leaf underline decoration-dotted underline-offset-4 hover:text-primary"
+            >
+              Karar veremediysen ustaya bırak
+            </button>
+          </>
+        ) : null}
+      </p>
       <label htmlFor="pickle-search" className="sr-only">
         Malzeme ara
       </label>
@@ -240,14 +247,12 @@ export function IngredientsStep({
                 >
                   {status.text}
                 </span>
-              ) : item.seasonStartMonth && item.seasonEndMonth ? (
-                <span className="mt-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                  {formatSeasonRange(
-                    item.seasonStartMonth,
-                    item.seasonEndMonth,
-                  )}
-                </span>
-              ) : null}
+              ) : (
+                <HarvestCalendar
+                  start={item.seasonStartMonth}
+                  end={item.seasonEndMonth}
+                />
+              )}
             </button>
           );
         })}

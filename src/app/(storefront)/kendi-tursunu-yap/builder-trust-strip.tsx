@@ -17,20 +17,20 @@ export async function BuilderTrustStrip() {
 
   const items = [
     {
-      title: "Güvenli ödeme",
-      text: "256-bit SSL ile korunan ödeme sayfası",
+      title: "Çubuk Ovası'ndan taze",
+      text: "Sebzeler yerel çiftçiden, sabahın erken saatinde gelir",
+    },
+    {
+      title: "Çankırı kaya tuzu",
+      text: "Rafine tuz yok; salamura doğal kaya tuzuyla hazırlanır",
+    },
+    {
+      title: "Tarifine göre hazırlanır",
+      text: "Seçtiğin gramajlar ve etiket adın bidona aynen geçer",
     },
     {
       title: "24-48 saatte kargoda",
-      text: "Takip numarası SMS ve e-posta ile iletilir",
-    },
-    {
-      title: "Ücretsiz kargo",
-      text: `${formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde`,
-    },
-    {
-      title: "Hasar güvencesi",
-      text: "Kargoda kırılan ürün ücretsiz yenilenir",
+      text: `${formatMoney(shipping.freeShippingThreshold)} ve üzeri siparişlerde kargo ücretsiz`,
     },
   ];
 
@@ -38,7 +38,7 @@ export async function BuilderTrustStrip() {
 
   return (
     <section
-      aria-label="Sipariş güvencesi"
+      aria-label="Kaplan sözü"
       className="flex flex-col gap-4 rounded-3xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_rgba(11,35,24,0.04),0_12px_28px_-16px_rgba(11,35,24,0.16)] sm:p-6"
     >
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -75,7 +75,7 @@ export async function BuilderTrustStrip() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
         <p className="text-sm font-semibold text-primary">
-          Sorunuz mu var? Hemen yazın.
+          Tarifin için ustaya danışabilirsin.
         </p>
         <div className="flex flex-wrap gap-2 text-xs font-bold">
           <a

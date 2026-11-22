@@ -26,7 +26,7 @@ export function BrineStep({ builder }: { builder: CustomPickleBuilderState }) {
   const { brine, setBrine, brines } = builder;
 
   return (
-    <Step index={4} title="Suyu nasıl olsun?">
+    <Step index={4} title="Salamura suyu">
       <div className="grid gap-3 sm:grid-cols-2">
         {brines.map((item) => {
           const active = brine === item.key;

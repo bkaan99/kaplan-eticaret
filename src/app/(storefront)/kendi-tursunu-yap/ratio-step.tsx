@@ -38,7 +38,7 @@ export function RatioStep({ builder }: { builder: CustomPickleBuilderState }) {
     <Step
       id="adim-oran"
       index={3}
-      title="Gramajı ayarlayın"
+      title="Tartıya koy"
       done={vegetables.length > 0 && isFull}
     >
       <p className="-mt-2 text-sm text-slate-600">
