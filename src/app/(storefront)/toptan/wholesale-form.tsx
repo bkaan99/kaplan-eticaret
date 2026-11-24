@@ -3,12 +3,14 @@
 import { useActionState, type ReactNode } from "react";
 import { ArrowRightIcon } from "@/components/storefront/icons";
 import {
-  BUSINESS_TYPES,
-  CONTACT_CHANNELS,
-  ORDER_VOLUMES,
   sendWholesaleQuoteAction,
   type WholesaleFormState,
 } from "./actions";
+import {
+  BUSINESS_TYPES,
+  CONTACT_CHANNELS,
+  ORDER_VOLUMES,
+} from "./wholesale-options";
 
 const initial: WholesaleFormState = {};
 
