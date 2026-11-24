@@ -141,33 +141,58 @@ export function MobileNav({
 
               {/* Çekmece İçeriği (Kaydırılabilir) */}
               <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 [scrollbar-width:thin]">
-                {/* Öne Çıkan Eylem: Kendi Turşunu Yap */}
-                <Link
-                  href="/kendi-tursunu-yap"
-                  className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-brand-dark p-4 text-[#f6efe0] shadow-[0_8px_24px_-8px_rgba(11,35,24,0.5)] ring-1 ring-brand-gold/20 transition-all duration-200 hover:ring-brand-gold/40"
-                >
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-gold/10 blur-2xl transition-opacity group-hover:bg-brand-gold/20"
-                  />
-                  <div className="relative flex flex-col gap-1">
-                    <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-gold">
-                      Özel Üretim
-                    </span>
-                    <span className="inline-flex items-center gap-2.5 text-base font-semibold">
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-gold/15 ring-1 ring-brand-gold/30">
-                        <BidonThumb width={22} height={26} />
+                {/* Öne çıkan eylemler */}
+                <div className="space-y-2.5">
+                  <Link
+                    href="/kendi-tursunu-yap"
+                    className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-brand-dark p-4 text-[#f6efe0] shadow-[0_8px_24px_-8px_rgba(11,35,24,0.5)] ring-1 ring-brand-gold/20 transition-all duration-200 hover:ring-brand-gold/40"
+                  >
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-gold/10 blur-2xl transition-opacity group-hover:bg-brand-gold/20"
+                    />
+                    <div className="relative flex flex-col gap-1">
+                      <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-gold">
+                        Özel Üretim
                       </span>
-                      Kendi Turşunu Yap
+                      <span className="inline-flex items-center gap-2.5 text-base font-semibold">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-gold/15 ring-1 ring-brand-gold/30">
+                          <BidonThumb width={22} height={26} />
+                        </span>
+                        Kendi Turşunu Yap
+                      </span>
+                      <span className="text-xs text-[#f6efe0]/75">
+                        Damak tadına göre bidonunu kendin hazırla
+                      </span>
+                    </div>
+                    <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-[#f6efe0] ring-1 ring-white/15 transition-transform group-hover:translate-x-0.5">
+                      <ChevronRightIcon width={16} height={16} />
                     </span>
-                    <span className="text-xs text-[#f6efe0]/75">
-                      Damak tadına göre bidonunu kendin hazırla
+                  </Link>
+
+                  <Link
+                    href="/toptan"
+                    className="group flex items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-4 text-primary transition-colors hover:border-primary/30 hover:bg-primary/10"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-primary/70">
+                        Kurumsal
+                      </span>
+                      <span className="inline-flex items-center gap-2.5 text-base font-semibold">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/20">
+                          <TruckIcon width={20} height={20} />
+                        </span>
+                        Toptan Teklif
+                      </span>
+                      <span className="text-xs text-primary/70">
+                        Restoran, otel ve market için fiyat teklifi alın
+                      </span>
+                    </div>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/15 transition-transform group-hover:translate-x-0.5">
+                      <ChevronRightIcon width={16} height={16} />
                     </span>
-                  </div>
-                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-[#f6efe0] ring-1 ring-white/15 transition-transform group-hover:translate-x-0.5">
-                    <ChevronRightIcon width={16} height={16} />
-                  </span>
-                </Link>
+                  </Link>
+                </div>
 
                 {/* Kategoriler */}
                 <div className="space-y-2">
@@ -266,14 +291,6 @@ export function MobileNav({
                         <span>Bayi Başvurusu</span>
                       </Link>
                     ) : null}
-
-                    <Link
-                      href="/toptan"
-                      className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
-                    >
-                      <TruckIcon width={18} height={18} className="text-slate-400" />
-                      <span>Toptan Teklif</span>
-                    </Link>
 
                     <Link
                       href="/iletisim"

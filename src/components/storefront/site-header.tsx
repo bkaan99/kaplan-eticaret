@@ -74,6 +74,18 @@ function BuilderLink() {
   );
 }
 
+function WholesaleLink() {
+  return (
+    <Link
+      href="/toptan"
+      className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-primary/20 bg-primary/5 py-1 pr-4 pl-2.5 text-[13px] font-extrabold whitespace-nowrap text-primary transition-colors hover:border-primary/40 hover:bg-primary/10"
+    >
+      <TruckIcon width={16} height={16} />
+      Toptan Teklif
+    </Link>
+  );
+}
+
 const iconLinkClass =
   "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/5";
 
@@ -147,10 +159,13 @@ export async function SiteHeader() {
           </div>
         </div>
 
-        {/* Satır 2: öne çıkan bağlantı · kategoriler · mağaza ve iletişim */}
+        {/* Satır 2: öne çıkan bağlantılar · kategoriler · mağaza ve iletişim */}
         <div className="hidden border-t border-slate-100 md:block">
           <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 px-4 py-1.5 lg:px-8 2xl:px-12">
-            <BuilderLink />
+            <div className="flex shrink-0 items-center gap-2">
+              <BuilderLink />
+              <WholesaleLink />
+            </div>
             <div className="min-w-0 flex-1">
               <Suspense fallback={<div className="h-9" />}>
                 <CategoryNav />

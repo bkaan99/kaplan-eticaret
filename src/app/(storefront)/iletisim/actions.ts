@@ -4,6 +4,7 @@ import { z } from "zod";
 import { siteConfig } from "@/config/site.config";
 import { getCachedContactSettings } from "@/modules/settings/cached";
 import { getNotificationDispatcher } from "@/modules/notifications/container";
+import { escapeHtml } from "@/modules/notifications/templates/layout";
 import { isAppError } from "@/shared/errors";
 import { logger } from "@/shared/logger";
 import {
@@ -101,30 +102,30 @@ ${message}
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
     <div style="background-color: #154734; padding: 20px 24px;">
       <h2 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 700;">Yeni İletişim Formu Mesajı</h2>
-      <p style="color: #d1fae5; margin: 4px 0 0 0; font-size: 13px;">${siteConfig.name} web sitesi üzerinden gönderildi</p>
+      <p style="color: #d1fae5; margin: 4px 0 0 0; font-size: 13px;">${escapeHtml(siteConfig.name)} web sitesi üzerinden gönderildi</p>
     </div>
     <div style="padding: 24px;">
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;">
         <tr style="border-bottom: 1px solid #f1f5f9;">
           <td style="padding: 10px 0; color: #64748b; font-weight: 600; width: 110px;">Ad Soyad:</td>
-          <td style="padding: 10px 0; color: #0f172a; font-weight: 700;">${fullName}</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 700;">${escapeHtml(fullName)}</td>
         </tr>
         <tr style="border-bottom: 1px solid #f1f5f9;">
           <td style="padding: 10px 0; color: #64748b; font-weight: 600;">E-Posta:</td>
-          <td style="padding: 10px 0;"><a href="mailto:${email}" style="color: #154734; text-decoration: underline;">${email}</a></td>
+          <td style="padding: 10px 0;"><a href="mailto:${escapeHtml(email)}" style="color: #154734; text-decoration: underline;">${escapeHtml(email)}</a></td>
         </tr>
         <tr style="border-bottom: 1px solid #f1f5f9;">
           <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Telefon:</td>
-          <td style="padding: 10px 0;"><a href="tel:${phone}" style="color: #154734; text-decoration: underline;">${phone}</a></td>
+          <td style="padding: 10px 0;"><a href="tel:${escapeHtml(phone)}" style="color: #154734; text-decoration: underline;">${escapeHtml(phone)}</a></td>
         </tr>
         <tr>
           <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Konu:</td>
-          <td style="padding: 10px 0; color: #0f172a; font-weight: 600;">${subject}</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600;">${escapeHtml(subject)}</td>
         </tr>
       </table>
       <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
         <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Mesaj Metni:</h4>
-        <p style="margin: 0; white-space: pre-wrap; font-size: 14px; color: #1e293b; line-height: 1.6;">${message}</p>
+        <p style="margin: 0; white-space: pre-wrap; font-size: 14px; color: #1e293b; line-height: 1.6;">${escapeHtml(message)}</p>
       </div>
     </div>
   </div>
