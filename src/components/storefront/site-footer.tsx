@@ -127,6 +127,11 @@ async function FooterMenu() {
           İletişim & Mağazamız
         </Link>
       </li>
+      <li>
+        <Link href="/toptan" className={linkClass}>
+          Toptan Teklif
+        </Link>
+      </li>
       {menuItems.map((item) => (
         <li key={`${item.label}-${item.url}`}>
           <Link href={item.url} className={linkClass}>

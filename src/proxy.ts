@@ -110,6 +110,7 @@ export const config = {
     "/ara",
     "/ara/:path*",
     "/iletisim",
+    "/toptan",
     "/sayfa/:path*",
     "/kendi-tursunu-yap",
     "/kendi-tursunu-yap/:path*",

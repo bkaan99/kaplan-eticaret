@@ -45,6 +45,7 @@ ${categoryLines}
 ## İletişim, Konum ve Resmi Kanallar
 - **Resmi Web Sitesi:** ${absoluteUrl("/")}
 - **İletişim & Fabrika Satış Mağazası:** ${absoluteUrl("/iletisim")}
+- **Toptan Fiyat Teklifi:** ${absoluteUrl("/toptan")}
 - **Müşteri Destek Telefon:** ${storefrontContact.phone} (${storefrontContact.phoneTel})
 - **Çalışma Saatleri:** ${storefrontContact.workingHours}
 - **E-posta:** ${siteConfig.contact.email}

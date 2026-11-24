@@ -53,6 +53,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
       images: [absoluteUrl("/images/hero/hero-tursu-kavanozlar.jpg")],
     },
+    {
+      url: absoluteUrl("/toptan"),
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
     ...categories.map((category) => ({
       url: absoluteUrl(`/kategori/${category.slug}`),
       lastModified: now,

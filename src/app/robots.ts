@@ -46,6 +46,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
           "/urun/",
           "/sayfa/",
           "/iletisim",
+          "/toptan",
           "/kendi-tursunu-yap",
           "/feeds/products.xml",
         ],

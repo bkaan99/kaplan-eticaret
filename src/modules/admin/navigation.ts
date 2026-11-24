@@ -35,6 +35,12 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
     permission: PERMISSIONS.RETURN_MANAGE,
   },
   {
+    href: "/admin/toptan",
+    label: "Toptan",
+    group: "sales",
+    permission: PERMISSIONS.CUSTOMER_READ,
+  },
+  {
     href: "/admin/kuponlar",
     label: "Kupon ve kampanyalar",
     group: "sales",

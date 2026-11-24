@@ -38,6 +38,7 @@ import {
 import { banner, page, menu, menuItem } from "./content";
 import { setting, auditLog, rateLimit } from "./system";
 import { pickleIngredient } from "./pickle";
+import { wholesaleLead } from "./wholesale";
 
 export const tables = {
   user,
@@ -83,4 +84,5 @@ export const tables = {
   auditLog,
   rateLimit,
   pickleIngredient,
+  wholesaleLead,
 };

@@ -18,6 +18,14 @@ describe("visibleNav", () => {
     expect(hrefs).not.toContain("/admin/denetim");
   });
 
+  it("müşteri okuma yetkisi toptan menüsünü açar", () => {
+    const hrefs = visibleNav([PERMISSIONS.CUSTOMER_READ]).map(
+      (item) => item.href,
+    );
+    expect(hrefs).toContain("/admin/toptan");
+    expect(hrefs).toContain("/admin/musteriler");
+  });
+
   it("B2B menüleri yalnızca özellik açıkken ve yetki varsa görünür", () => {
     const permissions = [PERMISSIONS.B2B_APPROVE, PERMISSIONS.PROMOTION_MANAGE];
 

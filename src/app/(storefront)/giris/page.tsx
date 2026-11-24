@@ -132,10 +132,10 @@ export default function LoginPage({ searchParams }: PageProps<"/giris">) {
               <p>
                 Toptan alım için{" "}
                 <Link
-                  href="/bayi-basvuru"
+                  href="/toptan"
                   className="font-semibold text-primary underline-offset-4 hover:underline"
                 >
-                  bayilik başvurusu
+                  toptan fiyat teklifi alın
                 </Link>
               </p>
             </div>

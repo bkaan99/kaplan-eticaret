@@ -9,5 +9,6 @@ export * from "./orders";
 export * from "./content";
 export * from "./system";
 export * from "./pickle";
+export * from "./wholesale";
 export * from "./relations";
 export * from "./tables";

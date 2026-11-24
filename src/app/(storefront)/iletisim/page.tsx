@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { JsonLd } from "@/components/storefront/json-ld";
 import {
   ArrowRightIcon,
@@ -309,17 +310,17 @@ export default async function ContactPage() {
               <p className="text-xs leading-relaxed text-slate-600">
                 Restoranlar, oteller, lokantalar ve şarküteriler için 5 kg, 10
                 kg ve 18 kg bidon ambalajlarda düzenli toptan sevkiyat
-                yapıyoruz. Özel toptan fiyat listesi için form üzerinden veya
-                WhatsApp ile talep oluşturabilirsiniz.
+                yapıyoruz. Özel toptan fiyat teklifi için formu doldurun veya
+                WhatsApp ile ulaşın.
               </p>
               <div className="mt-1">
-                <a
-                  href="/bayi-basvuru"
+                <Link
+                  href="/toptan"
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-primary transition hover:underline"
                 >
-                  <span>Bayilik Başvurusu Yap</span>
+                  <span>Toptan Fiyat Teklifi Alın</span>
                   <ArrowRightIcon width={12} height={12} />
-                </a>
+                </Link>
               </div>
             </div>
 
