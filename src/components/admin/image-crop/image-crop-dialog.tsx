@@ -92,7 +92,7 @@ export function ImageCropDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="image-crop-dialog-title"
-      className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-1 sm:p-4"
     >
       <div
         className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs"
@@ -101,16 +101,16 @@ export function ImageCropDialog({
         }}
       />
 
-      <div className="relative z-10 flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+      <div className="relative z-10 flex max-h-[98vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
           <div>
             <h2
               id="image-crop-dialog-title"
-              className="text-base font-bold text-slate-900"
+              className="text-base font-bold text-slate-900 sm:text-lg"
             >
               {title}
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
               Sürükleyerek konumu, kaydırıcıyla yakınlaştırmayı ayarlayın
             </p>
           </div>
@@ -118,14 +118,14 @@ export function ImageCropDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 cursor-pointer"
             aria-label="Kapat"
           >
             ✕
           </button>
         </div>
 
-        <div className="relative h-72 w-full bg-slate-900 sm:h-80">
+        <div className="relative h-[min(78vh,820px)] min-h-[480px] w-full bg-slate-900">
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -138,8 +138,8 @@ export function ImageCropDialog({
           />
         </div>
 
-        <div className="space-y-3 border-t border-slate-100 px-5 py-4">
-          <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
+        <div className="shrink-0 space-y-3 border-t border-slate-100 px-5 py-4 sm:px-6 sm:py-5">
+          <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700 sm:text-sm">
             Yakınlaştır
             <input
               type="range"
