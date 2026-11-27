@@ -5,7 +5,7 @@ import { isFeatureEnabled } from "@/config/features";
 import { CUSTOM_PICKLE_PRODUCT_SLUG } from "@/modules/custom-pickle/custom-pickle.types";
 import type { ProductCard as ProductCardData } from "@/modules/catalog/catalog.types";
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
-import { BidonThumb } from "./icons";
+import { BidonPreview } from "./bidon-preview";
 import { Price } from "./price";
 import { QuickAddButton } from "./quick-add-button";
 
@@ -38,8 +38,13 @@ export function ProductCard({
           }`}
         >
           {isCustomPickle ? (
-            <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out group-hover:scale-105">
-              <BidonThumb width={148} height={178} liquidColor="#e6edc2" />
+            <span className="absolute inset-0 flex items-center justify-center p-3 transition-transform duration-500 ease-out group-hover:scale-105">
+              <BidonPreview
+                width={168}
+                height={220}
+                liquidColor="#e6edc2"
+                className="drop-shadow-sm"
+              />
             </span>
           ) : (
             <Image

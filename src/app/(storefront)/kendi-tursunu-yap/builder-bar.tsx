@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BidonThumb } from "@/components/storefront/icons";
+import { BidonPreview } from "@/components/storefront/bidon-preview";
 import { formatMoney } from "@/shared/money";
 import type { CustomPickleBuilderState } from "./use-custom-pickle-builder";
 
@@ -70,10 +70,12 @@ export function BuilderBar({ builder }: { builder: CustomPickleBuilderState }) {
         ) : null}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:px-6">
           <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/95 p-0.5 sm:inline-flex">
-            <BidonThumb
+            <BidonPreview
               width={40}
-              height={48}
+              height={52}
               liquidColor={activeBrine?.color ?? "#e6edc2"}
+              title="KAPLAN"
+              subtitle=""
             />
           </span>
           <div className="min-w-0 flex-1">

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { BidonThumb } from "@/components/storefront/icons";
+import { BidonPreview } from "@/components/storefront/bidon-preview";
 import { Price } from "@/components/storefront/price";
 import { refreshStorefrontShell } from "@/components/storefront/shell-events";
 import type { CartLine, CartView } from "@/modules/cart/cart.types";
@@ -60,9 +60,9 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
           }`}
         >
           {line.isCustom ? (
-            <BidonThumb
-              width={72}
-              height={86}
+            <BidonPreview
+              width={70}
+              height={92}
               liquidColor={customLiquid}
               className="drop-shadow-xs"
             />
