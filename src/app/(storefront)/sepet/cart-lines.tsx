@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { BidonThumb } from "@/components/storefront/icons";
 import { Price } from "@/components/storefront/price";
 import { refreshStorefrontShell } from "@/components/storefront/shell-events";
 import type { CartLine, CartView } from "@/modules/cart/cart.types";
@@ -23,6 +24,11 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const max = Math.min(line.availableQuantity ?? 99, 99);
+  const customLiquid =
+    /kırmızı\s*su/i.test(line.variantLabel ?? "") ||
+    /\bred\b/i.test(line.variantLabel ?? "")
+      ? "#c8456f"
+      : "#e6edc2";
 
   function update(quantity: number) {
     startTransition(async () => {
@@ -46,14 +52,29 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
   return (
     <li className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:gap-4">
       <div className="flex gap-3 sm:gap-4">
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-theme bg-muted">
-          <Image
-            src={line.imageUrl ?? "/placeholder.svg"}
-            alt={line.productName}
-            fill
-            sizes="96px"
-            className="object-cover"
-          />
+        <div
+          className={`relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-theme ${
+            line.isCustom
+              ? "bg-linear-to-b from-[#f7f8f3] to-[#e3ecd8]"
+              : "bg-muted"
+          }`}
+        >
+          {line.isCustom ? (
+            <BidonThumb
+              width={72}
+              height={86}
+              liquidColor={customLiquid}
+              className="drop-shadow-xs"
+            />
+          ) : (
+            <Image
+              src={line.imageUrl ?? "/placeholder.svg"}
+              alt={line.productName}
+              fill
+              sizes="96px"
+              className="object-cover"
+            />
+          )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">

@@ -139,15 +139,17 @@ export function BidonIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 /**
- * Statik mini bidon — builder sayfasındaki tombik kavanoz + sarı vida kapak.
- * Buton/CTA thumb için; animasyon/malzeme yok.
+ * Statik mini bidon — builder sayfasındaki tombik kavanoz + yeşil vida kapak.
+ * Buton/CTA/sepet thumb için; animasyon/malzeme yok.
  */
 export function BidonThumb({
   className,
   width = 22,
   height = 26,
+  /** Verilirse bidon içinde salamura rengi gösterilir (sepet önizlemesi). */
+  liquidColor,
   ...props
-}: SVGProps<SVGSVGElement>) {
+}: SVGProps<SVGSVGElement> & { liquidColor?: string }) {
   return (
     <svg
       viewBox="0 0 48 58"
@@ -160,6 +162,13 @@ export function BidonThumb({
       <ellipse cx="24" cy="54" rx="16" ry="2.2" fill="#0b2318" opacity="0.14" />
       {/* Gövde — köşeli omuzlu şeffaf bidon */}
       <path d="M17 15 H31 L39 23 V46 L35 51 H13 L9 46 V23 Z" fill="#f4f6f2" />
+      {liquidColor ? (
+        <path
+          d="M10.2 28 L37.8 28 L35 51 H13 Z"
+          fill={liquidColor}
+          opacity="0.88"
+        />
+      ) : null}
       {/* Dikiş çizgileri + yansıma */}
       <path d="M17.5 24 V45 M30.5 24 V45" stroke="#c3cabd" strokeWidth="0.9" />
       <path

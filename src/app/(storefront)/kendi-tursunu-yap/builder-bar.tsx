@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { BidonThumb } from "@/components/storefront/icons";
 import { formatMoney } from "@/shared/money";
 import type { CustomPickleBuilderState } from "./use-custom-pickle-builder";
 
@@ -27,6 +27,7 @@ export function BuilderBar({ builder }: { builder: CustomPickleBuilderState }) {
     justAdded,
     clear,
     message,
+    activeBrine,
   } = builder;
 
   const cta = justAdded
@@ -68,13 +69,13 @@ export function BuilderBar({ builder }: { builder: CustomPickleBuilderState }) {
           </p>
         ) : null}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:px-6">
-          <Image
-            src="/images/urunler/kendi-tursunu-yap.svg"
-            alt=""
-            width={48}
-            height={48}
-            className="hidden rounded-lg bg-white p-0.5 sm:block"
-          />
+          <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/95 p-0.5 sm:inline-flex">
+            <BidonThumb
+              width={40}
+              height={48}
+              liquidColor={activeBrine?.color ?? "#e6edc2"}
+            />
+          </span>
           <div className="min-w-0 flex-1">
             <p className="font-display text-xl leading-tight font-bold tabular-nums sm:text-2xl">
               {chosen.length === 0
