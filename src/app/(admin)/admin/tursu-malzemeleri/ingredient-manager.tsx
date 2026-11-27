@@ -150,6 +150,7 @@ export function IngredientManager({
         editingId={editingId}
         form={form}
         spices={options.spices}
+        brines={options.brines}
         update={update}
         priceNumber={priceNumber}
         uploading={uploading}
@@ -367,6 +368,14 @@ export function IngredientManager({
                                   )?.label ?? item.spiceKey}
                                 </span>
                               ) : null}
+                              {item.brineKey ? (
+                                <span className="rounded-full border border-fuchsia-200 bg-fuchsia-50 px-2 py-0.5 font-bold text-fuchsia-800">
+                                  💧{" "}
+                                  {options.brines.find(
+                                    (option) => option.key === item.brineKey,
+                                  )?.label ?? item.brineKey}
+                                </span>
+                              ) : null}
                               {item.seasonStartMonth && item.seasonEndMonth ? (
                                 <span>
                                   {formatSeasonRange(
@@ -460,6 +469,15 @@ export function IngredientManager({
                                         (option) =>
                                           option.key === item.spiceKey,
                                       )?.label ?? item.spiceKey}
+                                    </span>
+                                  ) : null}
+                                  {item.brineKey ? (
+                                    <span className="inline-flex w-fit rounded-full border border-fuchsia-200 bg-fuchsia-50 px-2 py-0.5 text-[10px] font-bold text-fuchsia-800">
+                                      💧{" "}
+                                      {options.brines.find(
+                                        (option) =>
+                                          option.key === item.brineKey,
+                                      )?.label ?? item.brineKey}
                                     </span>
                                   ) : null}
                                 </span>

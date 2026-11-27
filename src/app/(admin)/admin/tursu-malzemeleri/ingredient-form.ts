@@ -15,6 +15,8 @@ export interface FormState {
   seasonEndMonth: string;
   /** Seçilince önerilen acılık seviyesi (boş = etkisiz). */
   spiceKey: string;
+  /** Seçilince önerilen salamura/su rengi (boş = etkisiz). */
+  brineKey: string;
   sortOrder: string;
   description: string;
   imageUrl: string;
@@ -30,6 +32,7 @@ export const EMPTY: FormState = {
   seasonStartMonth: "",
   seasonEndMonth: "",
   spiceKey: "",
+  brineKey: "",
   sortOrder: "0",
   description: "",
   imageUrl: "",
@@ -48,6 +51,7 @@ export function toForm(item: IngredientView): FormState {
       : "",
     seasonEndMonth: item.seasonEndMonth ? String(item.seasonEndMonth) : "",
     spiceKey: item.spiceKey ?? "",
+    brineKey: item.brineKey ?? "",
     sortOrder: String(item.sortOrder),
     description: item.description ?? "",
     imageUrl: item.imageUrl ?? "",
@@ -67,6 +71,7 @@ export function toPayload(form: FormState) {
     seasonEndMonth:
       form.seasonEndMonth !== "" ? Number(form.seasonEndMonth) : null,
     spiceKey: form.spiceKey === "" ? null : form.spiceKey,
+    brineKey: form.brineKey === "" ? null : form.brineKey,
     sortOrder: form.sortOrder || "0",
     description: form.description,
     imageUrl: form.imageUrl,

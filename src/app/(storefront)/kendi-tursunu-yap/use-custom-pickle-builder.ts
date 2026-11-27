@@ -27,6 +27,11 @@ import { addCustomPickleAction } from "./actions";
 import { flavorProfile, mixNote } from "./flavor-profile";
 import type { PicklePreset } from "./pickle-presets";
 import {
+  requiredBrine,
+  resolveBrine,
+  type AutoBrine,
+} from "@/modules/custom-pickle/custom-pickle.brine";
+import {
   requiredSpice,
   resolveSpice,
   type AutoSpice,
@@ -73,12 +78,15 @@ export function useCustomPickleBuilder(
   );
   const [selected, setSelected] = useState<string[]>([]);
   const [shares, setShares] = useState<PickleShares>({});
-  const [brine, setBrine] = useState<string>(() => brines[0]?.key ?? "WHITE");
+  const [brine, setBrineState] = useState<string>(
+    () => brines[0]?.key ?? "WHITE",
+  );
   const [spice, setSpiceState] = useState<string>(
     () => spices[1]?.key ?? spices[0]?.key ?? "MEDIUM",
   );
-  // Acılı malzeme seçilince sistemin yaptığı yükseltme (geri alınabilsin diye).
+  // Acılı / renk veren malzeme seçilince sistemin yaptığı yükseltme.
   const [autoSpice, setAutoSpice] = useState<AutoSpice | null>(null);
+  const [autoBrine, setAutoBrine] = useState<AutoBrine | null>(null);
   const [note, setNote] = useState("");
   const [title, setTitle] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -151,6 +159,7 @@ export function useCustomPickleBuilder(
         equalShares(ids.filter((id) => byId.get(id)?.group === "VEGETABLE")),
     );
     syncSpice(ids);
+    syncBrine(ids);
   }
 
   /** Acılı malzeme seçildiyse acılığı en az o seviyeye çeker; çıkarılınca geri alır. */
@@ -179,10 +188,41 @@ export function useCustomPickleBuilder(
     }
   }
 
+  /** Renk veren malzeme seçildiyse suyu o renge çeker; çıkarılınca geri alır. */
+  function syncBrine(ids: string[]) {
+    const picked = ids
+      .map((id) => byId.get(id))
+      .filter((item): item is IngredientView => item !== undefined);
+    const result = resolveBrine({
+      current: brine,
+      auto: autoBrine,
+      required: requiredBrine(picked, brines),
+      brines,
+    });
+    setBrineState(result.brine);
+    setAutoBrine(result.auto);
+    if (result.raised) {
+      const raised = result.raised;
+      const names = picked
+        .filter((item) => item.brineKey === raised.key)
+        .map((item) => item.name)
+        .join(", ");
+      setMessage({
+        text: `${names || "Seçtiğiniz malzeme"} suyu boyadığı için salamura "${raised.label}" olarak ayarlandı. Dilerseniz değiştirebilirsiniz.`,
+        error: false,
+      });
+    }
+  }
+
   /** Müşterinin elle seçimi: otomatik ayarlama kaydı bırakılır. */
   function setSpice(key: string) {
     setSpiceState(key);
     setAutoSpice(null);
+  }
+
+  function setBrine(key: string) {
+    setBrineState(key);
+    setAutoBrine(null);
   }
 
   function selectSize(nextVariantId: string) {

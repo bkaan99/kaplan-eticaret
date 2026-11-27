@@ -177,6 +177,14 @@ export const ingredientInputSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => (value ? value : null)),
+  /** Seçilince önerilen salamura/su rengi (PickleBrineOption.key); boş = etkisiz. */
+  brineKey: z
+    .string()
+    .trim()
+    .max(40)
+    .nullable()
+    .optional()
+    .transform((value) => (value ? value : null)),
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
   isActive: z.boolean().default(true),
 });

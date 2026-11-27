@@ -71,6 +71,7 @@ export function toView(
     seasonStartMonth: record.seasonStartMonth,
     seasonEndMonth: record.seasonEndMonth,
     spiceKey: record.spiceKey,
+    brineKey: record.brineKey,
     inStock,
     inSeason,
     isAvailable,

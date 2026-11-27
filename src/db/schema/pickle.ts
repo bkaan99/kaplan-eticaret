@@ -19,6 +19,8 @@ export const pickleIngredient = sqliteTable(
     seasonEndMonth: integer("seasonEndMonth"),
     /** Bu malzeme seçilince en az bu acılık seviyesi (PickleSpiceOption.key) önerilir. */
     spiceKey: text("spiceKey"),
+    /** Bu malzeme seçilince salamura/su rengi (PickleBrineOption.key) önerilir. */
+    brineKey: text("brineKey"),
     isActive: integer("isActive", { mode: "boolean" }).notNull().default(true),
     sortOrder: integer("sortOrder").notNull().default(0),
     createdAt: timestamp("createdAt")

@@ -44,6 +44,7 @@ function ingredient(
     seasonStartMonth: null,
     seasonEndMonth: null,
     spiceKey: null,
+    brineKey: null,
     isActive: true,
     sortOrder: 0,
     ...overrides,

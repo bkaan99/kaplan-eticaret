@@ -9,6 +9,7 @@ import {
   INGREDIENT_GROUP_LABELS,
   MONTH_NAMES_TR,
   type IngredientGroup,
+  type PickleBrineOption,
   type PickleSpiceOption,
 } from "@/modules/custom-pickle/custom-pickle.types";
 import { formatMoney } from "@/shared/money";
@@ -27,6 +28,8 @@ export interface IngredientModalProps {
   form: FormState;
   /** Panelde tanımlı acılık seçenekleri (malzemeye atanabilir). */
   spices: PickleSpiceOption[];
+  /** Panelde tanımlı salamura seçenekleri (su rengi etkisi). */
+  brines: PickleBrineOption[];
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
   priceNumber: number;
   uploading: boolean;
@@ -42,6 +45,7 @@ export function IngredientModal({
   editingId,
   form,
   spices,
+  brines,
   update,
   priceNumber,
   uploading,
@@ -312,6 +316,30 @@ export function IngredientModal({
               Müşteri bu malzemeyi seçince acılık en az bu seviyeye ayarlanır.
               Bidonda birden fazla acı malzeme varsa en yüksek seviye geçerli
               olur.
+            </span>
+          </label>
+
+          {/* Su rengi: pancar / kırmızı lahana gibi malzemeler salamurayı boyar */}
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
+            💧 Su rengi etkisi (İsteğe bağlı)
+            <select
+              className={inputClass}
+              value={form.brineKey}
+              onChange={(event) => update("brineKey", event.target.value)}
+            >
+              <option value="">(Normal - etkisiz)</option>
+              {brines
+                .filter((option) => option.isActive)
+                .map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+            </select>
+            <span className="text-[11px] font-normal text-slate-500">
+              Müşteri bu malzemeyi seçince bidonun suyu bu renge ayarlanır (ör.
+              pancar → kırmızı su). Birden fazla renk veren malzeme varsa en
+              güçlü renk geçerli olur.
             </span>
           </label>
 

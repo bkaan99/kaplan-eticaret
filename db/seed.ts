@@ -378,6 +378,8 @@ const PICKLE_INGREDIENTS: {
   seasonEndMonth?: number;
   /** Seçilince önerilen acılık seviyesi (PickleSpiceOption.key). */
   spiceKey?: string;
+  /** Seçilince önerilen salamura/su rengi (PickleBrineOption.key). */
+  brineKey?: string;
 }[] = [
   {
     name: "Salatalık",
@@ -418,6 +420,7 @@ const PICKLE_INGREDIENTS: {
     minStockKg: 20,
     seasonStartMonth: 9,
     seasonEndMonth: 3,
+    brineKey: "RED",
   },
   {
     name: "Havuç",
@@ -466,6 +469,7 @@ const PICKLE_INGREDIENTS: {
     minStockKg: 20,
     seasonStartMonth: 9,
     seasonEndMonth: 3,
+    brineKey: "RED",
   },
   {
     name: "Yeşil domates",
@@ -554,9 +558,18 @@ async function seedCustomPickle(db: Db): Promise<void> {
         seasonStartMonth: item.seasonStartMonth ?? null,
         seasonEndMonth: item.seasonEndMonth ?? null,
         spiceKey: item.spiceKey ?? null,
+        brineKey: item.brineKey ?? null,
         sortOrder: index,
       })
       .onConflictDoNothing({ target: pickleIngredient.slug });
+  }
+
+  // Mevcut kayıtlarda da pancar / kırmızı lahana suyu kırmızı boyasın.
+  for (const slug of ["pancar", "kirmizi-lahana"] as const) {
+    await db
+      .update(pickleIngredient)
+      .set({ brineKey: "RED" })
+      .where(eq(pickleIngredient.slug, slug));
   }
 
   const slug = "kendi-tursunu-yap";

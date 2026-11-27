@@ -260,6 +260,8 @@ export interface IngredientView {
   seasonEndMonth: number | null;
   /** Seçilince önerilen en düşük acılık seviyesi (null = etkisiz). */
   spiceKey: string | null;
+  /** Seçilince önerilen salamura/su rengi (null = etkisiz). */
+  brineKey: string | null;
   inStock: boolean;
   inSeason: boolean;
   isAvailable: boolean;
