@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionRunner } from "@/components/admin/use-action-runner";
+import { optimizeImageFile } from "@/components/admin/image-optimize/optimize-image";
 import { useEffect, useId, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,9 +80,10 @@ export function BannerModal({
   async function handleFileUpload(file: File) {
     setUploadError(null);
     setUploading(true);
-    const body = new FormData();
-    body.set("file", file);
     try {
+      const optimized = await optimizeImageFile(file, { maxEdge: 2000 });
+      const body = new FormData();
+      body.set("file", optimized);
       const response = await fetch("/admin/yukle", { method: "POST", body });
       const result = (await response.json()) as {
         url?: string;

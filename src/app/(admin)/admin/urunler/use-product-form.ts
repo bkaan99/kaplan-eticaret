@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { optimizeImageFile } from "@/components/admin/image-optimize/optimize-image";
 import type {
   EditableProduct,
   FormReferences,
@@ -143,10 +144,11 @@ export function useProductForm({
 
   async function uploadImage(file: File, index: number) {
     setUploadError(null);
-    const body = new FormData();
-    body.set("file", file);
 
     try {
+      const optimized = await optimizeImageFile(file);
+      const body = new FormData();
+      body.set("file", optimized);
       const response = await fetch("/admin/yukle", { method: "POST", body });
       const result = (await response.json()) as {
         url?: string;
