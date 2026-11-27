@@ -2,7 +2,8 @@
 
 import { inputClass } from "./pickle-ui";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ImageCropDialog } from "@/components/admin/image-crop/image-crop-dialog";
 import { Button } from "@/components/ui/button";
 import {
   INGREDIENT_GROUP_LABELS,
@@ -12,6 +13,12 @@ import {
 } from "@/modules/custom-pickle/custom-pickle.types";
 import { formatMoney } from "@/shared/money";
 import { type FormState } from "./ingredient-form";
+
+interface PendingCrop {
+  src: string;
+  fileName: string;
+  mime?: string;
+}
 
 export interface IngredientModalProps {
   isOpen: boolean;
@@ -43,13 +50,36 @@ export function IngredientModal({
   onSave,
   error,
 }: IngredientModalProps) {
+  const [pendingCrop, setPendingCrop] = useState<PendingCrop | null>(null);
+
+  function clearPendingCrop() {
+    setPendingCrop((current) => {
+      if (current?.src.startsWith("blob:")) {
+        URL.revokeObjectURL(current.src);
+      }
+      return null;
+    });
+  }
+
+  function openCropForFile(file: File) {
+    clearPendingCrop();
+    setPendingCrop({
+      src: URL.createObjectURL(file),
+      fileName: file.name,
+      mime: file.type || undefined,
+    });
+  }
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      clearPendingCrop();
+      return;
+    }
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !pendingCrop) onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
 
@@ -57,7 +87,7 @@ export function IngredientModal({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, pendingCrop]);
 
   if (!isOpen) return null;
 
@@ -306,7 +336,7 @@ export function IngredientModal({
                     alt="Malzeme"
                     fill
                     sizes="44px"
-                    className="object-contain p-1"
+                    className="object-cover"
                   />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center text-slate-400">
@@ -332,12 +362,16 @@ export function IngredientModal({
                   disabled={uploading}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
-                    if (file) void upload(file);
+                    if (file) openCropForFile(file);
                     event.target.value = "";
                   }}
                 />
               </label>
             </div>
+            <span className="font-normal text-slate-400 text-[11px]">
+              Dosya seçince kare kırpma ekranı açılır; turşu robotunda bu oran
+              kullanılır.
+            </span>
           </div>
 
           {/* Aktiflik Durumu */}
@@ -393,6 +427,21 @@ export function IngredientModal({
           </Button>
         </div>
       </div>
+
+      <ImageCropDialog
+        open={Boolean(pendingCrop)}
+        imageSrc={pendingCrop?.src ?? null}
+        fileName={pendingCrop?.fileName ?? "gorsel"}
+        sourceMime={pendingCrop?.mime}
+        aspect={1}
+        title="Malzeme Görselini Kırp"
+        confirmLabel="Kırp ve Yükle"
+        onCancel={clearPendingCrop}
+        onConfirm={(file) => {
+          clearPendingCrop();
+          void upload(file);
+        }}
+      />
     </div>
   );
 }
