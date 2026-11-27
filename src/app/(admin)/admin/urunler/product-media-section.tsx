@@ -1,11 +1,20 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
+import { ImageCropDialog } from "@/components/admin/image-crop/image-crop-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import type { ImageRow } from "./use-product-form";
+
+interface PendingCrop {
+  src: string;
+  fileName: string;
+  mime?: string;
+  index: number;
+}
 
 interface ProductMediaSectionProps {
   images: ImageRow[];
@@ -24,6 +33,38 @@ export function ProductMediaSection({
   imageOptionChoices,
   fieldErrors,
 }: ProductMediaSectionProps) {
+  const [pendingCrop, setPendingCrop] = useState<PendingCrop | null>(null);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+
+  function clearPendingCrop() {
+    setPendingCrop((current) => {
+      if (current?.src.startsWith("blob:")) {
+        URL.revokeObjectURL(current.src);
+      }
+      return null;
+    });
+  }
+
+  function openCropForFile(file: File, index: number) {
+    clearPendingCrop();
+    setPendingCrop({
+      src: URL.createObjectURL(file),
+      fileName: file.name,
+      mime: file.type || undefined,
+      index,
+    });
+  }
+
+  async function handleCroppedUpload(file: File, index: number) {
+    clearPendingCrop();
+    setUploadingIndex(index);
+    try {
+      await uploadImage(file, index);
+    } finally {
+      setUploadingIndex(null);
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -32,7 +73,8 @@ export function ProductMediaSection({
             Ürün & Bidon Görselleri
           </CardTitle>
           <p className="text-xs text-slate-500 mt-0.5">
-            Müşterinin göreceği kapak ve galeri görselleri (JPEG, PNG, WebP — en fazla 5 MB)
+            Dosya seçince kare kırpma açılır; görsel sıkıştırılarak yüklenir
+            (JPEG, PNG, WebP — en fazla 5 MB)
           </p>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
@@ -42,7 +84,10 @@ export function ProductMediaSection({
 
       <CardContent className="flex flex-col gap-4">
         {uploadError && (
-          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700"
+          >
             ⚠️ {uploadError}
           </div>
         )}
@@ -51,15 +96,16 @@ export function ProductMediaSection({
           <div className="space-y-3">
             {images.map((image, index) => {
               const hasValidUrl = Boolean(
-                image.url && (image.url.startsWith("http") || image.url.startsWith("/")),
+                image.url &&
+                  (image.url.startsWith("http") || image.url.startsWith("/")),
               );
+              const isUploading = uploadingIndex === index;
 
               return (
                 <div
                   key={index}
                   className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 transition sm:flex-row sm:items-center"
                 >
-                  {/* Görsel Önizleme Kutusu */}
                   <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
                     {hasValidUrl ? (
                       <Image
@@ -79,7 +125,6 @@ export function ProductMediaSection({
                     )}
                   </div>
 
-                  {/* Giriş Alanları */}
                   <div className="grid flex-1 gap-2.5 sm:grid-cols-[1.5fr_1fr_1fr]">
                     <div className="flex flex-col gap-1">
                       <Input
@@ -96,14 +141,19 @@ export function ProductMediaSection({
                         }
                       />
                       <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer">
-                        <span>📤 Dosyadan Yükle</span>
+                        <span>
+                          {isUploading
+                            ? "Yükleniyor..."
+                            : "📤 Dosya Seç ve Kırp"}
+                        </span>
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp,image/gif"
                           className="sr-only"
+                          disabled={isUploading || uploadingIndex !== null}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (file) void uploadImage(file, index);
+                            if (file) openCropForFile(file, index);
                             e.target.value = "";
                           }}
                         />
@@ -131,7 +181,9 @@ export function ProductMediaSection({
                       onChange={(e) =>
                         setImages((rows) =>
                           rows.map((r, i) =>
-                            i === index ? { ...r, forOption: e.target.value } : r,
+                            i === index
+                              ? { ...r, forOption: e.target.value }
+                              : r,
                           ),
                         )
                       }
@@ -145,7 +197,6 @@ export function ProductMediaSection({
                     </Select>
                   </div>
 
-                  {/* Sil Butonu */}
                   <Button
                     type="button"
                     variant="ghost"
@@ -193,6 +244,21 @@ export function ProductMediaSection({
           </Button>
         </div>
       </CardContent>
+
+      <ImageCropDialog
+        open={Boolean(pendingCrop)}
+        imageSrc={pendingCrop?.src ?? null}
+        fileName={pendingCrop?.fileName ?? "gorsel"}
+        sourceMime={pendingCrop?.mime}
+        aspect={1}
+        title="Ürün Görselini Kırp"
+        confirmLabel="Kırp ve Yükle"
+        onCancel={clearPendingCrop}
+        onConfirm={(file) => {
+          if (pendingCrop == null) return;
+          void handleCroppedUpload(file, pendingCrop.index);
+        }}
+      />
     </Card>
   );
 }
