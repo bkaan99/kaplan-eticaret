@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/db";
 import { createTestDb, type TestDb } from "../../../../tests/support/test-db";
 import { makeCategory } from "../../../../tests/support/factories";
+import { D1CatalogRepository } from "../../catalog/catalog.repository";
 import { D1ProductAdminRepository } from "./product-admin.repository";
 import { productInputSchema, type ProductInput } from "./product.schema";
 
@@ -155,5 +156,153 @@ describe("D1ProductAdminRepository", () => {
     });
     expect(result.items.length).toBeGreaterThanOrEqual(1);
     expect(result.items[0]!.variantCount).toBe(2);
+  });
+
+  describe("boyut varyantları (3 kg / 5 kg ayrı fiyat)", () => {
+    const sizes = (prefix: string, overrides: Record<string, unknown> = {}) =>
+      build(
+        {
+          options: [{ name: "Boyut", values: ["3 kg", "5 kg"] }],
+          variants: [
+            {
+              sku: `${prefix}-3KG`,
+              price: "249,90",
+              compareAtPrice: "299.90",
+              stockQuantity: 10,
+              optionValues: { Boyut: "3 kg" },
+            },
+            {
+              sku: `${prefix}-5KG`,
+              price: "379.90",
+              stockQuantity: 4,
+              optionValues: { Boyut: "5 kg" },
+            },
+          ],
+          images: [],
+          ...overrides,
+        },
+        prefix,
+      );
+
+    it("her boyutun fiyatı, eski fiyatı ve stoğu ayrı saklanır; vitrin ayrı gösterir", async () => {
+      const prefix = nextPrefix();
+      const slug = `boyut-${tag}-1`;
+      const id = await repo.create(sizes(prefix), slug);
+
+      const edit = await repo.findForEdit(id);
+      const bySku = new Map(edit!.variants.map((v) => [v.sku, v]));
+      expect(bySku.get(`${prefix}-3KG`)).toMatchObject({
+        price: "249.90",
+        compareAtPrice: "299.90",
+        stockQuantity: 10,
+      });
+      expect(bySku.get(`${prefix}-5KG`)).toMatchObject({
+        price: "379.90",
+        compareAtPrice: null,
+        stockQuantity: 4,
+      });
+
+      const detail = await new D1CatalogRepository(() => db).findDetailBySlug(
+        slug,
+      );
+      expect(detail!.options).toHaveLength(1);
+      expect(detail!.options[0]!.values.map((v) => v.value)).toEqual([
+        "3 kg",
+        "5 kg",
+      ]);
+      expect(detail!.variants.map((v) => v.price.toFixed(2))).toEqual([
+        "249.90",
+        "379.90",
+      ]);
+    });
+
+    it("kayıtlı varyantın değeri değişince vitrin yeni adı gösterir, eski ad kalmaz", async () => {
+      const prefix = nextPrefix();
+      const slug = `boyut-${tag}-2`;
+      const id = await repo.create(sizes(prefix), slug);
+      const created = await repo.findForEdit(id);
+      const three = created!.variants.find((v) => v.sku === `${prefix}-3KG`)!;
+      const five = created!.variants.find((v) => v.sku === `${prefix}-5KG`)!;
+
+      await repo.update(
+        id,
+        sizes(prefix, {
+          options: [{ name: "Boyut", values: ["3 kg bidon", "5 kg"] }],
+          variants: [
+            {
+              id: three.id,
+              sku: three.sku,
+              price: "249.90",
+              stockQuantity: 10,
+              optionValues: { Boyut: "3 kg bidon" },
+            },
+            {
+              id: five.id,
+              sku: five.sku,
+              price: "399.90",
+              stockQuantity: 4,
+              optionValues: { Boyut: "5 kg" },
+            },
+          ],
+        }),
+        slug,
+      );
+
+      const detail = await new D1CatalogRepository(() => db).findDetailBySlug(
+        slug,
+      );
+      expect(detail!.options[0]!.values.map((v) => v.value)).toEqual([
+        "3 kg bidon",
+        "5 kg",
+      ]);
+      const label = new Map(
+        detail!.options[0]!.values.map((v) => [v.id, v.value]),
+      );
+      const labelsByPrice = new Map(
+        detail!.variants.map((v) => [
+          v.price.toFixed(2),
+          v.optionValueIds.map((id) => label.get(id)),
+        ]),
+      );
+      expect(labelsByPrice.get("249.90")).toEqual(["3 kg bidon"]);
+      expect(labelsByPrice.get("399.90")).toEqual(["5 kg"]);
+
+      // Düzenleyici de eski adı hayalet olarak geri getirmez.
+      const edit = await repo.findForEdit(id);
+      expect(edit!.options).toEqual([
+        { name: "Boyut", values: ["3 kg bidon", "5 kg"] },
+      ]);
+    });
+
+    it("kaldırılan varyantın değeri vitrinde fiyatsız düğme olarak kalmaz", async () => {
+      const prefix = nextPrefix();
+      const slug = `boyut-${tag}-3`;
+      const id = await repo.create(sizes(prefix), slug);
+      const created = await repo.findForEdit(id);
+      const three = created!.variants.find((v) => v.sku === `${prefix}-3KG`)!;
+
+      await repo.update(
+        id,
+        sizes(prefix, {
+          options: [{ name: "Boyut", values: ["3 kg"] }],
+          variants: [
+            {
+              id: three.id,
+              sku: three.sku,
+              price: "249.90",
+              stockQuantity: 10,
+              optionValues: { Boyut: "3 kg" },
+            },
+          ],
+        }),
+        slug,
+      );
+
+      const detail = await new D1CatalogRepository(() => db).findDetailBySlug(
+        slug,
+      );
+      expect(detail!.variants).toHaveLength(1);
+      expect(detail!.options[0]!.values.map((v) => v.value)).toEqual(["3 kg"]);
+    });
   });
 });

@@ -8,27 +8,28 @@ import type {
 } from "@/modules/admin/catalog/product-admin.repository";
 import { generateCombinations } from "@/modules/admin/catalog/product.schema";
 import { saveProductAction } from "./actions";
+import {
+  addRow,
+  baseSkuFrom,
+  canDisableAxis,
+  disableAxis,
+  enableAxis,
+  removeRow,
+  renameAxis,
+  setRowValue,
+  validateRows,
+  type OptionRow,
+  type RowIssues,
+  type VariantRow,
+  type VariantState,
+} from "./variant-rows";
 
-export interface VariantRow {
-  id?: string;
-  sku: string;
-  barcode: string;
-  price: string;
-  compareAtPrice: string;
-  stockQuantity: string;
-  isActive: boolean;
-  optionValues: Record<string, string>;
-}
+export type { OptionRow, VariantRow };
 
 export interface ImageRow {
   url: string;
   alt: string;
   forOption: string; // "Renk\u0000Siyah" veya ""
-}
-
-export interface OptionRow {
-  name: string;
-  values: string;
 }
 
 export const emptyProduct: EditableProduct = {
@@ -177,19 +178,26 @@ export function useProductForm({
     [options],
   );
 
+  /**
+   * Seçeneklerden varyant satırlarını (fiyat alanları dahil) üretir/günceller.
+   * Var olan satırlar (kimlik, fiyat, stok) korunur; yalnızca yeni kombinasyonlar eklenir.
+   * Seçenek alanlarından çıkılınca (blur) ve "Listeyi Yenile" ile çalışır; her tuş
+   * vuruşunda çalışmaz, çünkü yazarken ara değerler satırları silip fiyatı kaybettirirdi.
+   */
   function generateVariants() {
     const combos = generateCombinations(parsedOptions);
-    const existing = new Map(
-      variants.map((v) => [comboKey(options, v.optionValues), v]),
-    );
-    const basePrice = variants[0]?.price ?? "";
     const baseSku = (slug || name || "URUN")
       .toUpperCase()
       .replace(/[^A-Z0-9]+/g, "-")
       .slice(0, 24);
 
-    setVariants(
-      combos.map((combo) => {
+    setVariants((current) => {
+      const existing = new Map(
+        current.map((v) => [comboKey(options, v.optionValues), v]),
+      );
+      const basePrice = current[0]?.price ?? "";
+
+      return combos.map((combo) => {
         const found = existing.get(comboKey(options, combo));
         if (found) return { ...found, optionValues: combo };
 
@@ -205,14 +213,55 @@ export function useProductForm({
           isActive: true,
           optionValues: combo,
         };
-      }),
-    );
+      });
+    });
   }
+
+  /** Sade varyant düzenleyicisi: özel bidon ürünü ve çok eksenli ürünler eski düzenleyiciyi kullanır. */
+  const simpleVariants =
+    options.length <= 1 && product?.slug !== "kendi-tursunu-yap";
+  const [variantIssues, setVariantIssues] = useState<Record<number, RowIssues>>(
+    {},
+  );
+  const baseSku = baseSkuFrom(slug, name);
+
+  function applyVariantState(change: (state: VariantState) => VariantState) {
+    const next = change({ options, variants });
+    setOptions(next.options);
+    setVariants(next.variants);
+    setVariantIssues({});
+  }
+
+  const variantEditor = {
+    addRow: (value?: string) =>
+      applyVariantState((state) => addRow(state, baseSku, value)),
+    setRowValue: (index: number, value: string) =>
+      applyVariantState((state) => setRowValue(state, baseSku, index, value)),
+    renameAxis: (newName: string) =>
+      applyVariantState((state) => renameAxis(state, newName)),
+    removeRow: (index: number) =>
+      applyVariantState((state) => removeRow(state, index)),
+    enableAxis: () => applyVariantState((state) => enableAxis(state, baseSku)),
+    disableAxis: () => applyVariantState((state) => disableAxis(state)),
+    canDisableAxis: canDisableAxis({ options, variants }),
+  };
 
   function updateVariant(index: number, patch: Partial<VariantRow>) {
     setVariants((rows) =>
       rows.map((row, i) => (i === index ? { ...row, ...patch } : row)),
     );
+    // Düzenlenen alanın eski hata işareti kalkar (yeniden kaydedince tekrar denetlenir).
+    setVariantIssues((current) => {
+      const issues = current[index];
+      if (!issues) return current;
+      const next = { ...issues };
+      if ("price" in patch) delete next.price;
+      if ("compareAtPrice" in patch) delete next.compareAtPrice;
+      if ("stockQuantity" in patch) delete next.stockQuantity;
+      const rest = { ...current };
+      delete rest[index];
+      return Object.keys(next).length > 0 ? { ...rest, [index]: next } : rest;
+    });
   }
 
   function toggleAttribute(valueId: string) {
@@ -226,6 +275,17 @@ export function useProductForm({
   function submit() {
     setError(null);
     setSaved(false);
+
+    if (simpleVariants) {
+      const issues = validateRows({ options, variants });
+      setVariantIssues(issues);
+      if (Object.keys(issues).length > 0) {
+        setError(
+          "Varyantlarda eksik veya hatalı alan var. Kırmızı işaretli alanları düzeltin.",
+        );
+        return;
+      }
+    }
 
     const payload = {
       name,
@@ -339,6 +399,9 @@ export function useProductForm({
     toggleAttribute,
     options,
     setOptions,
+    simpleVariants,
+    variantEditor,
+    variantIssues,
     variants,
     updateVariant,
     generateVariants,

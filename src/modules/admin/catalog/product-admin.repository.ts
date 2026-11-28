@@ -135,6 +135,36 @@ export interface ProductAdminRepository {
 
 type BatchOps = Parameters<typeof runBatch>[1];
 
+/**
+ * Düzenleyiciye yalnızca bir varyantın hâlâ kullandığı seçenek değerleri verilir.
+ * Eski ad/değerler (yeniden adlandırılan veya kaldırılan) hayalet olarak geri gelmez.
+ */
+function usedOptions(
+  options: { name: string; values: { value: string }[] }[],
+  variants: {
+    optionValues: {
+      optionValue: { value: string; option: { name: string } };
+    }[];
+  }[],
+): { name: string; values: string[] }[] {
+  const used = new Set(
+    variants.flatMap((variant) =>
+      variant.optionValues.map(
+        (link) =>
+          `${link.optionValue.option.name}\u0000${link.optionValue.value}`,
+      ),
+    ),
+  );
+  return options
+    .map((option) => ({
+      name: option.name,
+      values: option.values
+        .map((value) => value.value)
+        .filter((value) => used.has(`${option.name}\u0000${value}`)),
+    }))
+    .filter((option) => option.values.length > 0);
+}
+
 export class D1ProductAdminRepository implements ProductAdminRepository {
   constructor(private readonly db: () => Db) {}
 
@@ -290,10 +320,7 @@ export class D1ProductAdminRepository implements ProductAdminRepository {
       allergens: row.allergens,
       shelfLife: row.shelfLife,
       attributeValueIds: row.attributes.map((a) => a.attributeValueId),
-      options: row.options.map((option) => ({
-        name: option.name,
-        values: option.values.map((value) => value.value),
-      })),
+      options: usedOptions(row.options, row.variants),
       variants: row.variants.map((variant) => ({
         id: variant.id,
         sku: variant.sku,
@@ -512,13 +539,26 @@ export class D1ProductAdminRepository implements ProductAdminRepository {
       };
 
       if (variant.id) {
+        const existingId = variant.id;
         ops.push(
           db
             .update(productVariant)
             .set(data)
-            .where(eq(productVariant.id, variant.id)),
+            .where(eq(productVariant.id, existingId)),
+          // Seçenek değeri değişmiş olabilir (ör. "3kg" → "3 kg"): bağlantılar yeniden yazılır.
+          db
+            .delete(variantOptionValue)
+            .where(eq(variantOptionValue.variantId, existingId)),
+          ...input.options.map((option) =>
+            db.insert(variantOptionValue).values({
+              variantId: existingId,
+              optionValueId: valueIds.get(
+                `${option.name}\u0000${variant.optionValues[option.name]}`,
+              )!,
+            }),
+          ),
         );
-        keep.push(variant.id);
+        keep.push(existingId);
         continue;
       }
 

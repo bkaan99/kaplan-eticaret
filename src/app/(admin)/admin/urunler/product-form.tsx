@@ -12,6 +12,7 @@ import { ProductBasicInfo } from "./product-basic-info";
 import { ProductFoodInfoSection } from "./product-food-info-section";
 import { ProductMediaSection } from "./product-media-section";
 import { ProductSeoSection } from "./product-seo-section";
+import { ProductVariantsList } from "./product-variants-list";
 import { ProductVariantsSection } from "./product-variants-section";
 import { useProductForm } from "./use-product-form";
 
@@ -261,17 +262,20 @@ export function ProductForm({
 
       {/* Sekme İçerikleri */}
       <div className="mt-1">
-        {activeTab === "variants" && (
-          <ProductVariantsSection
-            options={form.options}
-            setOptions={form.setOptions}
-            variants={form.variants}
-            updateVariant={form.updateVariant}
-            generateVariants={form.generateVariants}
-            fieldErrors={form.fieldErrors}
-            isCustomPickle={isCustomPickle}
-          />
-        )}
+        {activeTab === "variants" &&
+          (form.simpleVariants ? (
+            <ProductVariantsList form={form} />
+          ) : (
+            <ProductVariantsSection
+              options={form.options}
+              setOptions={form.setOptions}
+              variants={form.variants}
+              updateVariant={form.updateVariant}
+              generateVariants={form.generateVariants}
+              fieldErrors={form.fieldErrors}
+              isCustomPickle={isCustomPickle}
+            />
+          ))}
 
         {activeTab === "basic" && (
           <ProductBasicInfo

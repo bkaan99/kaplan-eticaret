@@ -6,7 +6,10 @@ import { useId, type SVGProps } from "react";
 export const BIDON_BODY =
   "M96 66 H224 Q230 66 234 70 L272 108 Q276 112 276 118 V360 Q276 366 272 371 L254 393 Q250 398 244 398 H76 Q70 398 66 393 L48 371 Q44 366 44 360 V118 Q44 112 48 108 L86 70 Q90 66 96 66 Z";
 
-export interface BidonPreviewProps extends SVGProps<SVGSVGElement> {
+export interface BidonPreviewProps extends Omit<
+  SVGProps<SVGSVGElement>,
+  "fill"
+> {
   /** Salamura rengi */
   liquidColor?: string;
   /** Etiket üst satırı */
@@ -101,7 +104,14 @@ export function BidonPreview({
             d="M-20 0 Q 40 -10 100 0 T 220 0 T 340 0 V 420 H -20 Z"
             fill={`url(#${liquidId})`}
           />
-          <rect x="0" y="-2" width="320" height="8" fill="#ffffff" fillOpacity="0.35" />
+          <rect
+            x="0"
+            y="-2"
+            width="320"
+            height="8"
+            fill="#ffffff"
+            fillOpacity="0.35"
+          />
           <path
             d="M-20 0 Q 40 -10 100 0 T 220 0 T 340 0 V 420 H -20 Z"
             fill={liquidColor}

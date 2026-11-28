@@ -268,6 +268,35 @@ function toVariantRecord(row: VariantRow): VariantRecord {
   };
 }
 
+/**
+ * Vitrinde yalnızca satıştaki (aktif) varyantların kullandığı seçenek değerleri gösterilir.
+ * Kaldırılan varyantın değeri fiyatsız hayalet düğme, eski bir seçenek ekseni de
+ * satın almayı engelleyen fazladan seçim olarak kalmasın.
+ */
+function sellableOptions(
+  options: {
+    id: string;
+    name: string;
+    values: { id: string; value: string }[];
+  }[],
+  variants: { optionValues: { optionValueId: string }[] }[],
+): { id: string; name: string; values: { id: string; value: string }[] }[] {
+  const used = new Set(
+    variants.flatMap((variant) =>
+      variant.optionValues.map((item) => item.optionValueId),
+    ),
+  );
+  return options
+    .map((option) => ({
+      id: option.id,
+      name: option.name,
+      values: option.values
+        .filter((value) => used.has(value.id))
+        .map((value) => ({ id: value.id, value: value.value })),
+    }))
+    .filter((option) => option.values.length > 0);
+}
+
 export class D1CatalogRepository implements CatalogRepository {
   /** İstemci tembel verilir; env doğrulaması yalnızca ilk sorguda çalışır. */
   constructor(private readonly db: () => Db) {}
@@ -441,14 +470,7 @@ export class D1CatalogRepository implements CatalogRepository {
         alt: image.alt,
         optionValueId: image.optionValueId,
       })),
-      options: row.options.map((option) => ({
-        id: option.id,
-        name: option.name,
-        values: option.values.map((value) => ({
-          id: value.id,
-          value: value.value,
-        })),
-      })),
+      options: sellableOptions(row.options, row.variants),
       variants: row.variants.map(toVariantRecord),
       attributes: row.attributes.map((item) => ({
         name: item.attributeValue.attribute.name,
