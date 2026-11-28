@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { BidonPreview } from "@/components/storefront/bidon-preview";
+import { TrashIcon } from "@/components/storefront/icons";
 import { Price } from "@/components/storefront/price";
 import { refreshStorefrontShell } from "@/components/storefront/shell-events";
 import type { CartLine, CartView } from "@/modules/cart/cart.types";
@@ -50,7 +51,7 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
   }
 
   return (
-    <li className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:gap-4">
+    <li className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:items-start sm:gap-4">
       <div className="flex gap-3 sm:gap-4">
         <div
           className={`relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-theme ${
@@ -77,20 +78,34 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={
-                line.isCustom ? "/kendi-tursunu-yap" : `/urun/${line.productSlug}`
-              }
-              className="font-medium transition-colors hover:text-primary"
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <Link
+                href={
+                  line.isCustom
+                    ? "/kendi-tursunu-yap"
+                    : `/urun/${line.productSlug}`
+                }
+                className="font-medium transition-colors hover:text-primary"
+              >
+                {line.productName}
+              </Link>
+              {line.isCustom ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                  🥒 Özel Reçete
+                </span>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={remove}
+              disabled={pending}
+              aria-label={`${line.productName} ürününü sepetten kaldır`}
+              title="Sepetten kaldır"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50 sm:hidden"
             >
-              {line.productName}
-            </Link>
-            {line.isCustom ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-                🥒 Özel Reçete
-              </span>
-            ) : null}
+              <TrashIcon width={17} height={17} />
+            </button>
           </div>
           {line.variantLabel ? (
             <span className="text-sm text-muted-foreground">
@@ -117,14 +132,6 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
               }}
               className="min-h-11 w-20 rounded-theme border border-border px-2 py-2 text-sm"
             />
-            <button
-              type="button"
-              onClick={remove}
-              disabled={pending}
-              className="inline-flex min-h-11 items-center rounded-theme px-3 text-sm text-red-600 underline"
-            >
-              Kaldır
-            </button>
           </div>
 
           {line.issue ? (
@@ -139,8 +146,21 @@ function Line({ line, currency }: { line: CartLine; currency: string }) {
           ) : null}
         </div>
       </div>
-      <div className="flex justify-end font-semibold sm:shrink-0 sm:self-start">
-        <Price value={line.lineTotal} currency={currency} />
+      <div className="flex items-center justify-between gap-3 sm:shrink-0 sm:flex-col sm:items-end sm:justify-start sm:gap-2">
+        <span className="font-semibold">
+          <Price value={line.lineTotal} currency={currency} />
+        </span>
+        <button
+          type="button"
+          onClick={remove}
+          disabled={pending}
+          aria-label={`${line.productName} ürününü sepetten kaldır`}
+          title="Sepetten kaldır"
+          className="hidden h-9 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50 sm:inline-flex"
+        >
+          <TrashIcon width={15} height={15} />
+          <span>Kaldır</span>
+        </button>
       </div>
     </li>
   );
